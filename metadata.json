@@ -1,0 +1,5 @@
+{
+  "name": "Text-to-Speech Synthesizer",
+  "description": "A web application that utilizes the browser's built-in text-to-speech capabilities. Users can select from available voices, adjust the speech rate, enter text, and listen to the synthesized audio.",
+  "requestFramePermissions": []
+}
