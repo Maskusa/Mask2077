@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sensitive artifacts
+Voicer.keystore
+__key
+temp_ids.txt
+android/app/google-services*.json
+android/app/google-servicesPjson
