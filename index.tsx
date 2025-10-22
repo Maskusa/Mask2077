@@ -2,6 +2,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { LogProvider } from './context/LogContext';
+import { initAnalytics } from './firebase';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -9,8 +11,13 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+
+void initAnalytics();
+
 root.render(
   <React.StrictMode>
-    <App />
+    <LogProvider>
+      <App />
+    </LogProvider>
   </React.StrictMode>
 );

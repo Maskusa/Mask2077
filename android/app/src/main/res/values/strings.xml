@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TTS Synthesizer</string>
+    <string name="title_activity_main">TTS Synthesizer</string>
+    <string name="package_name">com.subtit.player</string>
+    <string name="custom_url_scheme">com.subtit.player</string>
+    <string name="admob_app_id">ca-app-pub-4735181707963719~5807381443</string>`n</resources>
+

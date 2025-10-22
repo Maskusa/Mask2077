@@ -1,5 +1,4 @@
-
-import type { SelectOption } from './types';
+﻿import type { SelectOption } from './types';
 
 export const SPEECH_RATES: SelectOption[] = [
   { value: 0.5, label: '0.5x' },
@@ -10,4 +9,4 @@ export const SPEECH_RATES: SelectOption[] = [
   { value: 2, label: '2x' },
 ];
 
-export const DEFAULT_TEXT = 'Пример текста для озвучивания';
+export const DEFAULT_TEXT = 'Privet! Eto test sinteza rechi.';
