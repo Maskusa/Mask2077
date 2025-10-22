@@ -109,6 +109,7 @@ const App: React.FC = () => {
   const [rate, setRate] = useState<number>(1);
   const [voiceId, setVoiceId] = useState<string>('');
   const [showLogs, setShowLogs] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [youtubeUrl, setYoutubeUrl] = useState<string>('');
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
@@ -198,6 +199,26 @@ const App: React.FC = () => {
     filteredVoices,
     voiceId,
   ]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+    if (!supportCheckReady) {
+      setLoadingProgress(0);
+      timer = setInterval(() => {
+        setLoadingProgress((prev) => {
+          const next = prev + Math.random() * 12 + 4;
+          return next >= 95 ? 95 : next;
+        });
+      }, 200);
+    } else {
+      setLoadingProgress(100);
+    }
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [supportCheckReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -960,17 +981,30 @@ const App: React.FC = () => {
     return renderHome();
   };
 
+
   if (!supportCheckReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
-        <div className="text-center p-8 bg-gray-800 rounded-xl shadow-2xl space-y-3">
-          <h1 className="text-2xl font-bold text-emerald-400">Проверяем поддержку TTS</h1>
-          <p className="text-gray-400">Ожидаем завершения инициализации движков синтеза речи...</p>
+      <div className="min-h-screen flex flex-col bg-gray-900 text-white">
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-semibold text-emerald-400">Mask2077</h1>
+            <p className="text-gray-400">��������� ����������...</p>
+          </div>
+        </div>
+        <div className="w-full px-6 pb-12">
+          <div className="relative max-w-xl mx-auto h-12 bg-slate-800/70 border border-slate-700 rounded-full overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 bg-emerald-500 transition-[width] duration-200 ease-out"
+              style={{ width: `${Math.min(loadingProgress, 100)}%` }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center text-lg font-semibold">
+              {`${Math.round(Math.min(loadingProgress, 100))}%`}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
-
   if (!supported) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
