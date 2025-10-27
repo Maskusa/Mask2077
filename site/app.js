@@ -135,6 +135,18 @@ function logLifecycle(stage, payload) {
 
 logLifecycle('script-evaluated', { readyState: document.readyState });
 
+function logEngineState(context = 'engine') {
+  const domValue = elements.engineSelect ? elements.engineSelect.value : null;
+  log('[SyncDebug] Engine state', {
+    context,
+    stateEngine: state.engineId,
+    nativeEngine: state.nativeCurrentEngine,
+    domEngine: domValue,
+    usingNative: state.usingNative,
+    nativeReady: state.nativeReady,
+  });
+}
+
 function updateLogOutput() {
   if (!elements.logOutput) {
     return;
@@ -259,7 +271,16 @@ function applyProvider(provider, engineId) {
   rebuildLanguageOptions();
   rebuildVoiceOptions();
   updateStats();
+  if (elements.engineSelect) {
+    elements.engineSelect.value = state.engineId || '';
+  }
   log('[Provider] Applied', { provider, engine: state.engineId, voices: state.voices.length });
+  log('[SyncDebug] Engine selection applied', {
+    provider,
+    stateEngine: state.engineId,
+    nativeEngine: state.nativeCurrentEngine,
+  });
+  logEngineState('applyProvider');
 }
 
 function getAllVoices() {
@@ -375,8 +396,22 @@ function rebuildEngineOptions() {
     value: engine.id,
     label: engine.label,
   }));
+  log('[SyncDebug] Engine options updated', {
+    options: options.map((option) => option.value),
+    count: options.length,
+  });
   populateSelect(elements.engineSelect, options, state.engineId);
-  elements.engineSelect.disabled = options.length <= 1;
+  if (elements.engineSelect) {
+    elements.engineSelect.value = options.some((option) => option.value === state.engineId)
+      ? state.engineId
+      : '';
+    elements.engineSelect.disabled = options.length <= 1;
+    log('[SyncDebug] Engine dropdown value applied', {
+      stateEngine: state.engineId,
+      domEngine: elements.engineSelect.value,
+    });
+  }
+  logEngineState('rebuildEngineOptions');
 }
 
 function updateStats() {
@@ -636,6 +671,7 @@ async function refreshNativeEngines() {
       engines: mapped.map((engine) => engine.id),
       current: state.nativeCurrentEngine,
     });
+    logEngineState('refreshNativeEngines');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log('[NativeTTS] getEngines failed', message);
@@ -929,7 +965,7 @@ function closeYoutubeEmbed() {
 }
 
 function tryApplyPendingSettings() {
-  if (!state.voicesLoaded) {
+  if (!state.voicesLoaded && !state.nativeReady) {
     return;
   }
   if (state.pendingSettings.length === 0) {
@@ -954,10 +990,12 @@ function tryApplyPendingSettings() {
     }
     internalApplySettings(settings, source);
     log('[Bridge] Applied queued settings', { source });
+    logEngineState('applySettings:queue-flush');
   }
   if (stillWaiting.length > 0) {
     state.pendingSettings.push(...stillWaiting);
     log('[Bridge] Still waiting for native resources', { remaining: stillWaiting.length });
+    logEngineState('applySettings:queue-waiting');
   }
 }
 
@@ -1100,6 +1138,7 @@ function internalApplySettings(settings, source = 'external') {
 
   if (Object.keys(applied).length > 0) {
     log(`[Bridge] Settings applied (${source})`, applied);
+    logEngineState('internalApplySettings');
   }
 
   if (settings.autoplay) {
@@ -1115,10 +1154,12 @@ function applySettings(settings, source) {
   if (!state.voicesLoaded || (needsNative && !state.nativeReady)) {
     state.pendingSettings.push({ settings, source });
     log('[Bridge] Queued settings (waiting for resources)', { source, needsNative });
+    logEngineState('applySettings:queued');
     return;
   }
   log('[Bridge] Applying settings directly', { source, needsNative });
   internalApplySettings(settings, source);
+  logEngineState('applySettings:direct');
 }
 
 function parseParams(searchParams) {
@@ -1241,6 +1282,7 @@ async function handleEngineChange(event) {
     elements.engineSelect.value = value;
   }
   await selectNativeEngine(value);
+  logEngineState('handleEngineChange');
 }
 
 function handleLanguageChange(event) {
@@ -1433,6 +1475,7 @@ function loadVoices(attempt = 0) {
   }
 
   log('[WebTTS] Loaded voices', { count: mapped.length, voices: mapped.map((voice) => ({ id: voice.id, name: voice.name, lang: voice.lang })).slice(0, 5) });
+  logEngineState('loadVoices');
   tryApplyPendingSettings();
 }
 
