@@ -5,7 +5,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
+import { Capacitor, type PermissionState, type PluginListenerHandle } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import {
   AdMob,
   BannerAdPluginEvents,
@@ -36,7 +37,22 @@ import { get, ref } from 'firebase/database';
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { WEB_PORTAL_URL } from './constants/web';
 
-type Screen = 'home' | 'tts' | 'site' | 'ads' | 'purchases';
+type Screen = 'home' | 'tts' | 'site' | 'ads' | 'purchases' | 'fonts' | 'file' | 'reminders';
+
+interface FontOption {
+  family: string;
+}
+
+interface Reminder {
+  id: string;
+  durationMs: number;
+  loop: boolean;
+  createdAt: number;
+  nextTriggerAt: number;
+  lastTriggeredAt: number | null;
+  status: 'scheduled' | 'completed';
+  notificationId: number | null;
+}
 
 const BANNER_AD_UNIT_ID = 'ca-app-pub-3940256099942544/6300978111';
 const INTERSTITIAL_AD_UNIT_ID = 'ca-app-pub-3940256099942544/1033173712';
@@ -44,8 +60,126 @@ const REWARDED_AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917';
 const SHARE_APP_TEXT =
   'Check out this game: https://play.google.com/store/apps/details?id=com.subtit.player.';
 const SHARE_APP_URL = 'https://play.google.com/store/apps/details?id=com.subtit.player';
+const STORE_REVIEW_URL = `${SHARE_APP_URL}&showAllReviews=true`;
 const YOUTUBE_MOBILE_URL = 'https://m.youtube.com/';
 const YOUTUBE_EMBED_BASE_URL = 'https://www.youtube.com/embed/';
+const FONT_FALLBACK_STACK = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const FONT_PREVIEW_PARAGRAPH =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+const FONT_SAMPLE_TEXT = 'Пример текста со шрифтом';
+const FONT_PROBE_LIST: readonly string[] = [
+  'Arial',
+  'Comic Sans MS',
+  'Courier New',
+  'Gabriola',
+  'Georgia',
+  'Impact',
+  'Inter',
+  'Montserrat',
+  'Noto Sans',
+  'Open Sans',
+  'Palatino Linotype',
+  'Roboto',
+  'Segoe UI',
+  'Tahoma',
+  'Times New Roman',
+  'Trebuchet MS',
+  'Verdana',
+];
+const FONT_FALLBACK_LIST: readonly string[] = [
+  'Arial',
+  'Comic Sans MS',
+  'Courier New',
+  'Georgia',
+  'Impact',
+  'Segoe UI',
+  'Tahoma',
+  'Times New Roman',
+  'Verdana',
+];
+
+const REMINDER_DEFAULT_TIMER_VALUE = '00:00:10';
+const REMINDER_NOTIFICATION_TITLE = '\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435';
+const REMINDER_NOTIFICATION_BODY = '\u0422\u0430\u0439\u043c\u0435\u0440 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d.';
+const REMINDERS_STORAGE_KEY = 'mask2077.reminders';
+
+const parseReminderDuration = (value: string): number | null => {
+  const parts = value.split(':');
+
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [daysPart, hoursPart, minutesPart] = parts.map((part) => part.trim());
+  const days = Number(daysPart);
+  const hours = Number(hoursPart);
+  const minutes = Number(minutesPart);
+
+  if (
+    Number.isNaN(days) ||
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes) ||
+    days < 0 ||
+    hours < 0 ||
+    minutes < 0 ||
+    hours > 23 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  const totalMinutes = days * 24 * 60 + hours * 60 + minutes;
+  if (totalMinutes <= 0) {
+    return null;
+  }
+
+  return totalMinutes * 60 * 1000;
+};
+
+const formatReminderDuration = (milliseconds: number): string => {
+  const totalMinutes = Math.floor(milliseconds / (60 * 1000));
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes - days * 24 * 60) / 60);
+  const minutes = totalMinutes - days * 24 * 60 - hours * 60;
+
+  const parts: string[] = [];
+  if (days > 0) {
+    parts.push(`${days} \u0434\u043d.`);
+  }
+  if (hours > 0) {
+    parts.push(`${hours} \u0447.`);
+  }
+  parts.push(`${minutes} \u043c\u0438\u043d.`);
+
+  return parts.join(' ');
+};
+
+const formatReminderCountdown = (milliseconds: number): string => {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const days = Math.floor(totalSeconds / (24 * 3600));
+  const hours = Math.floor((totalSeconds - days * 24 * 3600) / 3600);
+  const minutes = Math.floor((totalSeconds - days * 24 * 3600 - hours * 3600) / 60);
+  const seconds = totalSeconds - days * 24 * 3600 - hours * 3600 - minutes * 60;
+
+  const pad = (value: number) => value.toString().padStart(2, '0');
+
+  return `${pad(days)}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
+const normalizePermissionState = (state: PermissionState | undefined): PermissionState => {
+  if (state === 'prompt-with-rationale' || state === undefined) {
+    return 'prompt';
+  }
+  return state;
+};
+
+const composeFontFamily = (family: string | null): string | undefined => {
+  if (!family) {
+    return undefined;
+  }
+  const sanitized = family.replace(/['"]/g, '');
+  return `'${sanitized}', ${FONT_FALLBACK_STACK}`;
+};
 
 const buildVoiceLabel = (voice: VoiceProfile): string => {
   const provider = voice.provider === 'native' ? 'native' : 'web';
@@ -158,6 +292,9 @@ const App: React.FC = () => {
   const [rate, setRate] = useState<number>(1);
   const [voiceId, setVoiceId] = useState<string>('');
   const [showLogs, setShowLogs] = useState(false);
+  const [availableFonts, setAvailableFonts] = useState<FontOption[]>([]);
+  const [fontDetectionCompleted, setFontDetectionCompleted] = useState(false);
+  const [selectedFontFamily, setSelectedFontFamily] = useState<string | null>(null);
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [webSiteUrl, setWebSiteUrl] = useState<string>(WEB_PORTAL_URL);
   const [webSiteContext, setWebSiteContext] = useState<'generic' | 'youtube'>('generic');
@@ -170,6 +307,21 @@ const App: React.FC = () => {
   const [rewardLoading, setRewardLoading] = useState(false);
   const [adMobReady, setAdMobReady] = useState(false);
   const [firebaseAuthReady, setFirebaseAuthReady] = useState(false);
+  const [fileContent, setFileContent] = useState<string>('');
+  const [fileName, setFileName] = useState<string>('');
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [reminderInputValue, setReminderInputValue] = useState<string>(REMINDER_DEFAULT_TIMER_VALUE);
+  const [reminderLoopEnabled, setReminderLoopEnabled] = useState<boolean>(false);
+  const [reminderStatus, setReminderStatus] = useState<string | null>(null);
+  const [reminderError, setReminderError] = useState<string | null>(null);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const reminderTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const remindersRef = useRef<Reminder[]>([]);
+  const remindersLoadedRef = useRef<boolean>(false);
+  const reminderLastTriggerRef = useRef<Map<string, number>>(new Map());
+  const localNotificationPermission = useRef<PermissionState>('prompt');
   const adSubscriptions = useRef<PluginListenerHandle[]>([]);
 
   const trackHomeButton = useCallback(
@@ -194,6 +346,37 @@ const App: React.FC = () => {
     return platform === 'web' ? 'Ð±ÑÐ°ÑÐ·ÐµÑ' : platform;
   }, []);
   const isNativePlatform = useMemo(() => Capacitor.getPlatform() !== 'web', []);
+  const localNotificationsSupported = useMemo(
+    () => Capacitor.isPluginAvailable('LocalNotifications'),
+    []
+  );
+
+  useEffect(() => {
+    if (!localNotificationsSupported) {
+      return;
+    }
+
+    let cancelled = false;
+    const syncPermission = async () => {
+      try {
+        const status = await LocalNotifications.checkPermissions();
+        const normalized = normalizePermissionState(status.display);
+        if (!cancelled) {
+          localNotificationPermission.current = normalized;
+          addLog(`[Reminders] Local notification permission state: ${normalized}`);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`[Reminders] Failed to check local notification permission: ${message}`);
+      }
+    };
+
+    void syncPermission();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [addLog, localNotificationsSupported]);
 
   useEffect(() => {
     if (screen === 'site') {
@@ -201,6 +384,39 @@ const App: React.FC = () => {
       addLog(`[Web] screen=site context=${webSiteContext} presentation=${presentation}`);
     }
   }, [screen, webSiteContext, addLog]);
+
+  useEffect(() => {
+    remindersRef.current = reminders;
+  }, [reminders]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (!remindersLoadedRef.current) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(reminders));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      addLog(`[Reminders] Failed to persist reminders: ${message}`);
+    }
+  }, [addLog, reminders]);
 
   const stats = useMemo(
     () => ({
@@ -263,6 +479,99 @@ const App: React.FC = () => {
     filteredVoices,
     voiceId,
   ]);
+
+  const mergedFontOptions = useMemo(() => {
+    const unique = new Map<string, FontOption>();
+    availableFonts.forEach((font) => {
+      const key = font.family.trim().toLowerCase();
+      if (!key || unique.has(key)) {
+        return;
+      }
+      unique.set(key, font);
+    });
+    FONT_FALLBACK_LIST.forEach((fontName) => {
+      const key = fontName.trim().toLowerCase();
+      if (!unique.has(key)) {
+        unique.set(key, { family: fontName });
+      }
+    });
+    return Array.from(unique.values());
+  }, [availableFonts]);
+
+  const formattedSelectedFont = useMemo(
+    () => composeFontFamily(selectedFontFamily),
+    [selectedFontFamily]
+  );
+
+  const fontRows = useMemo(
+    () => [
+      { key: 'default', family: null as string | null, label: 'Системный (по умолчанию)' },
+      ...mergedFontOptions.map((font) => ({
+        key: font.family,
+        family: font.family,
+        label: font.family,
+      })),
+    ],
+    [mergedFontOptions]
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') {
+      setFontDetectionCompleted(true);
+      return;
+    }
+    let cancelled = false;
+    const span = document.createElement('span');
+    span.textContent = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+    span.style.position = 'absolute';
+    span.style.left = '-9999px';
+    span.style.top = '0';
+    span.style.fontSize = '72px';
+    span.style.fontWeight = '400';
+    span.style.whiteSpace = 'nowrap';
+    span.style.visibility = 'hidden';
+    document.body.appendChild(span);
+
+    const signatureFor = (fontFamily: string) => {
+      span.style.fontFamily = fontFamily;
+      return `${span.offsetWidth}-${span.offsetHeight}`;
+    };
+
+    const baseStacks = ['monospace', 'serif', 'sans-serif'];
+    const baseSignatures = baseStacks.map(signatureFor);
+
+    const detected = new Map<string, FontOption>();
+    FONT_PROBE_LIST.forEach((fontName) => {
+      const signature = signatureFor(`'${fontName}', ${baseStacks[0]}`);
+      const matchesBase = baseSignatures.includes(signature);
+      if (!matchesBase && !detected.has(fontName)) {
+        detected.set(fontName, { family: fontName });
+      }
+    });
+
+    document.body.removeChild(span);
+
+    if (!cancelled) {
+      if (detected.size === 0) {
+        const fallbackDetected = new Map<string, FontOption>();
+        FONT_FALLBACK_LIST.forEach((fontName) => {
+          fallbackDetected.set(fontName, { family: fontName });
+        });
+        setAvailableFonts(Array.from(fallbackDetected.values()));
+      } else {
+        setAvailableFonts(Array.from(detected.values()));
+      }
+      setFontDetectionCompleted(true);
+      addLog('[Fonts] Detection completed', { detected: detected.size });
+    }
+
+    return () => {
+      cancelled = true;
+      if (span.parentNode) {
+        span.parentNode.removeChild(span);
+      }
+    };
+  }, [addLog]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -522,15 +831,42 @@ const App: React.FC = () => {
     });
   }, [openSettings, addLog]);
 
+  const openStoreReviewPage = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storeUrl = STORE_REVIEW_URL;
+    const newWindow = window.open(storeUrl, '_blank', 'noopener');
+    if (!newWindow) {
+      window.location.href = storeUrl;
+    }
+  }, []);
+
   const handleRateApp = useCallback(async () => {
+    const platform = Capacitor.getPlatform();
+    if (platform === 'web') {
+      openStoreReviewPage();
+      addLog('[Utilities] rateApp fallback opened store page (web)');
+      return;
+    }
+
     try {
-      await NativeUtilities.rateApp();
+      const result = await NativeUtilities.rateApp();
       addLog('[Utilities] rateApp invoked');
+      if (result?.fallback) {
+        const reason = result.reason ?? 'unknown';
+        addLog(`[Utilities] rateApp fallback triggered (${reason})`);
+        if (platform !== 'android' && platform !== 'ios') {
+          openStoreReviewPage();
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       addLog(`[Utilities] rateApp failed: ${message}`);
+       openStoreReviewPage();
+       addLog('[Utilities] Store page opened as fallback');
     }
-  }, [addLog]);
+  }, [addLog, openStoreReviewPage]);
 
   const handleShareApp = useCallback(async () => {
     const platform = Capacitor.getPlatform();
@@ -808,6 +1144,36 @@ const App: React.FC = () => {
     setScreen('site');
   }, [trackHomeButton, addLog, buildWebPortalUrl, selectedEngineId, selectedVoice, usingNative]);
 
+  const handleOpenFontsFromHome = useCallback(() => {
+    trackHomeButton('fonts');
+    addLog('screen_fonts');
+    setScreen('fonts');
+  }, [trackHomeButton, addLog]);
+
+  const handleOpenRemindersFromHome = useCallback(() => {
+    trackHomeButton('reminders');
+    addLog('screen_reminders');
+    setScreen('reminders');
+  }, [trackHomeButton, addLog]);
+
+  const handleFontToggle = useCallback(
+    (fontFamily: string | null, checked: boolean) => {
+      setSelectedFontFamily((previous) => {
+        const nextValue = checked ? fontFamily : previous === fontFamily ? null : previous;
+        if (nextValue !== previous) {
+          addLog('[Fonts] Selected font', { font: nextValue ?? 'default' });
+        }
+        return nextValue;
+      });
+    },
+    [addLog]
+  );
+
+  const handleFontsConfirm = useCallback(() => {
+    addLog('[Fonts] Selection confirmed', { font: selectedFontFamily ?? 'default' });
+    setScreen('home');
+  }, [addLog, selectedFontFamily]);
+
   const handleYoutubeInputChange = useCallback(
     (value: string) => {
       setYoutubeUrlInput(value);
@@ -849,6 +1215,68 @@ const App: React.FC = () => {
     setScreen('purchases');
   }, [trackHomeButton, addLog]);
 
+  const handleOpenFileFromHome = useCallback(() => {
+    trackHomeButton('file');
+    addLog('screen_file_viewer');
+    setScreen('file');
+  }, [trackHomeButton, addLog]);
+
+  const handleFileButtonClick = useCallback(() => {
+    setFileError(null);
+    fileInputRef.current?.click();
+  }, [setFileError, fileInputRef]);
+
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const { files } = event.target;
+      const selectedFile = files && files[0];
+
+      if (!selectedFile) {
+        return;
+      }
+
+      setFileError(null);
+      setFileName(selectedFile.name);
+      addLog(`[File] Reading file ${selectedFile.name} (${selectedFile.size} bytes)`);
+
+      const reader = new FileReader();
+      const inputElement = event.target;
+
+      reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        setFileContent(result);
+        addLog(`[File] Loaded content from ${selectedFile.name}`);
+      };
+
+      reader.onerror = () => {
+        const message =
+          reader.error instanceof Error
+            ? reader.error.message
+            : reader.error
+            ? String(reader.error)
+            : 'Unknown error';
+        setFileError('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u043e\u0447\u0438\u0442\u0430\u0442\u044c \u0444\u0430\u0439\u043b.');
+        setFileContent('');
+        addLog(`[File] Failed to read ${selectedFile.name}: ${message}`);
+      };
+
+      reader.onloadend = () => {
+        inputElement.value = '';
+      };
+
+      try {
+        reader.readAsText(selectedFile, 'UTF-8');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setFileError('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u043e\u0447\u0438\u0442\u0430\u0442\u044c \u0444\u0430\u0439\u043b.');
+        setFileContent('');
+        addLog(`[File] Failed to start reading ${selectedFile.name}: ${message}`);
+        inputElement.value = '';
+      }
+    },
+    [addLog]
+  );
+
   const handleShareAppFromHome = useCallback(() => {
     trackHomeButton('share_app');
     void handleShareApp();
@@ -858,6 +1286,488 @@ const App: React.FC = () => {
     trackHomeButton('clear_cache');
     void handleClearCache();
   }, [trackHomeButton, handleClearCache]);
+
+  const clearScheduledReminder = useCallback((id: string) => {
+    const timeoutId = reminderTimersRef.current.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      reminderTimersRef.current.delete(id);
+    }
+  }, []);
+
+  const clearAllReminderTimers = useCallback(() => {
+    reminderTimersRef.current.forEach((timeoutId) => {
+      clearTimeout(timeoutId);
+    });
+    reminderTimersRef.current.clear();
+  }, []);
+
+  const cancelNativeNotification = useCallback(
+    async (notificationId: number | null) => {
+      if (!localNotificationsSupported || notificationId === null) {
+        return;
+      }
+
+      try {
+        await LocalNotifications.cancel({
+          notifications: [{ id: notificationId }],
+        });
+        addLog(`[Reminders] Local notification cancelled id=${notificationId}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`[Reminders] Failed to cancel local notification ${notificationId}: ${message}`);
+      }
+    },
+    [addLog, localNotificationsSupported]
+  );
+
+  const scheduleNativeNotification = useCallback(
+    async (reminder: Reminder) => {
+      if (!localNotificationsSupported || reminder.notificationId === null) {
+        return;
+      }
+      if (localNotificationPermission.current !== 'granted') {
+        return;
+      }
+      try {
+        const scheduleDate = new Date(reminder.nextTriggerAt);
+        await LocalNotifications.cancel({
+          notifications: [{ id: reminder.notificationId }],
+        });
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: reminder.notificationId,
+              title: REMINDER_NOTIFICATION_TITLE,
+              body: REMINDER_NOTIFICATION_BODY,
+              schedule: {
+                at: scheduleDate,
+                allowWhileIdle: true,
+              },
+              extra: {
+                reminderId: reminder.id,
+                loop: reminder.loop,
+                durationMs: reminder.durationMs,
+              },
+            },
+          ],
+        });
+        addLog(
+          `[Reminders] Local notification scheduled id=${reminder.notificationId} at=${scheduleDate.toISOString()}`
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`[Reminders] Failed to schedule local notification ${reminder.id}: ${message}`);
+      }
+    },
+    [addLog, localNotificationsSupported]
+  );
+
+  const dispatchReminderNotification = useCallback(
+    (context: 'single' | 'loop') => {
+      if (localNotificationsSupported && localNotificationPermission.current === 'granted') {
+        setReminderStatus(
+          context === 'loop'
+            ? '\u0426\u0438\u043a\u043b\u0438\u0447\u043d\u043e\u0435 \u043d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u043e.'
+            : '\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u043e.'
+        );
+        return;
+      }
+
+      if (typeof window === 'undefined') {
+        addLog('[Reminders] Notification skipped: window not available');
+        return;
+      }
+
+      if ('Notification' in window) {
+        const permission = Notification.permission;
+
+        if (permission === 'granted') {
+          new Notification(REMINDER_NOTIFICATION_TITLE, { body: REMINDER_NOTIFICATION_BODY });
+          addLog('[Reminders] Web notification displayed');
+          setReminderStatus(
+            context === 'loop'
+              ? '\u0426\u0438\u043a\u043b\u0438\u0447\u043d\u043e\u0435 \u043d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u043e.'
+              : '\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u043e.'
+          );
+          return;
+        }
+
+        if (permission === 'default') {
+          Notification.requestPermission()
+            .then((result) => {
+              addLog(`[Reminders] Web permission requested: ${result}`);
+              if (result === 'granted') {
+                new Notification(REMINDER_NOTIFICATION_TITLE, { body: REMINDER_NOTIFICATION_BODY });
+                setReminderStatus(
+                  context === 'loop'
+                    ? '\u0426\u0438\u043a\u043b\u0438\u0447\u043d\u043e\u0435 \u043d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u043e.'
+                    : '\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0441\u0440\u0430\u0431\u043e\u0442\u0430\u043b\u043e.'
+                );
+              } else {
+                setReminderStatus('\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0439 \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435.');
+              }
+            })
+            .catch((error) => {
+              const message = error instanceof Error ? error.message : String(error);
+              addLog(`[Reminders] Web permission request failed: ${message}`);
+            });
+          return;
+        }
+
+        setReminderStatus('\u0423\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f \u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u044b \u043d\u0430 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0435.');
+        addLog('[Reminders] Web notification blocked, fallback to alert');
+        window.alert(REMINDER_NOTIFICATION_BODY);
+        return;
+      }
+
+      addLog('[Reminders] Notification API unavailable, using alert fallback');
+      window.alert(REMINDER_NOTIFICATION_BODY);
+      setReminderStatus('\u0422\u0430\u0439\u043c\u0435\u0440 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d (\u0441\u0438\u0441\u0442\u0435\u043c\u043d\u043e\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435).');
+    },
+    [addLog, localNotificationsSupported]
+  );
+
+  const processReminderTrigger = useCallback(
+    (reminderId: string, triggeredAt: number) => {
+      const lastTrigger = reminderLastTriggerRef.current.get(reminderId);
+      if (lastTrigger !== undefined && triggeredAt - lastTrigger < 750) {
+        return { rescheduled: null as Reminder | null, cancelledNotificationId: null as number | null, loop: false, skipped: true };
+      }
+      reminderLastTriggerRef.current.set(reminderId, triggeredAt);
+
+      let rescheduled: Reminder | null = null;
+      let cancelledNotificationId: number | null = null;
+      let loop = false;
+
+      setReminders((previous) =>
+        previous.map((item) => {
+          if (item.id !== reminderId) {
+            return item;
+          }
+
+          loop = item.loop;
+          if (item.loop) {
+            const updated: Reminder = {
+              ...item,
+              lastTriggeredAt: triggeredAt,
+              nextTriggerAt: triggeredAt + item.durationMs,
+              status: 'scheduled',
+            };
+            rescheduled = updated;
+            addLog(`[Reminders] Loop reminder triggered (${item.id}), rescheduling.`);
+            return updated;
+          }
+
+          cancelledNotificationId = item.notificationId;
+          addLog(`[Reminders] Reminder triggered (${item.id}).`);
+          return {
+            ...item,
+            lastTriggeredAt: triggeredAt,
+            status: 'completed',
+            notificationId: null,
+          };
+        })
+      );
+
+      dispatchReminderNotification(loop ? 'loop' : 'single');
+
+      return { rescheduled, cancelledNotificationId, loop, skipped: false };
+    },
+    [addLog, dispatchReminderNotification]
+  );
+
+  const scheduleReminder = useCallback(
+    (reminder: Reminder) => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      if (reminder.status === 'completed') {
+        clearScheduledReminder(reminder.id);
+        return;
+      }
+
+      const delay = Math.max(reminder.nextTriggerAt - Date.now(), 0);
+      clearScheduledReminder(reminder.id);
+
+      const timeoutId = window.setTimeout(() => {
+        const result = processReminderTrigger(reminder.id, Date.now());
+        if (!result || result.skipped) {
+          return;
+        }
+
+        if (result.rescheduled) {
+          scheduleReminder(result.rescheduled);
+          void scheduleNativeNotification(result.rescheduled);
+        } else {
+          clearScheduledReminder(reminder.id);
+          if (result.cancelledNotificationId !== null) {
+            void cancelNativeNotification(result.cancelledNotificationId);
+          }
+        }
+      }, delay);
+
+      reminderTimersRef.current.set(reminder.id, timeoutId);
+    },
+    [cancelNativeNotification, clearScheduledReminder, processReminderTrigger, scheduleNativeNotification]
+  );
+
+  const handleNativeNotificationFired = useCallback(
+    (reminderId: string) => {
+      const result = processReminderTrigger(reminderId, Date.now());
+      if (!result || result.skipped) {
+        return;
+      }
+
+      if (result.rescheduled) {
+        scheduleReminder(result.rescheduled);
+        void scheduleNativeNotification(result.rescheduled);
+      } else {
+        clearScheduledReminder(reminderId);
+        if (result.cancelledNotificationId !== null) {
+          void cancelNativeNotification(result.cancelledNotificationId);
+        }
+      }
+    },
+    [cancelNativeNotification, clearScheduledReminder, processReminderTrigger, scheduleNativeNotification, scheduleReminder]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (remindersLoadedRef.current) {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(REMINDERS_STORAGE_KEY);
+      if (!raw) {
+        remindersLoadedRef.current = true;
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        remindersLoadedRef.current = true;
+        return;
+      }
+
+      const nowTs = Date.now();
+      const restored: Reminder[] = parsed
+        .map((item) => {
+          if (!item || typeof item !== 'object') {
+            return null;
+          }
+
+          const id =
+            typeof item.id === 'string' ? item.id : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          const durationMs = Number(item.durationMs);
+          if (!Number.isFinite(durationMs) || durationMs <= 0) {
+            return null;
+          }
+
+          const loop = Boolean(item.loop);
+          const createdAt = Number(item.createdAt);
+          const status = item.status === 'completed' ? 'completed' : 'scheduled';
+          const lastTriggeredAt =
+            typeof item.lastTriggeredAt === 'number' && Number.isFinite(item.lastTriggeredAt)
+              ? item.lastTriggeredAt
+              : null;
+
+          const rawNextTrigger = Number(item.nextTriggerAt);
+          const safeNextTrigger =
+            Number.isFinite(rawNextTrigger) && rawNextTrigger > 0 ? rawNextTrigger : nowTs + durationMs;
+          const nextTriggerAt =
+            status === 'completed' ? safeNextTrigger : Math.max(nowTs + 1000, safeNextTrigger);
+
+          let notificationId =
+            typeof item.notificationId === 'number' && Number.isFinite(item.notificationId)
+              ? item.notificationId
+              : null;
+
+          if (notificationId === null && localNotificationsSupported && localNotificationPermission.current === 'granted') {
+            notificationId = Math.floor(Math.random() * 1_000_000_000);
+          }
+
+          return {
+            id,
+            durationMs,
+            loop,
+            createdAt: Number.isFinite(createdAt) && createdAt > 0 ? createdAt : nowTs,
+            nextTriggerAt,
+            lastTriggeredAt,
+            status,
+            notificationId,
+          } as Reminder;
+        })
+        .filter((value): value is Reminder => value !== null);
+
+      remindersRef.current = restored;
+      setReminders(restored);
+      restored.forEach((reminder) => {
+        if (reminder.status === 'scheduled') {
+          scheduleReminder(reminder);
+          void scheduleNativeNotification(reminder);
+        }
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      addLog(`[Reminders] Failed to load saved reminders: ${message}`);
+    } finally {
+      remindersLoadedRef.current = true;
+    }
+  }, [addLog, localNotificationsSupported, scheduleNativeNotification, scheduleReminder]);
+
+  useEffect(() => {
+    if (!localNotificationsSupported) {
+      return;
+    }
+
+    const handleReminderFromNotification = (payload: unknown) => {
+      const maybeReminderId =
+        typeof payload === 'object' && payload !== null && 'reminderId' in (payload as Record<string, unknown>)
+          ? (payload as Record<string, unknown>).reminderId
+          : undefined;
+      if (typeof maybeReminderId === 'string') {
+        handleNativeNotificationFired(maybeReminderId);
+      }
+    };
+
+    const receivedListener = LocalNotifications.addListener('localNotificationReceived', (notification) => {
+      handleReminderFromNotification(notification.extra ?? null);
+    });
+
+    const actionListener = LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
+      handleReminderFromNotification(event.notification?.extra ?? null);
+    });
+
+    return () => {
+      void receivedListener.remove();
+      void actionListener.remove();
+    };
+  }, [handleNativeNotificationFired, localNotificationsSupported]);
+
+  const handleCreateReminder = useCallback(async () => {
+    const duration = parseReminderDuration(reminderInputValue.trim());
+
+    if (!duration) {
+      setReminderError('\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0444\u043e\u0440\u043c\u0430\u0442. \u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 [\u0434\u043d\u0438]:[\u0447\u0430\u0441\u044b]:[\u043c\u0438\u043d\u0443\u0442\u044b].');
+      setReminderStatus(null);
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      setReminderStatus('\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u044f \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0432 \u0438\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0439 \u0441\u0440\u0435\u0434\u0435.');
+      return;
+    }
+
+    setReminderError(null);
+
+    let permission: NotificationPermission | undefined;
+    if ('Notification' in window) {
+      permission = Notification.permission;
+      if (permission === 'default') {
+        try {
+          permission = await Notification.requestPermission();
+          addLog(`[Reminders] Permission requested before scheduling: ${permission}`);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          addLog(`[Reminders] Permission preflight failed: ${message}`);
+        }
+      }
+
+      if (permission === 'denied') {
+        setReminderStatus('\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f \u0432 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430, \u0447\u0442\u043e\u0431\u044b \u0432\u0438\u0434\u0435\u0442\u044c \u0430\u043b\u0435\u0440\u0442 \u043d\u0430\u043f\u0440\u044f\u043c\u0443\u044e.');
+      }
+    }
+
+    let notificationId: number | null = null;
+
+    if (localNotificationsSupported) {
+      try {
+        const currentPermissions = await LocalNotifications.checkPermissions();
+        let displayState = normalizePermissionState(currentPermissions.display);
+        localNotificationPermission.current = displayState;
+
+        if (displayState !== 'granted') {
+          const requested = await LocalNotifications.requestPermissions();
+          displayState = normalizePermissionState(requested.display);
+          localNotificationPermission.current = displayState;
+          addLog(`[Reminders] Local notification permission requested: ${displayState}`);
+        } else {
+          addLog('[Reminders] Local notification permission already granted');
+        }
+
+        if (displayState === 'granted') {
+          notificationId = Math.floor(Math.random() * 1_000_000_000);
+        } else if (displayState === 'denied') {
+          setReminderStatus('\u0412 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430\u0445 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u044f \u0432\u043a\u043b\u044e\u0447\u0438\u0442\u0435 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f \u0434\u043b\u044f Mask2077.');
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`[Reminders] Local notification permission failed: ${message}`);
+      }
+    } else {
+      localNotificationPermission.current = 'denied';
+    }
+
+    const nowTs = Date.now();
+    const newReminder: Reminder = {
+      id: `${nowTs}-${Math.random().toString(16).slice(2)}`,
+      durationMs: duration,
+      loop: reminderLoopEnabled,
+      createdAt: nowTs,
+      nextTriggerAt: nowTs + duration,
+      lastTriggeredAt: null,
+      status: 'scheduled',
+      notificationId,
+    };
+
+    setReminders((previous) => [...previous, newReminder]);
+    setReminderStatus('\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0441\u043e\u0437\u0434\u0430\u043d\u043e.');
+    addLog(
+      `[Reminders] Created reminder ${newReminder.id} loop=${newReminder.loop} duration=${duration}ms`
+    );
+    setReminderInputValue(REMINDER_DEFAULT_TIMER_VALUE);
+    scheduleReminder(newReminder);
+    if (notificationId !== null) {
+      void scheduleNativeNotification(newReminder);
+    }
+  }, [
+    addLog,
+    localNotificationsSupported,
+    reminderInputValue,
+    reminderLoopEnabled,
+    scheduleNativeNotification,
+    scheduleReminder,
+  ]);
+
+  const handleDeleteReminder = useCallback(
+    (id: string) => {
+      const existing = remindersRef.current.find((item) => item.id === id);
+      if (!existing) {
+        setReminderStatus('\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0443\u0436\u0435 \u0443\u0434\u0430\u043b\u0435\u043d\u043e.');
+        return;
+      }
+
+      clearScheduledReminder(id);
+      void cancelNativeNotification(existing.notificationId);
+      setReminders((previous) => previous.filter((item) => item.id !== id));
+      setReminderError(null);
+      setReminderStatus('\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u0443\u0434\u0430\u043b\u0435\u043d\u043e.');
+      addLog(`[Reminders] Reminder deleted ${id}`);
+    },
+    [addLog, cancelNativeNotification, clearScheduledReminder]
+  );
+
+  useEffect(
+    () => () => {
+      clearAllReminderTimers();
+    },
+    [clearAllReminderTimers]
+  );
 
   const handleRateAppFromHome = useCallback(() => {
     trackHomeButton('rate_app');
@@ -928,6 +1838,7 @@ const App: React.FC = () => {
       <TextArea
         label="Текст для синтеза"
         value={text}
+        fontFamily={formattedSelectedFont}
         onChange={(event) => setText(event.target.value)}
         placeholder="Введите текст для синтеза речи..."
       />
@@ -955,6 +1866,183 @@ const App: React.FC = () => {
   );
 
 
+  const renderReminders = () => {
+    const sortedReminders = [...reminders].sort((a, b) => {
+      if (a.status === b.status) {
+        return a.nextTriggerAt - b.nextTriggerAt;
+      }
+      return a.status === 'completed' ? 1 : -1;
+    });
+
+    return (
+      <div className="max-w-3xl mx-auto px-6 pt-20 pb-16 space-y-8">
+        <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <p className="text-sm uppercase tracking-widest text-emerald-300">Reminders</p>
+            <h1 className="text-3xl font-semibold text-white">
+              {'\u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u044f'}
+            </h1>
+            <p className="text-sm text-slate-300">
+              {'\u0417\u0430\u0434\u0430\u0439\u0442\u0435 \u0442\u0430\u0439\u043c\u0435\u0440 \u0432 \u0444\u043e\u0440\u043c\u0430\u0442\u0435 [\u0434\u043d\u0438]:[\u0447\u0430\u0441\u044b]:[\u043c\u0438\u043d\u0443\u0442\u044b] \u0438 \u043c\u044b \u0432\u044b\u0432\u0435\u0441\u0442\u0438\u043c \u0441\u0442\u0430\u043d\u0434\u0430\u0440\u0442\u043d\u043e\u0435 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="neutral" className="w-auto px-6" onClick={resetToHome}>
+              {'\u041d\u0430\u0437\u0430\u0434'}
+            </Button>
+            <Button variant="highlight" className="w-auto px-6" onClick={handleShowLogs}>
+              {'\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043b\u043e\u0433'}
+            </Button>
+          </div>
+        </header>
+
+        <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-8 shadow-xl space-y-6 border border-slate-700">
+          <div className="space-y-4">
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-200">
+              {'\u0422\u0430\u0439\u043c\u0435\u0440'}
+              <input
+                type="text"
+                value={reminderInputValue}
+                onChange={(event) => setReminderInputValue(event.target.value)}
+                placeholder="00:00:10"
+                inputMode="numeric"
+                pattern="\\d{1,2}:\\d{1,2}:\\d{1,2}"
+                className="w-full rounded-lg border border-slate-600 bg-slate-900/60 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+              />
+            </label>
+            <label className="inline-flex items-center gap-3 text-sm text-slate-200">
+              <input
+                type="checkbox"
+                checked={reminderLoopEnabled}
+                onChange={(event) => setReminderLoopEnabled(event.target.checked)}
+                className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500/60"
+              />
+              {'\u041f\u0435\u0442\u043b\u044f (\u043f\u043e\u0432\u0442\u043e\u0440 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u044f)'}
+            </label>
+            {reminderError && <p className="text-sm text-red-400">{reminderError}</p>}
+            {reminderStatus && <p className="text-sm text-emerald-300">{reminderStatus}</p>}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button variant="primary" className="sm:w-auto" onClick={handleCreateReminder}>
+                {'\u0421\u043e\u0437\u0434\u0430\u0442\u044c'}
+              </Button>
+            </div>
+            <p className="text-xs text-slate-400">
+              {'\u0422\u0435\u043a\u0441\u0442 \u0438 \u0438\u043a\u043e\u043d\u043a\u0430 \u0432 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e.'}
+            </p>
+          </div>
+        </section>
+
+        <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-8 shadow-xl space-y-6 border border-slate-700">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-xl font-semibold text-white">
+              {'\u0421\u043f\u0438\u0441\u043e\u043a \u043d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0439'}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {`\u0412 \u0441\u043f\u0438\u0441\u043a\u0435: ${sortedReminders.length}`}
+            </p>
+          </div>
+          {sortedReminders.length === 0 ? (
+            <p className="text-sm text-slate-300">
+              {'\u0421\u0435\u0439\u0447\u0430\u0441 \u043d\u0435\u0442 \u043d\u0438 \u043e\u0434\u043d\u043e\u0433\u043e \u043d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u044f. \u0421\u043e\u0437\u0434\u0430\u0439\u0442\u0435 \u043d\u043e\u0432\u043e\u0435 \u0441\u043d\u0430\u0447\u0430\u043b\u0430.'}
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {sortedReminders.map((reminder) => {
+                const remainingMs =
+                  reminder.status === 'completed'
+                    ? 0
+                    : Math.max(reminder.nextTriggerAt - currentTime, 0);
+                const countdownLabel = formatReminderCountdown(remainingMs);
+                const intervalLabel = formatReminderDuration(reminder.durationMs);
+                const statusLabel =
+                  reminder.status === 'completed'
+                    ? '\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e'
+                    : '\u0412 \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u0438';
+                const nextTriggerLabel =
+                  reminder.status === 'completed'
+                    ? '\u0422\u0430\u0439\u043c\u0435\u0440 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043d'
+                    : new Date(reminder.nextTriggerAt).toLocaleString();
+                const lastTriggeredLabel = reminder.lastTriggeredAt
+                  ? new Date(reminder.lastTriggeredAt).toLocaleString()
+                  : null;
+
+                return (
+                  <div
+                    key={reminder.id}
+                    className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5 shadow-lg"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-2 text-sm text-slate-200">
+                        <p>
+                          <span className="text-slate-400">
+                            {'\u0421\u0442\u0430\u0442\u0443\u0441:'}
+                          </span>{' '}
+                          {statusLabel}
+                        </p>
+                        <p>
+                          <span className="text-slate-400">
+                            {'\u041e\u0441\u0442\u0430\u043b\u043e\u0441\u044c:'}
+                          </span>{' '}
+                          <span className="font-mono text-base text-emerald-300">
+                            {countdownLabel}
+                          </span>
+                        </p>
+                        <p>
+                          <span className="text-slate-400">
+                            {'\u0418\u043d\u0442\u0435\u0440\u0432\u0430\u043b:'}
+                          </span>{' '}
+                          {intervalLabel}
+                        </p>
+                        <p>
+                          <span className="text-slate-400">
+                            {'\u0420\u0435\u0436\u0438\u043c:'}
+                          </span>{' '}
+                          {reminder.loop
+                            ? '\u041f\u0435\u0442\u043b\u044f (\u043f\u043e\u0432\u0442\u043e\u0440)'
+                            : '\u0420\u0430\u0437\u043e\u0432\u043e\u0435'}
+                        </p>
+                        <p>
+                          <span className="text-slate-400">
+                            {'\u0421\u043e\u0437\u0434\u0430\u043d\u043e:'}
+                          </span>{' '}
+                          {new Date(reminder.createdAt).toLocaleString()}
+                        </p>
+                        <p>
+                          <span className="text-slate-400">
+                            {'\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u0435 \u0441\u0440\u0430\u0431\u0430\u0442\u044b\u0432\u0430\u043d\u0438\u0435:'}
+                          </span>{' '}
+                          {nextTriggerLabel}
+                        </p>
+                        {lastTriggeredLabel && (
+                          <p>
+                            <span className="text-slate-400">
+                              {'\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0435\u0435 \u0441\u0440\u0430\u0431\u0430\u0442\u044b\u0432\u0430\u043d\u0438\u0435:'}
+                            </span>{' '}
+                            {lastTriggeredLabel}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                        <Button
+                          variant="secondary"
+                          className="w-full sm:w-auto px-5"
+                          onClick={() => handleDeleteReminder(reminder.id)}
+                        >
+                          {'\u0423\u0434\u0430\u043b\u0438\u0442\u044c'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  };
+
+
   const renderHome = () => (
     <div className="max-w-5xl mx-auto px-6 pt-20 pb-16 space-y-8">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -967,8 +2055,17 @@ const App: React.FC = () => {
 
       <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-8 shadow-xl space-y-6 border border-slate-700">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button variant="primary" onClick={handleOpenFileFromHome}>
+            {'\u041e\u0442\u043a\u0440\u044b\u0442\u044c'}
+          </Button>
           <Button variant="primary" onClick={handleOpenTtsFromHome}>
             Синтез
+          </Button>
+          <Button variant="primary" onClick={handleOpenRemindersFromHome}>
+            {'\u041d\u0430\u043f\u043e\u043c\u043d\u0438\u0442\u044c'}
+          </Button>
+          <Button variant="primary" onClick={handleOpenFontsFromHome}>
+            {'\u0428\u0440\u0438\u0444\u0442\u044b'}
           </Button>
           <Button variant="primary" onClick={handleOpenYoutubeFromHome}>
             YouTube
@@ -998,6 +2095,141 @@ const App: React.FC = () => {
           </Button>
         </div>
       </section>
+    </div>
+  );
+
+  const renderFileViewer = () => (
+    <div className="max-w-3xl mx-auto px-6 pt-20 pb-16 space-y-8">
+      <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <p className="text-sm uppercase tracking-widest text-emerald-300">Files</p>
+          <h1 className="text-3xl font-semibold text-white">
+            {'\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0442\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u0444\u0430\u0439\u043b'}
+          </h1>
+          {fileName ? (
+            <p className="text-sm text-slate-300">{`\u0424\u0430\u0439\u043b: ${fileName}`}</p>
+          ) : (
+            <p className="text-sm text-slate-300">
+              {'\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0442\u0435\u043a\u0441\u0442\u043e\u0432\u044b\u0439 \u0444\u0430\u0439\u043b \u043d\u0430 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0435.'}
+            </p>
+          )}
+          {fileError && <p className="text-sm text-red-400">{fileError}</p>}
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="neutral" className="w-auto px-6" onClick={resetToHome}>
+            {'\u041d\u0430\u0437\u0430\u0434'}
+          </Button>
+          <Button variant="highlight" className="w-auto px-6" onClick={handleShowLogs}>
+            {'\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043b\u043e\u0433'}
+          </Button>
+        </div>
+      </header>
+
+      <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-8 shadow-xl space-y-6 border border-slate-700">
+        <div className="flex flex-col gap-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,text/plain,.md,.json"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button variant="primary" className="w-full sm:w-auto" onClick={handleFileButtonClick}>
+            {'\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0444\u0430\u0439\u043b'}
+          </Button>
+          <div className="min-h-[280px] max-h-[480px] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900/70 p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono">
+            {fileContent ? fileContent : '\u0424\u0430\u0439\u043b \u043d\u0435 \u0432\u044b\u0431\u0440\u0430\u043d.'}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+
+  const renderFonts = () => (
+    <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 space-y-8">
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-2">
+          <p className="text-sm uppercase tracking-widest text-emerald-300">Настройки</p>
+          <h1 className="text-3xl font-semibold text-white">Шрифты</h1>
+          <p className="text-sm text-slate-300">
+            {fontDetectionCompleted
+              ? `Доступно шрифтов: ${mergedFontOptions.length}`
+              : 'Идёт поиск установленных шрифтов...'}
+          </p>
+          <p className="text-xs text-slate-500">
+            Источник: {availableFonts.length > 0 ? 'обнаружены на устройстве' : 'использован стандартный список'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="neutral" className="w-auto px-6" onClick={resetToHome}>
+            {'\u041d\u0430\u0437\u0430\u0434'}
+          </Button>
+          <Button variant="highlight" className="w-auto px-6" onClick={handleShowLogs}>
+            {'\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043b\u043e\u0433'}
+          </Button>
+        </div>
+      </header>
+
+      <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-8 shadow-xl space-y-4 border border-slate-700">
+        <h2 className="text-xl font-semibold text-white">Предпросмотр</h2>
+        <div
+          className="rounded-2xl border border-sky-500/40 bg-sky-900/40 text-sky-100 p-6 leading-relaxed shadow-inner"
+          style={{ fontFamily: formattedSelectedFont }}
+        >
+          {text.trim() || FONT_PREVIEW_PARAGRAPH}
+        </div>
+        <p className="text-xs text-slate-400">
+          Выбранный шрифт применяется к полю ввода текста на экране синтеза.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        {fontRows.map((font) => {
+          const isChecked =
+            font.family === null ? selectedFontFamily === null : selectedFontFamily === font.family;
+          const fontFamilyValue = composeFontFamily(font.family);
+          const disabled = !fontDetectionCompleted && font.key !== 'default';
+          const cardClass = `rounded-2xl border p-4 space-y-3 ${
+            isChecked ? 'border-emerald-500/70 bg-slate-800/80 shadow-lg shadow-emerald-900/10' : 'border-slate-700 bg-slate-800/60'
+          }`;
+          return (
+            <div
+              key={font.key}
+              className={cardClass}
+            >
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 accent-emerald-400"
+                  checked={isChecked}
+                  onChange={(event) => handleFontToggle(font.family, event.target.checked)}
+                  disabled={disabled}
+                />
+                <span className="text-base font-semibold text-slate-100">{font.label}</span>
+              </label>
+              <div
+                className={`rounded-xl border px-3 py-2 text-sm text-slate-50 ${
+                  isChecked ? 'border-emerald-500/60 bg-slate-900/60' : 'border-slate-700 bg-slate-900/70'
+                }`}
+                style={{ fontFamily: fontFamilyValue }}
+              >
+                {FONT_SAMPLE_TEXT}
+              </div>
+            </div>
+          );
+        })}
+        {!fontDetectionCompleted && (
+          <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-800/40 p-6 text-sm text-slate-300">
+            Шрифты загружаются...
+          </div>
+        )}
+      </section>
+
+      <div className="flex justify-end">
+        <Button variant="primary" className="w-auto px-8" onClick={handleFontsConfirm}>
+          OK
+        </Button>
+      </div>
     </div>
   );
 
@@ -1127,6 +2359,9 @@ const App: React.FC = () => {
   );
 
   const renderContent = () => {
+    if (screen === 'file') {
+      return renderFileViewer();
+    }
     if (screen === 'tts') {
       return renderTts();
     }
@@ -1138,6 +2373,12 @@ const App: React.FC = () => {
     }
     if (screen === 'purchases') {
       return renderPurchases();
+    }
+    if (screen === 'fonts') {
+      return renderFonts();
+    }
+    if (screen === 'reminders') {
+      return renderReminders();
     }
     return renderHome();
   };
@@ -1192,4 +2433,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export default App;
