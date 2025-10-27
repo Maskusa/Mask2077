@@ -295,6 +295,7 @@ const App: React.FC = () => {
   const [availableFonts, setAvailableFonts] = useState<FontOption[]>([]);
   const [fontDetectionCompleted, setFontDetectionCompleted] = useState(false);
   const [selectedFontFamily, setSelectedFontFamily] = useState<string | null>(null);
+  const [fontPreviewValue, setFontPreviewValue] = useState<string>(FONT_PREVIEW_PARAGRAPH);
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [webSiteUrl, setWebSiteUrl] = useState<string>(WEB_PORTAL_URL);
   const [webSiteContext, setWebSiteContext] = useState<'generic' | 'youtube'>('generic');
@@ -503,16 +504,23 @@ const App: React.FC = () => {
     [selectedFontFamily]
   );
 
-  const fontRows = useMemo(
-    () => [
-      { key: 'default', family: null as string | null, label: 'Системный (по умолчанию)' },
-      ...mergedFontOptions.map((font) => ({
-        key: font.family,
-        family: font.family,
-        label: font.family,
-      })),
-    ],
-    [mergedFontOptions]
+  const fontRows = useMemo(() => {
+    const defaultRow = {
+      key: 'default',
+      family: null as string | null,
+      label: 'System default (fallback)',
+    };
+    const dynamicRows = mergedFontOptions.map((font) => ({
+      key: font.family,
+      family: font.family,
+      label: font.family,
+    }));
+    return [defaultRow, ...dynamicRows];
+  }, [mergedFontOptions]);
+
+  const fontPreviewText = useMemo(
+    () => (fontPreviewValue.trim() ? fontPreviewValue : FONT_PREVIEW_PARAGRAPH),
+    [fontPreviewValue]
   );
 
   useEffect(() => {
@@ -2146,81 +2154,94 @@ const App: React.FC = () => {
   );
 
   const renderFonts = () => (
-    <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 space-y-8">
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-2">
-          <p className="text-sm uppercase tracking-widest text-emerald-300">Настройки</p>
-          <h1 className="text-3xl font-semibold text-white">Шрифты</h1>
-          <p className="text-sm text-slate-300">
-            {fontDetectionCompleted
-              ? `Доступно шрифтов: ${mergedFontOptions.length}`
-              : 'Идёт поиск установленных шрифтов...'}
-          </p>
-          <p className="text-xs text-slate-500">
-            Источник: {availableFonts.length > 0 ? 'обнаружены на устройстве' : 'использован стандартный список'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="neutral" className="w-auto px-6" onClick={resetToHome}>
-            {'\u041d\u0430\u0437\u0430\u0434'}
-          </Button>
-          <Button variant="highlight" className="w-auto px-6" onClick={handleShowLogs}>
-            {'\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043b\u043e\u0433'}
-          </Button>
-        </div>
-      </header>
-
-      <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-8 shadow-xl space-y-4 border border-slate-700">
-        <h2 className="text-xl font-semibold text-white">Предпросмотр</h2>
-        <div
-          className="rounded-2xl border border-sky-500/40 bg-sky-900/40 text-sky-100 p-6 leading-relaxed shadow-inner"
-          style={{ fontFamily: formattedSelectedFont }}
-        >
-          {text.trim() || FONT_PREVIEW_PARAGRAPH}
-        </div>
-        <p className="text-xs text-slate-400">
-          Выбранный шрифт применяется к полю ввода текста на экране синтеза.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        {fontRows.map((font) => {
-          const isChecked =
-            font.family === null ? selectedFontFamily === null : selectedFontFamily === font.family;
-          const fontFamilyValue = composeFontFamily(font.family);
-          const disabled = !fontDetectionCompleted && font.key !== 'default';
-          const cardClass = `rounded-2xl border p-4 space-y-3 ${
-            isChecked ? 'border-emerald-500/70 bg-slate-800/80 shadow-lg shadow-emerald-900/10' : 'border-slate-700 bg-slate-800/60'
-          }`;
-          return (
-            <div
-              key={font.key}
-              className={cardClass}
-            >
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  className="h-5 w-5 accent-emerald-400"
-                  checked={isChecked}
-                  onChange={(event) => handleFontToggle(font.family, event.target.checked)}
-                  disabled={disabled}
-                />
-                <span className="text-base font-semibold text-slate-100">{font.label}</span>
-              </label>
-              <div
-                className={`rounded-xl border px-3 py-2 text-sm text-slate-50 ${
-                  isChecked ? 'border-emerald-500/60 bg-slate-900/60' : 'border-slate-700 bg-slate-900/70'
-                }`}
-                style={{ fontFamily: fontFamilyValue }}
-              >
-                {FONT_SAMPLE_TEXT}
-              </div>
+    <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 space-y-6 lg:space-y-8">
+      <div className="sticky top-24 z-20 space-y-4">
+        <div className="rounded-3xl border border-slate-700/70 bg-gray-900/95 shadow-xl px-6 py-6">
+          <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-2">
+              <p className="text-sm uppercase tracking-widest text-emerald-300">Fonts</p>
+              <h1 className="text-3xl font-semibold text-white">Font playground</h1>
+              <p className="text-sm text-slate-300">
+                {fontDetectionCompleted
+                  ? `Detected fonts: ${mergedFontOptions.length}`
+                  : 'Scanning available fonts...'}
+              </p>
+              <p className="text-xs text-slate-500">
+                Source: {availableFonts.length > 0 ? 'device fonts' : 'fallback list'}
+              </p>
             </div>
-          );
-        })}
+            <div className="flex flex-wrap gap-3">
+              <Button variant="neutral" className="w-auto px-6" onClick={resetToHome}>
+                {'\u041d\u0430\u0437\u0430\u0434'}
+              </Button>
+              <Button variant="highlight" className="w-auto px-6" onClick={handleShowLogs}>
+                {'\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043b\u043e\u0433'}
+              </Button>
+            </div>
+          </header>
+        </div>
+        <section className="rounded-3xl bg-slate-800/80 backdrop-blur p-6 shadow-xl space-y-4 border border-slate-700/80">
+          <h2 className="text-xl font-semibold text-white">Preview</h2>
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-200">
+            Text
+            <textarea
+              value={fontPreviewValue}
+              onChange={(event) => setFontPreviewValue(event.target.value)}
+              rows={3}
+              placeholder={FONT_PREVIEW_PARAGRAPH}
+              className="w-full resize-y rounded-xl border border-slate-600 bg-slate-900/70 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+            />
+          </label>
+          <div
+            className="rounded-2xl border border-sky-500/40 bg-sky-900/40 text-sky-100 p-6 leading-relaxed shadow-inner"
+            style={{ fontFamily: formattedSelectedFont }}
+          >
+            {fontPreviewText}
+          </div>
+          <p className="text-xs text-slate-400">
+            Preview text is shared with every font sample below.
+          </p>
+        </section>
+      </div>
+
+      <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-6 shadow-xl space-y-4 border border-slate-700">
+        <h2 className="text-xl font-semibold text-white">Available fonts</h2>
+        <div className="max-h-[28rem] overflow-y-auto pr-1 space-y-3">
+          {fontRows.map((font) => {
+            const isChecked =
+              font.family === null ? selectedFontFamily === null : selectedFontFamily === font.family;
+            const fontFamilyValue = composeFontFamily(font.family);
+            const disabled = !fontDetectionCompleted && font.key !== 'default';
+            const cardClass = `rounded-2xl border p-4 space-y-3 ${
+              isChecked ? 'border-emerald-500/70 bg-slate-800/80 shadow-lg shadow-emerald-900/10' : 'border-slate-700 bg-slate-800/60'
+            }`;
+            return (
+              <div key={font.key} className={cardClass}>
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 accent-emerald-400"
+                    checked={isChecked}
+                    onChange={(event) => handleFontToggle(font.family, event.target.checked)}
+                    disabled={disabled}
+                  />
+                  <span className="text-base font-semibold text-slate-100">{font.label}</span>
+                </label>
+                <div
+                  className={`rounded-xl border px-3 py-2 text-sm text-slate-50 ${
+                    isChecked ? 'border-emerald-500/60 bg-slate-900/60' : 'border-slate-700 bg-slate-900/70'
+                  }`}
+                  style={{ fontFamily: fontFamilyValue }}
+                >
+                  {fontPreviewText}
+                </div>
+              </div>
+            );
+          })}
+        </div>
         {!fontDetectionCompleted && (
           <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-800/40 p-6 text-sm text-slate-300">
-            Шрифты загружаются...
+            Detecting fonts...
           </div>
         )}
       </section>
@@ -2232,7 +2253,6 @@ const App: React.FC = () => {
       </div>
     </div>
   );
-
   const renderSite = () => {
     const urlInputConfig =
       webSiteContext === 'youtube'
@@ -2433,4 +2453,6 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export default App;
+
+
