@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Мой профиль</title>
+    <meta
+      name="description"
+      content="Заполните личный профиль, чтобы Айви обращалась к вам по имени и лучше подстраивала сюжет."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="settings">
+    <div class="app">
+      <main class="screen screen--secondary">
+        <header class="screen__header screen__header--back">
+          <a class="back-button" href="ivy-settings.html">Назад</a>
+          <h1>Мой профиль</h1>
+        </header>
+
+        <form class="my-profile" id="my-profile-form">
+          <label>
+            <span>Имя</span>
+            <input type="text" name="name" placeholder="Как к вам обращаться?" />
+          </label>
+          <label>
+            <span>Псевдоним</span>
+            <input type="text" name="nickname" placeholder="Отобразится для Айви" />
+          </label>
+          <label>
+            <span>Электронная почта</span>
+            <input type="email" name="email" placeholder="example@mail.com" />
+          </label>
+          <label>
+            <span>Любимый жанр</span>
+            <input type="text" name="genre" placeholder="Фантастика, киберпанк…" />
+          </label>
+          <label>
+            <span>Комментарий для Айви</span>
+            <textarea name="comment" rows="3" placeholder="Расскажите, что вам интересно"></textarea>
+          </label>
+          <button class="btn btn--accent" type="submit">Сохранить</button>
+        </form>
+      </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+  </body>
+</html>

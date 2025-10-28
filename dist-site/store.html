@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Магазин</title>
+    <meta
+      name="description"
+      content="Магазин Айви: премиальный пропуск, акции и подарки для улучшения показателей виртуального помощника."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="store">
+    <div class="app">
+      <main class="screen screen--primary screen--store" id="premium">
+        <header class="screen__header">
+          <h1>Магазин Айви</h1>
+          <p class="screen__subtext">Premium, акции и подарки для улучшения настроения</p>
+        </header>
+
+        <div class="store">
+          <section class="store__section" id="premium-pass">
+            <h3>Премиум</h3>
+            <article class="store-card store-card--premium">
+              <div>
+                <h4>Премиальный пропуск</h4>
+                <p>Откройте все главы сразу, получите эксклюзивные иллюстрации и голосовые пакеты.</p>
+              </div>
+              <button class="btn btn--accent" data-action="buy-premium">Купить</button>
+            </article>
+          </section>
+
+          <section class="store__section" id="offers">
+            <h3>Акции</h3>
+            <div class="store__grid">
+              <article class="store-card">
+                <h4>Стартовый пак «Лучший друг»</h4>
+                <ul>
+                  <li>3 билета общения</li>
+                  <li>Голос «Юри А.»</li>
+                  <li>Эксклюзивная обложка главы</li>
+                </ul>
+                <button class="btn btn--accent" data-action="buy-offer" data-offer-id="starter">Купить</button>
+              </article>
+              <article class="store-card">
+                <h4>Супер пак «Космос»</h4>
+                <ul>
+                  <li>10 билетов общения</li>
+                  <li>Голос «Нова·Искра»</li>
+                  <li>Эффекты глубокой озвучки</li>
+                </ul>
+                <button class="btn btn--accent" data-action="buy-offer" data-offer-id="super">Купить</button>
+              </article>
+            </div>
+          </section>
+
+          <section class="store__section" id="gifts">
+            <h3>Подарки</h3>
+            <div class="gift-selector" role="radiogroup" aria-label="Выбор показателя">
+              <label class="radio">
+                <input type="radio" name="gift-stat" value="affection" checked />
+                <span>Привязанность</span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="gift-stat" value="mood" />
+                <span>Настроение</span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="gift-stat" value="trust" />
+                <span>Доверие</span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="gift-stat" value="attention" />
+                <span>Внимание</span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="gift-stat" value="energy" />
+                <span>Энергия</span>
+              </label>
+            </div>
+
+            <div class="store__grid store__grid--gifts">
+              <article class="gift-card gift-card--free">
+                <h4 class="gift-card__title">Билет синхронизации</h4>
+                <p class="gift-card__caption">Восстановите связь с Айви</p>
+                <p class="gift-card__footer">Бесплатно · реклама</p>
+              </article>
+              <article class="gift-card">
+                <h4 class="gift-card__title">Молекулярный десерт</h4>
+                <p class="gift-card__caption">Поднимает настроение на 12%</p>
+                <p class="gift-card__footer">40 кредитов</p>
+              </article>
+              <article class="gift-card">
+                <h4 class="gift-card__title">Патч доверия</h4>
+                <p class="gift-card__caption">Стабилизирует доверие</p>
+                <p class="gift-card__footer">60 кредитов</p>
+              </article>
+              <article class="gift-card">
+                <h4 class="gift-card__title">Фокус-капсула</h4>
+                <p class="gift-card__caption">Увеличивает внимание на 8%</p>
+                <p class="gift-card__footer">50 кредитов</p>
+              </article>
+              <article class="gift-card">
+                <h4 class="gift-card__title">Энергетический импульс</h4>
+                <p class="gift-card__caption">Энергия +18%</p>
+                <p class="gift-card__footer">75 кредитов</p>
+              </article>
+              <article class="gift-card">
+                <h4 class="gift-card__title">Память о первой встрече</h4>
+                <p class="gift-card__caption">Уникальный сюжетный предмет</p>
+                <p class="gift-card__footer">Премиум</p>
+              </article>
+            </div>
+          </section>
+        </div>
+      </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+  </body>
+</html>

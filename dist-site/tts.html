@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Настройки озвучки</title>
+    <meta
+      name="description"
+      content="Настройте синтез речи для книги «Маск 2077»: выберите движок, язык, голос и параметры воспроизведения."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="settings">
+    <div class="app">
+      <main class="screen screen--secondary">
+        <header class="screen__header screen__header--back">
+          <a class="back-button" href="settings.html">Назад</a>
+          <h1>Настройки озвучки</h1>
+        </header>
+
+        <form class="tts" id="tts-form">
+          <label class="tts__field tts__field--toggle">
+            <span>Озвучивать текст книги</span>
+            <input type="checkbox" id="toggle-reader-voice" class="toggle" checked />
+          </label>
+
+          <fieldset class="tts__fieldset">
+            <legend>Диктор</legend>
+            <label>
+              <span>Движок (TTS Engine)</span>
+              <select id="tts-engine">
+                <option value="web">Browser (Web Speech API)</option>
+              </select>
+            </label>
+            <label>
+              <span>Язык</span>
+              <select id="tts-language"></select>
+            </label>
+            <label>
+              <span>Голос</span>
+              <select id="tts-voice"></select>
+            </label>
+            <label>
+              <span>Скорость</span>
+              <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1" />
+            </label>
+            <label>
+              <span>Высота</span>
+              <input type="range" id="tts-pitch" min="0.5" max="2" step="0.1" value="1" />
+            </label>
+            <label>
+              <span>Громкость</span>
+              <input type="range" id="tts-volume" min="0" max="1" step="0.05" value="1" />
+            </label>
+          </fieldset>
+
+          <label class="tts__field">
+            <span>Текст для проверки</span>
+            <textarea id="tts-text" rows="4">
+Привет! Это Айви. Пора открывать следующую главу «Маск 2077»?
+            </textarea>
+          </label>
+
+          <div class="tts__actions">
+            <button type="button" class="btn btn--accent" data-action="tts-speak">Произнести</button>
+            <button type="button" class="btn btn--ghost" data-action="tts-stop">Стоп</button>
+          </div>
+        </form>
+      </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+    <script type="module" src="./js/tts.js"></script>
+  </body>
+</html>

@@ -3,6 +3,7 @@ import type { PluginListenerHandle } from '@capacitor/core';
 
 export interface NativeWebOverlayShowOptions {
   url: string;
+  mode?: 'default' | 'minimal';
 }
 
 export interface NativeWebOverlayUrlChangeEvent {
@@ -19,6 +20,10 @@ export interface NativeWebOverlayPlugin {
   ): Promise<PluginListenerHandle>;
   addListener(eventName: 'showLogRequested', listenerFunc: () => void): Promise<PluginListenerHandle>;
   addListener(eventName: 'closed', listenerFunc: () => void): Promise<PluginListenerHandle>;
+  addListener(
+    eventName: 'debug',
+    listenerFunc: (event: { message: string }) => void
+  ): Promise<PluginListenerHandle>;
 }
 
 export const NativeWebOverlay = registerPlugin<NativeWebOverlayPlugin>('NativeWebOverlay');

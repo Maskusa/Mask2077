@@ -71,6 +71,8 @@ const state = {
   youtubeEmbedUrl: null,
   toastTimeout: null,
   currentUtterance: null,
+  overlayFallbackActive: false,
+  controlsLocked: false,
 };
 
 const elements = {
@@ -106,23 +108,39 @@ const languageDisplay =
     ? new Intl.DisplayNames(['ru', 'en'], { type: 'language' })
     : null;
 
+function stringifyPayload(payload) {
+  if (payload === undefined) {
+    return '';
+  }
+  if (payload === null) {
+    return 'null';
+  }
+  if (typeof payload === 'string') {
+    return payload;
+  }
+  try {
+    return JSON.stringify(payload, null, 2);
+  } catch (error) {
+    return String(payload);
+  }
+}
+
 function log(message, payload) {
   const time = new Date().toISOString().slice(11, 23);
-  let formatted = payload;
-  if (payload !== undefined) {
-    try {
-      formatted = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
-    } catch (error) {
-      formatted = String(payload);
-    }
-  }
-  const entry = formatted !== undefined ? `${time}  ${message}\n${formatted}` : `${time}  ${message}`;
+  const payloadText = stringifyPayload(payload);
+  const entry = payload !== undefined && payloadText
+    ? `${time}  ${message}\n${payloadText}`
+    : `${time}  ${message}`;
   state.logEntries.push(entry);
   if (state.logEntries.length > LOG_LIMIT) {
     state.logEntries.splice(0, state.logEntries.length - LOG_LIMIT);
   }
   updateLogOutput();
-  console.log('[Mask2077]', message, payload ?? '');
+  if (payload !== undefined && payloadText) {
+    console.log(`[Mask2077] ${message} ${payloadText}`);
+  } else {
+    console.log(`[Mask2077] ${message}`);
+  }
 }
 
 function logEventLog(action, payload) {
@@ -168,6 +186,64 @@ function showToast(message) {
   }, 2600);
 }
 
+function setControlsLocked(locked) {
+  const nextLocked = Boolean(locked);
+  const changed = state.controlsLocked !== nextLocked;
+  state.controlsLocked = nextLocked;
+  const disable = nextLocked;
+  if (elements.speakButton) {
+    elements.speakButton.disabled = disable;
+  }
+  if (elements.shareButton) {
+    elements.shareButton.disabled = disable;
+  }
+  if (elements.settingsButton) {
+    elements.settingsButton.disabled = disable;
+  }
+  if (elements.openUrlButton) {
+    elements.openUrlButton.disabled = disable;
+  }
+  if (elements.openYoutubeButton) {
+    elements.openYoutubeButton.disabled = disable;
+  }
+  if (elements.closeYoutubeButton) {
+    elements.closeYoutubeButton.disabled = disable;
+  }
+  if (elements.voiceSelect) {
+    elements.voiceSelect.disabled = disable;
+  }
+  if (elements.languageSelect) {
+    elements.languageSelect.disabled = disable;
+  }
+  if (elements.rateSelect) {
+    elements.rateSelect.disabled = disable;
+  }
+  if (elements.pitchRange) {
+    elements.pitchRange.disabled = disable;
+  }
+  if (elements.toggleLogsButton) {
+    elements.toggleLogsButton.disabled = disable;
+  }
+  if (elements.copyLogsButton) {
+    elements.copyLogsButton.disabled = disable;
+  }
+  if (elements.clearLogsButton) {
+    elements.clearLogsButton.disabled = disable;
+  }
+  if (elements.closeLogsButton) {
+    elements.closeLogsButton.disabled = disable;
+  }
+  if (elements.textInput) {
+    elements.textInput.disabled = disable;
+  }
+  if (elements.engineSelect) {
+    elements.engineSelect.disabled = disable ? true : state.engines.length <= 1;
+  }
+  if (changed) {
+    log(`[Init] Controls ${disable ? 'locked' : 'unlocked'}`);
+  }
+}
+
 function getNativePlugin() {
   if (state.nativePlugin) {
     return state.nativePlugin;
@@ -183,6 +259,12 @@ function getNativePlugin() {
     state.nativePluginMissingLogged = false;
     return state.nativePlugin;
   }
+  if (!state.overlayFallbackActive) {
+    activateOverlayFallback('plugin-missing');
+    if (state.nativePlugin) {
+      return state.nativePlugin;
+    }
+  }
   if (!state.nativePluginMissingLogged) {
     log('[NativeTTS] Plugin not available yet', {
       hasCapacitor: Boolean(capacitor),
@@ -191,6 +273,187 @@ function getNativePlugin() {
     state.nativePluginMissingLogged = true;
   }
   return null;
+}
+
+function activateOverlayFallback(reason) {
+  if (state.overlayFallbackActive) {
+    return true;
+  }
+  const bridge = window.NativeOverlayBridge;
+  if (!bridge || typeof bridge.postMessage !== 'function') {
+    log('[Support] Overlay fallback unavailable', {
+      reason,
+      hasBridge: Boolean(bridge),
+      bridgeType: bridge ? typeof bridge : null,
+    });
+    return false;
+  }
+
+  log('[Support] Capacitor fallback runtime activated', { reason });
+  state.overlayFallbackActive = true;
+
+  const pending = new Map();
+  const listeners = new Map();
+  let requestCounter = 0;
+
+  const ensureListenerMap = (eventName) => {
+    if (!listeners.has(eventName)) {
+      listeners.set(eventName, new Map());
+    }
+    return listeners.get(eventName);
+  };
+
+  const dispatchMessage = (raw) => {
+    let message = raw;
+    if (!message) {
+      return;
+    }
+    if (typeof message === 'string') {
+      try {
+        message = JSON.parse(message);
+      } catch (error) {
+        log('[Support] Overlay dispatch parse error', {
+          raw,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return;
+      }
+    }
+    const { type } = message;
+    if (type === 'response') {
+      const entry = pending.get(message.id);
+      if (!entry) {
+        return;
+      }
+      pending.delete(message.id);
+      if (message.error) {
+        entry.reject(
+          message.error.message
+            ? new Error(message.error.message)
+            : message.error
+        );
+      } else {
+        entry.resolve(message.result);
+      }
+      return;
+    }
+    if (type === 'event') {
+      const eventName = message.event;
+      const map = listeners.get(eventName);
+      if (!map) {
+        return;
+      }
+      map.forEach((callback) => {
+        try {
+          callback(message.data || {});
+        } catch (error) {
+          log('[Support] Overlay event handler error', {
+            event: eventName,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      });
+      return;
+    }
+    if (type === 'log') {
+      log('[NativeOverlay]', { message: message.message });
+      return;
+    }
+    log('[Support] Overlay dispatch received unknown message', message);
+  };
+
+  if (typeof window.__nativeOverlayDispatch === 'function') {
+    const previousDispatch = window.__nativeOverlayDispatch;
+    window.__nativeOverlayDispatch = (message) => {
+      dispatchMessage(message);
+      try {
+        previousDispatch(message);
+      } catch (error) {
+        log('[Support] Overlay dispatch chain error', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    };
+  } else {
+    window.__nativeOverlayDispatch = dispatchMessage;
+  }
+
+  const sendMessage = (message) => {
+    try {
+      bridge.postMessage(JSON.stringify(message));
+    } catch (error) {
+      log('[Support] Overlay fallback postMessage failed', {
+        message,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  const invoke = (method, params) =>
+    new Promise((resolve, reject) => {
+      const id = String(++requestCounter);
+      pending.set(id, { resolve, reject });
+      sendMessage({
+        type: 'request',
+        id,
+        plugin: 'NativeTTS',
+        method,
+        params: params || {},
+      });
+    });
+
+  const registerListener = async (eventName, callback) => {
+    if (!eventName || typeof callback !== 'function') {
+      return { remove: async () => {} };
+    }
+    const map = ensureListenerMap(eventName);
+    const listenerId = `L${++requestCounter}`;
+    map.set(listenerId, callback);
+    sendMessage({
+      type: 'addListener',
+      plugin: 'NativeTTS',
+      event: eventName,
+      listenerId,
+    });
+    return {
+      remove: async () => {
+        const current = listeners.get(eventName);
+        if (current && current.has(listenerId)) {
+          current.delete(listenerId);
+          sendMessage({
+            type: 'removeListener',
+            plugin: 'NativeTTS',
+            event: eventName,
+            listenerId,
+          });
+        }
+      },
+    };
+  };
+
+  const proxy = {
+    isAvailable: (params) => invoke('isAvailable', params),
+    getEngines: (params) => invoke('getEngines', params),
+    selectEngine: (params) => invoke('selectEngine', params),
+    getVoices: (params) => invoke('getVoices', params),
+    getAvailableLanguages: (params) => invoke('getAvailableLanguages', params),
+    speak: (params) => invoke('speak', params),
+    stop: (params) => invoke('stop', params),
+    setPitch: (params) => invoke('setPitch', params),
+    setSpeechRate: (params) => invoke('setSpeechRate', params),
+    synthesizeToFile: (params) => invoke('synthesizeToFile', params),
+    shareAudio: (params) => invoke('shareAudio', params),
+    openSettings: (params) => invoke('openSettings', params),
+    getLogs: (params) => invoke('getLogs', params),
+    clearLogs: (params) => invoke('clearLogs', params),
+    addListener: (eventName, callback) => registerListener(eventName, callback),
+  };
+
+  state.nativePlugin = proxy;
+  state.nativePluginDetected = true;
+  state.nativePluginMissingLogged = false;
+
+  return true;
 }
 
 function clearNativeListeners() {
@@ -271,6 +534,9 @@ function applyProvider(provider, engineId) {
   rebuildLanguageOptions();
   rebuildVoiceOptions();
   updateStats();
+  if (state.controlsLocked && (state.nativeReady || state.voices.length > 0)) {
+    setControlsLocked(false);
+  }
   if (elements.engineSelect) {
     elements.engineSelect.value = state.engineId || '';
   }
@@ -405,7 +671,8 @@ function rebuildEngineOptions() {
     elements.engineSelect.value = options.some((option) => option.value === state.engineId)
       ? state.engineId
       : '';
-    elements.engineSelect.disabled = options.length <= 1;
+    elements.engineSelect.disabled =
+      state.controlsLocked || options.length <= 1;
     log('[SyncDebug] Engine dropdown value applied', {
       stateEngine: state.engineId,
       domEngine: elements.engineSelect.value,
@@ -702,6 +969,9 @@ async function refreshNativeVoices() {
       rebuildLanguageOptions();
       rebuildVoiceOptions();
     }
+    if (state.controlsLocked && state.nativeVoices.length > 0) {
+      setControlsLocked(false);
+    }
     log('[NativeTTS] Voices synchronized', { count: state.nativeVoices.length, voices: state.nativeVoices.map((voice) => ({ id: voice.nativeId ?? voice.id, name: voice.name, lang: voice.lang })).slice(0, 5) });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -789,11 +1059,14 @@ async function bootstrapNative() {
     await refreshNativeVoices();
     await refreshNativeLanguages();
     state.nativeReady = true;
+    state.support = true;
+    setControlsLocked(false);
     if (state.nativeBootstrapTimer) {
       clearTimeout(state.nativeBootstrapTimer);
       state.nativeBootstrapTimer = null;
     }
     state.nativeBootstrapAttempts = 0;
+    updateStats();
     const engineId =
       state.nativeCurrentEngine ||
       state.engines.find((engine) => engine.id !== 'web')?.id ||
@@ -964,11 +1237,40 @@ function closeYoutubeEmbed() {
   log('[YouTube] Embed closed');
 }
 
+function normalizeSettingsForApply(settings, source) {
+  if (!settings || typeof settings !== 'object') {
+    return { payload: null, needsNative: false };
+  }
+  const payload = { ...settings };
+  const wantsNative =
+    payload.usingNative === true ||
+    (typeof payload.engine === 'string' && payload.engine !== 'web');
+  const nativeCapable =
+    state.nativeExpected || state.nativePluginDetected || state.nativeReady;
+  if (wantsNative && !nativeCapable) {
+    payload.usingNative = false;
+    if (payload.engine && payload.engine !== 'web') {
+      payload.engine = 'web';
+    }
+    log('[Bridge] Native settings ignored (fallback to web)', {
+      source,
+      requestedEngine: settings.engine ?? null,
+      nativeExpected: state.nativeExpected,
+      nativeReady: state.nativeReady,
+      pluginDetected: state.nativePluginDetected,
+    });
+  }
+  const needsNative =
+    payload.usingNative === true ||
+    (typeof payload.engine === 'string' && payload.engine !== 'web');
+  return { payload, needsNative };
+}
+
 function tryApplyPendingSettings() {
-  if (!state.voicesLoaded && !state.nativeReady) {
+  if (state.pendingSettings.length === 0) {
     return;
   }
-  if (state.pendingSettings.length === 0) {
+  if (state.support !== false && !state.voicesLoaded && !state.nativeReady) {
     return;
   }
   log('[Bridge] Flushing pending settings', {
@@ -978,18 +1280,21 @@ function tryApplyPendingSettings() {
   });
   const stillWaiting = [];
   while (state.pendingSettings.length > 0) {
-    const { settings, source } = state.pendingSettings.shift();
-    const needsNative =
-      settings &&
-      (settings.usingNative === true ||
-        (typeof settings.engine === 'string' && settings.engine !== 'web'));
-    if (needsNative && !state.nativeReady) {
-      log('[Bridge] Waiting for native resources', { source });
-      stillWaiting.push({ settings, source });
+    const entry = state.pendingSettings.shift();
+    if (!entry) {
       continue;
     }
-    internalApplySettings(settings, source);
-    log('[Bridge] Applied queued settings', { source });
+    const { payload, needsNative } = normalizeSettingsForApply(entry.settings, entry.source);
+    if (!payload) {
+      continue;
+    }
+    if (needsNative && !state.nativeReady) {
+      log('[Bridge] Waiting for native resources', { source: entry.source });
+      stillWaiting.push({ settings: payload, source: entry.source });
+      continue;
+    }
+    internalApplySettings(payload, entry.source);
+    log('[Bridge] Applied queued settings', { source: entry.source });
     logEngineState('applySettings:queue-flush');
   }
   if (stillWaiting.length > 0) {
@@ -1148,17 +1453,19 @@ function internalApplySettings(settings, source = 'external') {
 }
 
 function applySettings(settings, source) {
-  const needsNative =
-    settings &&
-    (settings.usingNative === true || (typeof settings.engine === 'string' && settings.engine !== 'web'));
+  const { payload, needsNative } = normalizeSettingsForApply(settings, source);
+  if (!payload) {
+    return;
+  }
   if (!state.voicesLoaded || (needsNative && !state.nativeReady)) {
-    state.pendingSettings.push({ settings, source });
+    state.pendingSettings.push({ settings: payload, source });
     log('[Bridge] Queued settings (waiting for resources)', { source, needsNative });
     logEngineState('applySettings:queued');
+    tryApplyPendingSettings();
     return;
   }
   log('[Bridge] Applying settings directly', { source, needsNative });
-  internalApplySettings(settings, source);
+  internalApplySettings(payload, source);
   logEngineState('applySettings:direct');
 }
 
@@ -1474,6 +1781,10 @@ function loadVoices(attempt = 0) {
     updateStats();
   }
 
+  if (state.controlsLocked && mapped.length > 0) {
+    setControlsLocked(false);
+  }
+
   log('[WebTTS] Loaded voices', { count: mapped.length, voices: mapped.map((voice) => ({ id: voice.id, name: voice.name, lang: voice.lang })).slice(0, 5) });
   logEngineState('loadVoices');
   tryApplyPendingSettings();
@@ -1521,34 +1832,10 @@ function init() {
   logLifecycle('init:url-config-applied');
 
   if (!state.support) {
-    if (elements.speakButton) {
-      elements.speakButton.disabled = true;
-    }
-    if (elements.shareButton) {
-      elements.shareButton.disabled = true;
-    }
-    if (elements.settingsButton) {
-      elements.settingsButton.disabled = true;
-    }
-    if (elements.voiceSelect) {
-      elements.voiceSelect.disabled = true;
-    }
-    if (elements.languageSelect) {
-      elements.languageSelect.disabled = true;
-    }
-    if (elements.rateSelect) {
-      elements.rateSelect.disabled = true;
-    }
-    if (elements.pitchRange) {
-      elements.pitchRange.disabled = true;
-    }
-    if (elements.engineSelect) {
-      elements.engineSelect.disabled = true;
-    }
+    setControlsLocked(true);
     updateStats();
     log('[Init] Speech synthesis not supported');
     logLifecycle('init:no-support');
-    return;
   }
 
   if (state.webSupport) {

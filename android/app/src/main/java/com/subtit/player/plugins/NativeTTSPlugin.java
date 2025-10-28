@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.lang.reflect.Method;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @CapacitorPlugin(name = "NativeTTS")
 public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListener {
@@ -39,6 +40,29 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
     private float currentPitch = 1f;
     private float currentRate = 1f;
     private static final int MAX_LOG_SIZE = 500;
+    private final CopyOnWriteArrayList<ExternalListener> externalListeners = new CopyOnWriteArrayList<>();
+
+    public interface ExternalListener {
+        void onEvent(@NonNull String eventName, @NonNull JSObject data);
+    }
+
+    public void addExternalListener(@NonNull ExternalListener listener) {
+        externalListeners.add(listener);
+    }
+
+    public void removeExternalListener(@NonNull ExternalListener listener) {
+        externalListeners.remove(listener);
+    }
+
+    private void emitExternalEvent(@NonNull String eventName, @NonNull JSObject data) {
+        for (ExternalListener listener : externalListeners) {
+            try {
+                listener.onEvent(eventName, data);
+            } catch (Exception ignored) {
+                // ignore listener errors to avoid affecting core plugin flow
+            }
+        }
+    }
 
     @Override
     public void load() {
@@ -119,6 +143,7 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
         } else {
             notifyListeners("ttsState", data);
         }
+        emitExternalEvent("ttsState", data);
         log("State: " + state);
     }
 
@@ -136,6 +161,193 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
         } else {
             notifyListeners("log", payload);
         }
+        emitExternalEvent("log", payload);
+    }
+
+    private JSObject buildAvailabilityPayload() {
+        JSObject result = new JSObject();
+        result.put("available", ready);
+        return result;
+    }
+
+    private JSObject buildEnginesPayload() {
+        JSArray enginesArray = new JSArray();
+        List<EngineInfo> engines = textToSpeech != null ? textToSpeech.getEngines() : new ArrayList<>();
+        List<String> engineNames = new ArrayList<>();
+        if (engines != null) {
+            for (EngineInfo engine : engines) {
+                JSObject engineObj = new JSObject();
+                engineObj.put("id", engine.name);
+                engineObj.put("label", engine.label != null ? engine.label : engine.name);
+                enginesArray.put(engineObj);
+                engineNames.add(engine.name);
+            }
+        }
+        log("Requested engines. count=" + enginesArray.length() + " names=" + engineNames);
+        JSObject payload = new JSObject();
+        payload.put("engines", enginesArray);
+        payload.put("currentEngine", getCurrentEngine());
+        return payload;
+    }
+
+    private JSObject buildLanguagesPayload() {
+        JSArray languages = new JSArray();
+        Locale defaultLocale = Locale.getDefault();
+        if (textToSpeech != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                try {
+                    Set<Locale> available = textToSpeech.getAvailableLanguages();
+                    if (available != null) {
+                        for (Locale locale : available) {
+                            if (locale != null) {
+                                languages.put(locale.toLanguageTag());
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    log("getAvailableLanguages failed: " + ex.getMessage());
+                }
+            }
+            Locale current = textToSpeech.getLanguage();
+            if (current != null) {
+                languages.put(current.toLanguageTag());
+            }
+        }
+        languages.put(defaultLocale.toLanguageTag());
+        JSObject payload = new JSObject();
+        payload.put("languages", languages);
+        payload.put("defaultLanguage", defaultLocale.toLanguageTag());
+        return payload;
+    }
+
+    private JSObject buildVoicesPayload() {
+        if (!ready || textToSpeech == null) {
+            throw new IllegalStateException("not_ready");
+        }
+        JSArray voicesArray = new JSArray();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Set<Voice> voices = textToSpeech.getVoices();
+            if (voices != null) {
+                for (Voice voice : voices) {
+                    JSObject voiceObject = new JSObject();
+                    voiceObject.put("id", voice.getName());
+                    voiceObject.put("name", voice.getName());
+                    Locale locale = voice.getLocale() != null ? voice.getLocale() : textToSpeech.getLanguage();
+                    voiceObject.put("locale", locale != null ? locale.toLanguageTag() : Locale.getDefault().toLanguageTag());
+                    voiceObject.put("quality", voice.getQuality());
+                    voiceObject.put("latency", voice.getLatency());
+                    voicesArray.put(voiceObject);
+                }
+            }
+        }
+        if (voicesArray.length() == 0) {
+            JSObject defaultVoice = new JSObject();
+            Locale locale = textToSpeech != null && textToSpeech.getLanguage() != null ? textToSpeech.getLanguage() : Locale.getDefault();
+            defaultVoice.put("id", locale.toLanguageTag());
+            defaultVoice.put("name", locale.getDisplayName());
+            defaultVoice.put("locale", locale.toLanguageTag());
+            voicesArray.put(defaultVoice);
+        }
+        JSObject result = new JSObject();
+        result.put("voices", voicesArray);
+        log("Voices returned. count=" + voicesArray.length());
+        return result;
+    }
+
+    public JSObject isAvailableSync() {
+        return buildAvailabilityPayload();
+    }
+
+    public JSObject getEnginesSync() {
+        return buildEnginesPayload();
+    }
+
+    public JSObject getAvailableLanguagesSync() {
+        return buildLanguagesPayload();
+    }
+
+    public JSObject getVoicesSync() {
+        return buildVoicesPayload();
+    }
+
+    public JSObject selectEngineSync(String engineId) {
+        if (engineId == null || engineId.trim().isEmpty()) {
+            throw new IllegalArgumentException("engineId is required");
+        }
+        log("Engine selection requested: " + engineId);
+        initializeTextToSpeech(engineId);
+        updateActiveEngine();
+        log("Engine selection applied. activeEngine=" + activeEngine + " queried=" + getCurrentEngine());
+        JSObject result = new JSObject();
+        result.put("engineId", engineId);
+        return result;
+    }
+
+    public JSObject speakSync(String text, String voiceId, Double rate, Double pitch) {
+        if (text == null || text.trim().isEmpty()) {
+            throw new IllegalArgumentException("Text is required");
+        }
+        if (!ready) {
+            throw new IllegalStateException("TextToSpeech engine not ready");
+        }
+        float targetRate = rate != null ? rate.floatValue() : currentRate;
+        float targetPitch = pitch != null ? pitch.floatValue() : currentPitch;
+        currentRate = targetRate;
+        currentPitch = targetPitch;
+        log("Speak request. chars=" + text.length() + " rate=" + targetRate + " pitch=" + targetPitch + " voice=" + voiceId);
+        applyVoice(voiceId);
+        if (textToSpeech != null) {
+            textToSpeech.setSpeechRate(targetRate);
+            textToSpeech.setPitch(targetPitch);
+            String utteranceId = UUID.randomUUID().toString();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId);
+            } else {
+                textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+            }
+        }
+        JSObject result = new JSObject();
+        result.put("success", true);
+        return result;
+    }
+
+    public void stopSync() {
+        if (textToSpeech != null) {
+            boolean wasSpeaking = textToSpeech.isSpeaking();
+            log("Stop requested");
+            textToSpeech.stop();
+            if (wasSpeaking) {
+                notifyState("done");
+            }
+        }
+    }
+
+    public JSObject setPitchSync(Double pitch) {
+        if (pitch == null) {
+            throw new IllegalArgumentException("pitch is required");
+        }
+        currentPitch = pitch.floatValue();
+        if (textToSpeech != null) {
+            textToSpeech.setPitch(currentPitch);
+        }
+        log("Pitch updated: " + currentPitch);
+        JSObject result = new JSObject();
+        result.put("pitch", currentPitch);
+        return result;
+    }
+
+    public JSObject setSpeechRateSync(Double rate) {
+        if (rate == null) {
+            throw new IllegalArgumentException("rate is required");
+        }
+        currentRate = rate.floatValue();
+        if (textToSpeech != null) {
+            textToSpeech.setSpeechRate(currentRate);
+        }
+        log("Speech rate updated: " + currentRate);
+        JSObject result = new JSObject();
+        result.put("rate", currentRate);
+        return result;
     }
 
     private void updateActiveEngine() {
@@ -207,30 +419,13 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
 
     @PluginMethod
     public void isAvailable(PluginCall call) {
-        JSObject result = new JSObject();
-        result.put("available", ready);
-        call.resolve(result);
+        call.resolve(buildAvailabilityPayload());
     }
 
     @PluginMethod
     public void getEngines(PluginCall call) {
         log("getEngines invoked");
-        JSArray enginesArray = new JSArray();
-        List<EngineInfo> engines = textToSpeech != null ? textToSpeech.getEngines() : new ArrayList<>();
-        List<String> engineNames = new ArrayList<>();
-        if (engines != null) {
-            for (EngineInfo engine : engines) {
-                JSObject engineObj = new JSObject();
-                engineObj.put("id", engine.name);
-                engineObj.put("label", engine.label != null ? engine.label : engine.name);
-                enginesArray.put(engineObj);
-                engineNames.add(engine.name);
-            }
-        }
-        log("Requested engines. count=" + enginesArray.length() + " names=" + engineNames);
-        JSObject payload = new JSObject();
-        payload.put("engines", enginesArray);
-        payload.put("currentEngine", getCurrentEngine());
+        JSObject payload = buildEnginesPayload();
         log("getEngines resolving current=" + payload.getString("currentEngine"));
         call.resolve(payload);
     }
@@ -242,82 +437,25 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
             call.reject("engineId is required");
             return;
         }
-        log("Engine selection requested: " + engineId);
-        initializeTextToSpeech(engineId);
-        updateActiveEngine();
-        log("Engine selection applied. activeEngine=" + activeEngine + " queried=" + getCurrentEngine());
-        JSObject result = new JSObject();
-        result.put("engineId", engineId);
+        JSObject result = selectEngineSync(engineId);
         call.resolve(result);
     }
 
     @PluginMethod
     public void getAvailableLanguages(PluginCall call) {
-        JSArray languages = new JSArray();
-        Locale defaultLocale = Locale.getDefault();
-        if (textToSpeech != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                try {
-                    Set<Locale> available = textToSpeech.getAvailableLanguages();
-                    if (available != null) {
-                        for (Locale locale : available) {
-                            if (locale != null) {
-                                languages.put(locale.toLanguageTag());
-                            }
-                        }
-                    }
-                } catch (Exception ex) {
-                    log("getAvailableLanguages failed: " + ex.getMessage());
-                }
-            }
-            Locale current = textToSpeech.getLanguage();
-            if (current != null) {
-                languages.put(current.toLanguageTag());
-            }
-        }
-        languages.put(defaultLocale.toLanguageTag());
-        JSObject payload = new JSObject();
-        payload.put("languages", languages);
-        payload.put("defaultLanguage", defaultLocale.toLanguageTag());
-        call.resolve(payload);
+        call.resolve(buildLanguagesPayload());
     }
 
     @PluginMethod
     public void getVoices(PluginCall call) {
         log("getVoices invoked ready=" + ready + " tts=" + (textToSpeech != null));
-        if (!ready || textToSpeech == null) {
+        try {
+            JSObject result = buildVoicesPayload();
+            call.resolve(result);
+        } catch (IllegalStateException ex) {
             log("getVoices requested before engine ready");
-            call.reject("not_ready");
-            return;
+            call.reject(ex.getMessage());
         }
-        JSObject result = new JSObject();
-        JSArray voicesArray = new JSArray();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Set<Voice> voices = textToSpeech.getVoices();
-            if (voices != null) {
-                for (Voice voice : voices) {
-                    JSObject voiceObject = new JSObject();
-                    voiceObject.put("id", voice.getName());
-                    voiceObject.put("name", voice.getName());
-                    Locale locale = voice.getLocale() != null ? voice.getLocale() : textToSpeech.getLanguage();
-                    voiceObject.put("locale", locale != null ? locale.toLanguageTag() : Locale.getDefault().toLanguageTag());
-                    voiceObject.put("quality", voice.getQuality());
-                    voiceObject.put("latency", voice.getLatency());
-                    voicesArray.put(voiceObject);
-                }
-            }
-        }
-        if (voicesArray.length() == 0) {
-            JSObject defaultVoice = new JSObject();
-            Locale locale = textToSpeech.getLanguage() != null ? textToSpeech.getLanguage() : Locale.getDefault();
-            defaultVoice.put("id", locale.toLanguageTag());
-            defaultVoice.put("name", locale.getDisplayName());
-            defaultVoice.put("locale", locale.toLanguageTag());
-            voicesArray.put(defaultVoice);
-        }
-        log("Voices returned. count=" + voicesArray.length());
-        result.put("voices", voicesArray);
-        call.resolve(result);
     }
 
     @PluginMethod
@@ -331,31 +469,12 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
             call.reject("Text is required");
             return;
         }
-        if (!ready) {
-            call.reject("TextToSpeech engine not ready");
-            return;
+        try {
+            JSObject result = speakSync(text, voiceId, rate, pitch);
+            call.resolve(result);
+        } catch (IllegalStateException ex) {
+            call.reject(ex.getMessage());
         }
-
-        float targetRate = rate != null ? rate.floatValue() : currentRate;
-        float targetPitch = pitch != null ? pitch.floatValue() : currentPitch;
-        currentRate = targetRate;
-        currentPitch = targetPitch;
-
-        log("Speak request. chars=" + text.length() + " rate=" + targetRate + " pitch=" + targetPitch + " voice=" + voiceId);
-
-        applyVoice(voiceId);
-        textToSpeech.setSpeechRate(targetRate);
-        textToSpeech.setPitch(targetPitch);
-        String utteranceId = UUID.randomUUID().toString();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId);
-        } else {
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
-        }
-
-        JSObject result = new JSObject();
-        result.put("success", true);
-        call.resolve(result);
     }
 
     private void applyVoice(@Nullable String voiceId) {
@@ -381,14 +500,7 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
 
     @PluginMethod
     public void stop(PluginCall call) {
-        if (textToSpeech != null) {
-            boolean wasSpeaking = textToSpeech.isSpeaking();
-            log("Stop requested");
-            textToSpeech.stop();
-            if (wasSpeaking) {
-                notifyState("done");
-            }
-        }
+        stopSync();
         call.resolve();
     }
 
@@ -399,12 +511,8 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
             call.reject("pitch is required");
             return;
         }
-        currentPitch = pitch.floatValue();
-        if (textToSpeech != null) {
-            textToSpeech.setPitch(currentPitch);
-        }
-        log("Pitch updated: " + currentPitch);
-        call.resolve();
+        JSObject result = setPitchSync(pitch);
+        call.resolve(result);
     }
 
     @PluginMethod
@@ -414,12 +522,8 @@ public class NativeTTSPlugin extends Plugin implements TextToSpeech.OnInitListen
             call.reject("rate is required");
             return;
         }
-        currentRate = rate.floatValue();
-        if (textToSpeech != null) {
-            textToSpeech.setSpeechRate(currentRate);
-        }
-        log("Speech rate updated: " + currentRate);
-        call.resolve();
+        JSObject result = setSpeechRateSync(rate);
+        call.resolve(result);
     }
 
     @PluginMethod

@@ -92,10 +92,16 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
   const [usingNative, setUsingNative] = useState(false);
   const voicesRef = useRef<VoiceProfile[]>([]);
   const nativeVoiceRetryTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nativeBridgeRetryTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nativeLogSubscription = useRef<{ remove: () => void } | null>(null);
   const nativeInitializationRef = useRef(false);
   const lastNativeVoiceSignatureRef = useRef<string | null>(null);
   const nativeVoiceLoadState = useRef<'idle' | 'loading' | 'loaded'>('idle');
+  const voiceSyncSignatureRef = useRef<string | null>(null);
+  const engineSyncSignatureRef = useRef<string | null>(null);
+  const languageSyncSignatureRef = useRef<string | null>(null);
+  const availableLanguageCodesRef = useRef<string[]>([]);
+  const selectedLanguageRef = useRef<string>('all');
   const { addLog } = useLogContext();
 
   const recomputeLanguageOptions = useCallback(
@@ -126,10 +132,49 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
     (voiceList: VoiceProfile[], extras?: string[]) => {
       voicesRef.current = voiceList;
       setVoices(voiceList);
-      recomputeLanguageOptions(voiceList, extras ?? availableLanguageCodes);
+      recomputeLanguageOptions(voiceList, extras ?? availableLanguageCodesRef.current);
     },
-    [availableLanguageCodes, recomputeLanguageOptions]
+    [recomputeLanguageOptions]
   );
+
+  const checkNativeAvailability = useCallback(async (): Promise<{ available: boolean; retry: boolean }> => {
+    const isOverlayBridgePresent = () =>
+      typeof window !== 'undefined' &&
+      (Boolean((window as unknown as { NativeOverlayBridge?: unknown }).NativeOverlayBridge) ||
+        Boolean((window as Record<string, unknown>).__nativeOverlayRuntime));
+
+    if (!NativeTTS) {
+      addLog('[NativeTTS] Plugin bridge unavailable');
+      return { available: false, retry: isOverlayBridgePresent() };
+    }
+
+    if (isNativePlatformAvailable()) {
+      addLog('[Support] Capacitor native platform detected');
+      return { available: true, retry: false };
+    }
+
+    try {
+      const result = await NativeTTS.isAvailable();
+      const available = Boolean(result?.available);
+      addLog(`[NativeTTS] isAvailable resolved: ${available}`);
+      if (available) {
+        return { available: true, retry: false };
+      }
+      return { available: false, retry: isOverlayBridgePresent() };
+    } catch (error) {
+      console.warn('[NativeTTS] isAvailable error', error);
+      const message = error instanceof Error ? error.message : String(error);
+      addLog(`[NativeTTS] isAvailable error: ${message}`);
+      const lowerMessage = message.toLowerCase();
+      const retryable =
+        isOverlayBridgePresent() &&
+        (lowerMessage.includes('not implemented on web') ||
+          lowerMessage.includes('nativepromise') ||
+          lowerMessage.includes('unavailable') ||
+          lowerMessage.includes('undefined'));
+      return { available: false, retry: retryable };
+    }
+  }, [addLog]);
 
   const populateWebVoices = useCallback(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -141,7 +186,7 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
   }, [applyVoiceList]);
 
   const attachNativeListener = useCallback(() => {
-    if (!NativeTTS || !isNativePlatformAvailable()) {
+    if (!NativeTTS) {
       return () => undefined;
     }
     let isSubscribed = true;
@@ -247,10 +292,15 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
         const unique = Array.from(new Set(languages));
         setAvailableLanguageCodes(unique);
         recomputeLanguageOptions(voicesRef.current, unique);
-        if (selectedLanguage === 'all') {
+        if (selectedLanguageRef.current === 'all') {
           const resolved = resolveLanguage(defaultLanguage);
           if (resolved.code && resolved.code !== UNKNOWN_LANGUAGE) {
-            setSelectedLanguage(resolved.code);
+            setSelectedLanguage((prev) => {
+              if (prev !== 'all') {
+                return prev;
+              }
+              return resolved.code;
+            });
           }
         }
       })
@@ -258,7 +308,7 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
         console.warn('[NativeTTS] Unable to fetch languages', error);
         addLog(`[NativeTTS] Fetch languages failed: ${(error as Error).message}`);
       });
-  }, [addLog, recomputeLanguageOptions, selectedLanguage]);
+  }, [addLog, recomputeLanguageOptions]);
 
   const loadNativeEngines = useCallback(() => {
     if (!NativeTTS) {
@@ -290,18 +340,40 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
   }, [addLog]);
 
   useEffect(() => {
-    const preferNative = isNativePlatformAvailable() && Boolean(NativeTTS);
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
     let supportedTimer: ReturnType<typeof setTimeout> | null = null;
+    let bridgeRetryAttempts = 0;
 
-    if (preferNative) {
+    const clearBridgeRetry = () => {
+      if (nativeBridgeRetryTimeout.current) {
+        clearTimeout(nativeBridgeRetryTimeout.current);
+        nativeBridgeRetryTimeout.current = null;
+      }
+    };
+
+    const scheduleBridgeRetry = (delay: number) => {
+      clearBridgeRetry();
+      nativeBridgeRetryTimeout.current = setTimeout(() => {
+        if (!cancelled) {
+          void bootstrap();
+        }
+      }, delay);
+    };
+
+    const activateNative = () => {
       setUsingNative(true);
       supportedTimer = setTimeout(() => {
-        setSupported(true);
-        setSupportCheckReady(true);
+        if (!cancelled) {
+          setSupported(true);
+          setSupportCheckReady(true);
+        }
       }, 2000);
+
       if (!nativeInitializationRef.current) {
         nativeInitializationRef.current = true;
         addLog('[NativeTTS] native init start');
+        addLog('[Support] Requesting native engines from client');
         loadNativeEngines();
         refreshAvailableLanguages();
         if (nativeVoiceLoadState.current !== 'loaded') {
@@ -310,54 +382,91 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
       } else {
         addLog('[NativeTTS] native init skipped (already initialized)');
       }
+
       const detach = attachNativeListener();
-      NativeTTS?.isAvailable()
-        .catch((error) => {
-          console.warn('[NativeTTS] Availability check failed', error);
-          addLog(`[NativeTTS] Availability check failed: ${(error as Error).message}`);
-        });
-      return () => {
-        nativeInitializationRef.current = false;
+      cleanup = () => {
         detach?.();
-        if (nativeVoiceRetryTimeout.current) {
-          clearTimeout(nativeVoiceRetryTimeout.current);
-        }
-        if (supportedTimer) {
-          clearTimeout(supportedTimer);
-        }
+        nativeInitializationRef.current = false;
       };
-    }
+      clearBridgeRetry();
+    };
 
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    const activateWeb = () => {
       setUsingNative(false);
-      supportedTimer = setTimeout(() => {
-        setSupported(true);
+      clearBridgeRetry();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        addLog('[Support] Using Web Speech API voices');
+        populateWebVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+          window.speechSynthesis.onvoiceschanged = populateWebVoices;
+        }
+        supportedTimer = setTimeout(() => {
+          if (!cancelled) {
+            setSupported(true);
+            setSupportCheckReady(true);
+          }
+        }, 2000);
+        cleanup = () => {
+          if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = null;
+          }
+        };
+      } else {
+        addLog('[Support] Web speech synthesis unavailable');
+        setSupported(false);
         setSupportCheckReady(true);
-      }, 2000);
-      populateWebVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = populateWebVoices;
+        cleanup = null;
       }
-      return () => {
-        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          window.speechSynthesis.onvoiceschanged = null;
-        }
-        if (supportedTimer) {
-          clearTimeout(supportedTimer);
-        }
-      };
-    }
+    };
 
-    setSupportCheckReady(true);
-    setSupported(false);
-    nativeInitializationRef.current = false;
+    const bootstrap = async () => {
+      addLog('[Support] Checking TTS capabilities');
+      const { available, retry } = await checkNativeAvailability();
+      if (cancelled) {
+        return;
+      }
+      if (available) {
+        addLog('[Support] Using native TTS engines');
+        activateNative();
+        return;
+      }
+      if (retry && bridgeRetryAttempts < 5) {
+        bridgeRetryAttempts += 1;
+        const delay = Math.min(2000, 300 * 2 ** (bridgeRetryAttempts - 1));
+        addLog(`[Support] Native bridge not ready, retrying in ${delay}ms (attempt ${bridgeRetryAttempts})`);
+        scheduleBridgeRetry(delay);
+        return;
+      }
+      addLog('[Support] Native engines unavailable, falling back to web');
+      activateWeb();
+      if (!(typeof window !== 'undefined' && 'speechSynthesis' in window)) {
+        addLog('[Support] No speech synthesis engines available');
+      }
+    };
+
+    void bootstrap();
+
     return () => {
+      cancelled = true;
+      cleanup?.();
+      if (nativeVoiceRetryTimeout.current) {
+        clearTimeout(nativeVoiceRetryTimeout.current);
+        nativeVoiceRetryTimeout.current = null;
+      }
       if (supportedTimer) {
         clearTimeout(supportedTimer);
       }
+      clearBridgeRetry();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    attachNativeListener,
+    checkNativeAvailability,
+    loadNativeEngines,
+    loadNativeVoices,
+    populateWebVoices,
+    refreshAvailableLanguages,
+    addLog,
+  ]);
 
   useEffect(() => {
     if (!usingNative || !NativeTTS) {
@@ -394,6 +503,33 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
       setSelectedLanguage(availableCodes.includes('all') ? 'all' : availableCodes[0] ?? 'all');
     }
   }, [languageOptions, selectedLanguage]);
+
+  useEffect(() => {
+    const signature = voices.map((voice) => voice.id).join('|');
+    if (voiceSyncSignatureRef.current === signature) {
+      return;
+    }
+    voiceSyncSignatureRef.current = signature;
+    addLog(`[Sync] Voices synchronized (${voices.length})`);
+  }, [voices, addLog]);
+
+  useEffect(() => {
+    const signature = engines.map((engine) => engine.id).join('|');
+    if (engineSyncSignatureRef.current === signature) {
+      return;
+    }
+    engineSyncSignatureRef.current = signature;
+    addLog(`[Sync] Engines synchronized (${engines.length})`);
+  }, [engines, addLog]);
+
+  useEffect(() => {
+    const signature = languageOptions.map((option) => String(option.value)).join('|');
+    if (languageSyncSignatureRef.current === signature) {
+      return;
+    }
+    languageSyncSignatureRef.current = signature;
+    addLog(`[Sync] Languages synchronized (${languageOptions.length})`);
+  }, [languageOptions, addLog]);
 
   const speak = useCallback(
     async (text: string, voice: VoiceProfile | null, rate: number, pitch: number) => {
@@ -532,6 +668,14 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
       clearTimeout(nativeVoiceRetryTimeout.current);
     }
   }, []);
+
+  useEffect(() => {
+    availableLanguageCodesRef.current = availableLanguageCodes;
+  }, [availableLanguageCodes]);
+
+  useEffect(() => {
+    selectedLanguageRef.current = selectedLanguage;
+  }, [selectedLanguage]);
 
   return {
     supported,

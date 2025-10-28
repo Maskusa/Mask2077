@@ -7,9 +7,12 @@ interface TextAreaProps {
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
   rows?: number;
+  fontFamily?: string;
 }
 
-const TextArea: React.FC<TextAreaProps> = ({ label, value, onChange, placeholder, rows = 6 }) => {
+const TextArea: React.FC<TextAreaProps> = ({ label, value, onChange, placeholder, rows = 6, fontFamily }) => {
+  const style = fontFamily ? { fontFamily } : undefined;
+
   return (
     <div className="flex flex-col w-full">
       <label htmlFor={label} className="mb-2 text-sm font-medium text-gray-400">
@@ -21,6 +24,7 @@ const TextArea: React.FC<TextAreaProps> = ({ label, value, onChange, placeholder
         onChange={onChange}
         placeholder={placeholder}
         rows={rows}
+        style={style}
         className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 resize-y"
       />
     </div>

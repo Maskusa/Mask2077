@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Показатели Айви</title>
+    <meta
+      name="description"
+      content="Подробное описание показателей Айви: привязанность, настроение, доверие, внимание и энергия."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="ivy">
+    <div class="app">
+      <main class="screen screen--secondary">
+        <header class="screen__header screen__header--back">
+          <a class="back-button" href="profile-ivy.html">Назад</a>
+          <h1>Показатели Айви</h1>
+        </header>
+
+        <article class="stats">
+          <p>
+            Чем выше показатели, тем интереснее общение. Они постепенно увеличиваются, пока вы находитесь в приложении.
+          </p>
+          <dl>
+            <div>
+              <dt>Привязанность</dt>
+              <dd>Отражает близость с Айви. Растёт, когда вы открываете новые главы и делитесь эмоциями.</dd>
+            </div>
+            <div>
+              <dt>Настроение</dt>
+              <dd>Зависит от вашей активности. Поддерживайте беседу и не забывайте о подарках.</dd>
+            </div>
+            <div>
+              <dt>Доверие</dt>
+              <dd>Повышается, когда вы отвечаете на вопросы Айви и выполняете сюжетные задания.</dd>
+            </div>
+            <div>
+              <dt>Внимание</dt>
+              <dd>Увеличивается при регулярном чтении и прослушивании озвучки.</dd>
+            </div>
+            <div>
+              <dt>Энергия</dt>
+              <dd>Определяет, как долго Айви готова общаться без перерыва.</dd>
+            </div>
+          </dl>
+        </article>
+      </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+  </body>
+</html>

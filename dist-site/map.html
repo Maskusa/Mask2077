@@ -1,0 +1,195 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Карта</title>
+    <meta
+      name="description"
+      content="Карта прогресса по главам книги «Маск 2077». Следите за открытыми и заблокированными сценами."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="map">
+    <div class="app">
+      <main class="screen screen--primary screen--map">
+        <header class="screen__header">
+          <h1 id="map-title">Карта прогресса</h1>
+          <p class="screen__subtext">Следите за открытыми и закрытыми главами</p>
+        </header>
+
+        <div class="map" aria-labelledby="map-title">
+          <aside class="map__scale" aria-hidden="true">
+            <span>3.1</span>
+            <span>3.2</span>
+            <span>3.3</span>
+            <span>3.4</span>
+            <span>3.7</span>
+            <span>3.8</span>
+            <span>3.9</span>
+            <span>4</span>
+            <span>4.1</span>
+            <span>4.2</span>
+          </aside>
+
+          <div class="map__column">
+            <button
+              type="button"
+              class="map-card map-card--medium map-card--locked"
+              data-locked="true"
+              data-lock-destination="store.html#premium"
+            >
+              <div class="map-card__cover" aria-hidden="true">🔒</div>
+              <div class="map-card__body">
+                <h4>Заблокировано</h4>
+                <p>Откройте предыдущие главы</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="map-card map-card--medium map-card--locked"
+              data-locked="true"
+              data-lock-destination="store.html#premium"
+            >
+              <div class="map-card__cover" aria-hidden="true">🔒</div>
+              <div class="map-card__body">
+                <h4>Заблокировано</h4>
+                <p>Откройте предыдущие главы</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="map-card map-card--medium map-card--locked"
+              data-locked="true"
+            >
+              <div class="map-card__cover" aria-hidden="true">🔒</div>
+              <div class="map-card__body">
+                <h4>Заблокировано</h4>
+                <p>Подготовка следующего акта</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="map-card map-card--medium map-card--locked"
+              data-locked="true"
+            >
+              <div class="map-card__cover" aria-hidden="true">🔒</div>
+              <div class="map-card__body">
+                <h4>Заблокировано</h4>
+                <p>Нужен прогресс по сюжету</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="map-card map-card--medium map-card--locked"
+              data-locked="true"
+            >
+              <div class="map-card__cover" aria-hidden="true">🔒</div>
+              <div class="map-card__body">
+                <h4>Заблокировано</h4>
+                <p>Откроется в следующем обновлении</p>
+              </div>
+            </button>
+
+            <a class="map-card map-card--large" href="reader.html?chapter=prologue&section=0.1&point=0.1.2">
+              <div class="map-card__cover" aria-hidden="true">🛰️</div>
+              <div class="map-card__body">
+                <h4>Чистилище на Ио</h4>
+                <p>Текущий прогресс</p>
+              </div>
+            </a>
+
+            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
+              <div class="map-card__cover" aria-hidden="true">🛰️</div>
+              <div class="map-card__body">
+                <h4>Станция наблюдения</h4>
+                <p>Можно открыть</p>
+              </div>
+            </a>
+
+            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
+              <div class="map-card__cover" aria-hidden="true">🛰️</div>
+              <div class="map-card__body">
+                <h4>Лаборатория Айви</h4>
+                <p>Можно открыть</p>
+              </div>
+            </a>
+
+            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
+              <div class="map-card__cover" aria-hidden="true">🛰️</div>
+              <div class="map-card__body">
+                <h4>Контур памяти</h4>
+                <p>Можно открыть</p>
+              </div>
+            </a>
+
+            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
+              <div class="map-card__cover" aria-hidden="true">🛰️</div>
+              <div class="map-card__body">
+                <h4>Терминал связи</h4>
+                <p>Можно открыть</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
+    </div>
+
+    <dialog id="locked-modal" class="modal">
+      <form method="dialog" class="modal__content">
+        <h3>Глава заблокирована!</h3>
+        <p>
+          Вы можете открыть главу после прочтения предыдущей. Или оформите премиальный пропуск, чтобы получить
+          мгновенный доступ.
+        </p>
+        <div class="modal__actions">
+          <button value="cancel" class="btn btn--ghost">Не открывать</button>
+          <button value="store" class="btn btn--accent">Открыть</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+  </body>
+</html>

@@ -1,0 +1,121 @@
+{
+  "name": "codex-token-board",
+  "displayName": "Codex Token Board",
+  "description": "Панель в VS Code, которая читает JSON/JLOG логи Codex/IDE и показывает статистику по токенам (input/cached/output) без API.",
+  "version": "0.1.0",
+  "publisher": "local-user",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Codex Token Board",
+      "properties": {
+        "codexTokenBoard.logFolder": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Папка с логами сессий Codex/IDE (JSONL/JLOG/LOG). Выберите через команду 'Token Board: Select Log Folder'.",
+          "scope": "machine"
+        },
+        "codexTokenBoard.fileGlob": {
+          "type": "string",
+          "default": "**/*.{jsonl,log,jlog,json}",
+          "markdownDescription": "Глоб для файлов логов внутри выбранной папки.",
+          "scope": "machine"
+        },
+        "codexTokenBoard.parseHistoryOnStart": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "При старте прочитать историю логов (а не только новые события)."
+        },
+        "codexTokenBoard.pollIntervalMs": {
+          "type": "number",
+          "default": 1000,
+          "markdownDescription": "Частота опроса файлов логов в миллисекундах."
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "codexTokenBoard.dashboardView",
+          "name": "Token Board"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "codexTokenBoard.openDashboard",
+        "title": "Token Board: Open Dashboard"
+      },
+      {
+        "command": "codexTokenBoard.selectLogFolder",
+        "title": "Token Board: Select Log Folder"
+      },
+      {
+        "command": "codexTokenBoard.resetStats",
+        "title": "Token Board: Reset Stats"
+      },
+      {
+        "command": "codexTokenBoard.rebuildIndex",
+        "title": "Token Board: Rebuild (Re-scan all logs)"
+      },
+      {
+        "command": "codexTokenBoard.exportCSV",
+        "title": "Token Board: Export CSV"
+      },
+      {
+        "command": "codexTokenBoard.openSettings",
+        "title": "Token Board: Open Extension Settings"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "codexTokenBoard.openSettings",
+          "when": "view == codexTokenBoard.dashboardView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codexTokenBoard.selectLogFolder",
+          "when": "view == codexTokenBoard.dashboardView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "codexTokenBoard.resetStats",
+          "when": "view == codexTokenBoard.dashboardView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "codexTokenBoard.rebuildIndex",
+          "when": "view == codexTokenBoard.dashboardView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "codexTokenBoard.exportCSV",
+          "when": "view == codexTokenBoard.dashboardView",
+          "group": "navigation@5"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0",
+    "vsce": "^2.15.0",
+    "@types/vscode": "^1.70.0"
+  }
+}

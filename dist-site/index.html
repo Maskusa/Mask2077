@@ -1,138 +1,106 @@
-
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mask2077 · Web TTS Console</title>
+    <title>Mask2077 · Лобби</title>
     <meta
       name="description"
-      content="Веб-консоль синтеза речи Mask2077 на чистом HTML, CSS и JavaScript."
+      content="Лобби книги «Маск 2077». Следите за прогрессом чтения и переходите к следующим главам."
     />
-    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
-    <div class="page">
-      <header class="page__header">
-        <div>
-          <p class="eyebrow">Web synth</p>
-          <h1>Синтез речи в браузере</h1>
-          <p id="stats" class="muted">
-            Загрузка данных о голосах…
-          </p>
-        </div>
-        <div class="header-actions">
-          <button id="open-youtube" class="btn btn--primary">
-            Открыть YouTube
-          </button>
-          <button id="toggle-logs" class="btn btn--ghost">Журнал</button>
-        </div>
-      </header>
+  <body data-primary="lobby">
+    <div class="app">
+      <main class="screen screen--primary">
+        <header class="screen__header screen__header--floating">
+          <a class="pill pill--news" href="news.html">
+            <span class="pill__icon">📰</span>
+            <span>Новости</span>
+          </a>
+          <a class="pill pill--premium" href="store.html#premium">
+            <span class="pill__icon">🎟️</span>
+            <span>Premium</span>
+            <span class="pill__badge">0</span>
+          </a>
+        </header>
 
-      <main class="page__content">
-        <section class="card">
-          <div class="field-group">
-            <label class="field__label" for="youtube-url">
-              Ссылка на YouTube или другой ресурс
-            </label>
-            <div class="field__row">
-              <input
-                id="youtube-url"
-                type="url"
-                placeholder="https://www.youtube.com/watch?v=..."
-                class="input"
-              />
-              <button id="open-url" class="btn btn--highlight">
-                Открыть ссылку
-              </button>
+        <div class="lobby">
+          <h1 class="lobby__title">Айви ждёт продолжения…</h1>
+          <p class="lobby__subtitle">Продолжайте путь героя в книге «Маск 2077»</p>
+
+          <section class="lobby__card lobby-card lobby-card--image" aria-label="Текущая глава">
+            <div class="lobby-card__image" role="img" aria-label="Иллюстрация главы">
+              <span class="lobby-card__placeholder">АРТ ЗАГЛУШКА</span>
             </div>
-            <p id="youtube-error" class="field__helper" hidden></p>
-          </div>
-
-          <div class="grid grid--3">
-            <label class="field">
-              <span class="field__label">Движок (TTS Engine)</span>
-              <select id="engine-select" class="input"></select>
-            </label>
-            <label class="field">
-              <span class="field__label">Язык</span>
-              <select id="language-select" class="input"></select>
-            </label>
-            <label class="field">
-              <span class="field__label">Голос</span>
-              <select id="voice-select" class="input"></select>
-            </label>
-          </div>
-
-          <div class="grid grid--2">
-            <label class="field">
-              <span class="field__label">Скорость (Rate)</span>
-              <select id="rate-select" class="input"></select>
-            </label>
-            <label class="field">
-              <span class="field__label">
-                Питч (тон): <span id="pitch-value">1.00</span>
-              </span>
-              <input
-                id="pitch-range"
-                type="range"
-                min="0.5"
-                max="2"
-                step="0.05"
-                value="1"
-                class="range"
-              />
-            </label>
-          </div>
-
-          <div id="youtube-preview" class="youtube" hidden>
-            <div class="youtube__frame">
-              <iframe
-                id="youtube-iframe"
-                title="YouTube"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-              ></iframe>
+            <div class="lobby-card__footer">
+              <div class="progress-track">
+                <span class="progress-chip is-complete"></span>
+                <span class="progress-chip is-active"></span>
+                <span class="progress-chip"></span>
+                <span class="progress-chip"></span>
+              </div>
+              <div class="progress-labels">
+                <span>1</span>
+                <span>4</span>
+              </div>
             </div>
-            <button id="close-youtube" class="btn btn--ghost">
-              Закрыть видео
-            </button>
-          </div>
+          </section>
 
-          <label class="field field--stacked">
-            <span class="field__label">Текст для синтеза</span>
-            <textarea
-              id="text-input"
-              class="textarea"
-              rows="6"
-              placeholder="Введите текст для синтеза речи..."
-            ></textarea>
-          </label>
+          <a class="lobby__card lobby-card lobby-card--link" href="library.html">
+            <div class="lobby-card__icon icon icon--book" aria-hidden="true"></div>
+            <div class="lobby-card__body">
+              <p class="lobby-card__eyebrow">Книга 1 · Маск 2077</p>
+              <p class="lobby-card__title">Глава 3. Погоня в каньоне</p>
+              <p class="lobby-card__note">3.2.1 Текущий пункт — название под слоями сломленных скал</p>
+            </div>
+            <span class="lobby-card__chevron" aria-hidden="true">›</span>
+          </a>
 
-          <div class="grid grid--3">
-            <button id="speak" class="btn btn--primary">Синтез</button>
-            <button id="share" class="btn btn--primary">Share</button>
-            <button id="settings" class="btn btn--ghost">Настройки</button>
-          </div>
-        </section>
+          <a class="cta-button" href="reader.html">Старт</a>
+        </div>
       </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
     </div>
 
-    <aside id="log-panel" class="log-panel" hidden>
-      <div class="log-panel__header">
-        <h2>Журнал событий</h2>
-        <div class="log-panel__actions">
-          <button id="copy-logs" class="btn btn--ghost">Скопировать</button>
-          <button id="clear-logs" class="btn btn--ghost">Очистить</button>
-          <button id="close-logs" class="btn btn--ghost">Закрыть</button>
-        </div>
-      </div>
-      <pre id="log-output" class="log-panel__body"></pre>
-    </aside>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-    <div id="toast" class="toast" hidden></div>
-
-    <script src="./app.js" type="module"></script>
+    <script type="module" src="./js/common.js"></script>
   </body>
 </html>
+
+

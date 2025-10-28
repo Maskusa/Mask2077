@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Настройки</title>
+    <meta
+      name="description"
+      content="Настройки приложения Mask2077: язык, звук, музыка, переход к настройкам озвучки и профиля Айви."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="settings">
+    <div class="app">
+      <main class="screen screen--primary">
+        <header class="screen__header">
+          <h1>Настройки</h1>
+          <p class="screen__subtext">Управляйте языком, звуком и профилем Айви</p>
+        </header>
+
+        <form class="settings">
+          <label class="settings__field">
+            <span class="settings__label">Язык интерфейса</span>
+            <div class="settings__control">
+              <span class="flag flag--ru" aria-hidden="true"></span>
+              <select id="language-select-main" aria-label="Выбор языка">
+                <option value="ru" selected>Русский</option>
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
+          </label>
+
+          <label class="settings__field settings__field--toggle">
+            <span class="settings__label">Звук</span>
+            <input type="checkbox" id="toggle-sound" class="toggle" checked />
+          </label>
+
+          <label class="settings__field settings__field--toggle">
+            <span class="settings__label">Музыка</span>
+            <input type="checkbox" id="toggle-music" class="toggle" checked />
+          </label>
+
+          <div class="settings__group">
+            <a class="settings__link" href="tts.html">
+              <span>Озвучка</span>
+              <span aria-hidden="true">›</span>
+            </a>
+            <a class="settings__link" href="ivy-settings.html">
+              <span>Айви</span>
+              <span aria-hidden="true">›</span>
+            </a>
+            <button class="settings__link" type="button" data-action="rate-app">
+              <span>Оценить</span>
+              <span aria-hidden="true">★</span>
+            </button>
+            <button class="settings__link" type="button" data-action="share-app">
+              <span>Поделиться</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+            <button class="settings__link" type="button" data-action="report-issue">
+              <span>Сообщить об ошибке</span>
+              <span aria-hidden="true">!</span>
+            </button>
+          </div>
+
+          <a
+            class="settings__consent"
+            href="https://aigpt.app/privacy_policy.html"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Управление согласием
+          </a>
+        </form>
+      </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+  </body>
+</html>

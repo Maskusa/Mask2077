@@ -23,9 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 
-# Sensitive artifacts
+# secrets
+.env
+.env.*
+!.env.example
 Voicer.keystore
 __key
 temp_ids.txt
 android/app/google-services*.json
 android/app/google-servicesPjson
+android/app/src/main/assets/public/

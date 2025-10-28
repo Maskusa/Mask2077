@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Библиотека</title>
+    <meta
+      name="description"
+      content="Библиотека серии «Маск 2077». Выберите книгу, чтобы перейти к содержанию и чтению."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="lobby">
+    <div class="app">
+      <main class="screen screen--secondary">
+        <header class="screen__header screen__header--back">
+          <a class="back-button" href="index.html">Назад</a>
+          <h1 id="library-title">Библиотека</h1>
+        </header>
+
+        <div class="library" aria-labelledby="library-title">
+          <article class="library-card library-card--active">
+            <div class="library-card__cover library-card__cover--gold">
+              <span class="icon icon--cover" aria-hidden="true"></span>
+            </div>
+            <div class="library-card__body">
+              <h2>Книга 1</h2>
+              <p>Маск 2077 · путь гения</p>
+              <a class="btn btn--accent" href="content.html">Открыть</a>
+            </div>
+          </article>
+
+          <article class="library-card library-card--locked">
+            <div class="library-card__cover library-card__cover--gray">
+              <span class="icon icon--coming-soon" aria-hidden="true"></span>
+            </div>
+            <div class="library-card__body">
+              <h2>Книга 2</h2>
+              <p>Маск 2077 · поиск истины</p>
+              <button class="btn btn--disabled" type="button" disabled>Скоро</button>
+            </div>
+          </article>
+
+          <article class="library-card library-card--device" data-action="import-book">
+            <div class="library-card__cover library-card__cover--folder">
+              <span class="icon icon--folder" aria-hidden="true"></span>
+            </div>
+            <div class="library-card__body">
+              <h2>Книга с устройства</h2>
+              <p>Добавьте файл формата .epub</p>
+              <button class="btn btn--ghost" type="button" data-action="import-book">Добавить</button>
+            </div>
+          </article>
+        </div>
+      </main>
+
+            <nav class="primary-nav" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
+        </a>
+      </nav>
+    </div>
+
+    <input type="file" id="file-input" accept=".epub" hidden />
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+  </body>
+</html>
