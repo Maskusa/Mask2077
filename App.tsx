@@ -2155,58 +2155,44 @@ const App: React.FC = () => {
 
   const renderFonts = () => (
     <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 space-y-6 lg:space-y-8">
-      <div className="sticky top-24 z-20 space-y-4">
-        <div className="rounded-3xl border border-slate-700/70 bg-gray-900/95 shadow-xl px-6 py-6">
-          <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
-              <p className="text-sm uppercase tracking-widest text-emerald-300">Fonts</p>
-              <h1 className="text-3xl font-semibold text-white">Font playground</h1>
-              <p className="text-sm text-slate-300">
-                {fontDetectionCompleted
-                  ? `Detected fonts: ${mergedFontOptions.length}`
-                  : 'Scanning available fonts...'}
-              </p>
-              <p className="text-xs text-slate-500">
-                Source: {availableFonts.length > 0 ? 'device fonts' : 'fallback list'}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="neutral" className="w-auto px-6" onClick={resetToHome}>
-                {'\u041d\u0430\u0437\u0430\u0434'}
-              </Button>
-              <Button variant="highlight" className="w-auto px-6" onClick={handleShowLogs}>
-                {'\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043b\u043e\u0433'}
-              </Button>
-            </div>
-          </header>
-        </div>
-        <section className="rounded-3xl bg-slate-800/80 backdrop-blur p-6 shadow-xl space-y-4 border border-slate-700/80">
-          <h2 className="text-xl font-semibold text-white">Preview</h2>
-          <label className="flex flex-col gap-2 text-sm font-medium text-slate-200">
-            Text
-            <textarea
-              value={fontPreviewValue}
-              onChange={(event) => setFontPreviewValue(event.target.value)}
-              rows={3}
-              placeholder={FONT_PREVIEW_PARAGRAPH}
-              className="w-full resize-y rounded-xl border border-slate-600 bg-slate-900/70 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
-            />
-          </label>
-          <div
-            className="rounded-2xl border border-sky-500/40 bg-sky-900/40 text-sky-100 p-6 leading-relaxed shadow-inner"
-            style={{ fontFamily: formattedSelectedFont }}
-          >
-            {fontPreviewText}
+      <section className="rounded-3xl border border-slate-700/70 bg-gray-900/95 shadow-xl px-6 py-6 space-y-4">
+        <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-2">
+            <p className="text-sm uppercase tracking-widest text-emerald-300">Fonts</p>
+            <h1 className="text-3xl font-semibold text-white">Font playground</h1>
+            <p className="text-sm text-slate-300">
+              {fontDetectionCompleted
+                ? `Detected fonts: ${mergedFontOptions.length}`
+                : 'Scanning available fonts...'}
+            </p>
+            <p className="text-xs text-slate-500">
+              Source: {availableFonts.length > 0 ? 'device fonts' : 'fallback list'}
+            </p>
           </div>
-          <p className="text-xs text-slate-400">
-            Preview text is shared with every font sample below.
-          </p>
-        </section>
-      </div>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="neutral" className="w-auto px-6" onClick={resetToHome}>
+              {'\u041d\u0430\u0437\u0430\u0434'}
+            </Button>
+            <Button variant="highlight" className="w-auto px-6" onClick={handleShowLogs}>
+              {'\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043b\u043e\u0433'}
+            </Button>
+          </div>
+        </header>
+        <label className="flex flex-col gap-2 text-sm font-medium text-slate-200">
+          Preview text
+          <textarea
+            value={fontPreviewValue}
+            onChange={(event) => setFontPreviewValue(event.target.value)}
+            rows={2}
+            placeholder={FONT_PREVIEW_PARAGRAPH}
+            className="w-full resize-y rounded-xl border border-slate-600 bg-slate-900/70 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+          />
+        </label>
+      </section>
 
       <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-6 shadow-xl space-y-4 border border-slate-700">
         <h2 className="text-xl font-semibold text-white">Available fonts</h2>
-        <div className="max-h-[28rem] overflow-y-auto pr-1 space-y-3">
+        <div className="space-y-3">
           {fontRows.map((font) => {
             const isChecked =
               font.family === null ? selectedFontFamily === null : selectedFontFamily === font.family;
