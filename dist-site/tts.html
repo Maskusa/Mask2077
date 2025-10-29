@@ -18,7 +18,6 @@
     <div class="app">
       <main class="screen screen--secondary">
         <header class="screen__header screen__header--back">
-          <a class="back-button" href="settings.html">Назад</a>
           <h1>Настройки озвучки</h1>
         </header>
 
@@ -72,36 +71,10 @@
         </form>
       </main>
 
-            <nav class="primary-nav" aria-label="Основная навигация">
-        <a class="primary-nav__item" data-primary="store" href="store.html">
-          <span class="primary-nav__icon">🛒</span>
-          <span class="primary-nav__label">Магазин</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="map" href="map.html">
-          <span class="primary-nav__icon">🗺️</span>
-          <span class="primary-nav__label">Карта</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="lobby" href="index.html">
-          <span class="primary-nav__icon">🏠</span>
-          <span class="primary-nav__label">Лобби</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
-          <span class="primary-nav__icon">🤖</span>
-          <span class="primary-nav__label">Айви</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="settings" href="settings.html">
-          <span class="primary-nav__icon">⚙️</span>
-          <span class="primary-nav__label">Настройки</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-        </a>
-      </nav>
+      <div class="panel-ok" role="toolbar">
+        <button type="button" class="panel-ok__button" data-action="panel-ok">&#1054;&#1050;</button>
+      </div>
+
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -110,3 +83,4 @@
     <script type="module" src="./js/tts.js"></script>
   </body>
 </html>
+

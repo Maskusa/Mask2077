@@ -1,5 +1,6 @@
 const rootStyle = document.documentElement.style;
 const nav = document.querySelector('.primary-nav');
+const panelOk = document.querySelector('.panel-ok');
 const activePrimary = document.body.dataset.primary;
 const hideNav = document.body.dataset.hideNav === 'true';
 
@@ -44,10 +45,15 @@ function scheduleNavLabelFit() {
   navLabelFitFrame = window.requestAnimationFrame(fitPrimaryNavLabels);
 }
 
+if (nav && nav.parentElement !== document.body) {
+  document.body.appendChild(nav);
+}
+
+if (panelOk && panelOk.parentElement !== document.body) {
+  document.body.appendChild(panelOk);
+}
+
 if (nav) {
-  if (nav.parentElement !== document.body) {
-    document.body.appendChild(nav);
-  }
   if (hideNav) {
     nav.classList.add('primary-nav--hidden');
   }
@@ -62,23 +68,58 @@ if (nav) {
     }
   });
   scheduleNavLabelFit();
+} else if (panelOk) {
+  rootStyle.setProperty('--nav-height', `${panelOk.offsetHeight || 0}px`);
 } else {
   rootStyle.setProperty('--nav-height', '0px');
 }
 
+document.querySelectorAll('.panel-ok__button').forEach((button) => {
+  button.addEventListener('click', () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else if (document.referrer) {
+      window.location.href = document.referrer;
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+});
+
 function updateNavMetrics() {
-  if (!nav || nav.classList.contains('primary-nav--hidden')) {
-    rootStyle.setProperty('--nav-height', '0px');
+  if (nav && !nav.classList.contains('primary-nav--hidden')) {
+    rootStyle.setProperty('--nav-height', `${nav.offsetHeight}px`);
+    const navRect = nav.getBoundingClientRect();
+    console.info(
+      `[Navigation] position: top=${Math.round(navRect.top)}px; bottom=${Math.round(
+        navRect.bottom
+      )}px`
+    );
+    const primaryScreen = document.querySelector('.screen--primary');
+    if (primaryScreen) {
+      const screenRect = primaryScreen.getBoundingClientRect();
+      console.info(
+        `[Screen] scrollTop=${Math.round(primaryScreen.scrollTop)}; top=${Math.round(
+          screenRect.top
+        )}px; bottom=${Math.round(screenRect.bottom)}px`
+      );
+    }
+    scheduleNavLabelFit();
     return;
   }
-  rootStyle.setProperty('--nav-height', `${nav.offsetHeight}px`);
-  const navRect = nav.getBoundingClientRect();
-  console.info(
-    `[Navigation] position: top=${Math.round(navRect.top)}px; bottom=${Math.round(
-      navRect.bottom
-    )}px`
-  );
-  scheduleNavLabelFit();
+
+  if (panelOk) {
+    rootStyle.setProperty('--nav-height', `${panelOk.offsetHeight}px`);
+    const panelRect = panelOk.getBoundingClientRect();
+    console.info(
+      `[PanelOK] position: top=${Math.round(panelRect.top)}px; bottom=${Math.round(
+        panelRect.bottom
+      )}px`
+    );
+    return;
+  }
+
+  rootStyle.setProperty('--nav-height', '0px');
 }
 
 updateNavMetrics();
@@ -319,6 +360,8 @@ async function initSafeArea() {
           `[Navigation] active data-primary=${activeItem.dataset.primary}; top=${Math.round(rect.top)}px; bottom=${Math.round(rect.bottom)}px`
         );
       }
+    } else if (panelOk) {
+      console.info(`[PanelOK] height=${panelOk.offsetHeight}px`);
     }
   } finally {
     safeAreaInFlight = false;

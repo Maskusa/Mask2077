@@ -18,127 +18,12 @@
     <div class="app">
       <main class="screen screen--secondary">
         <header class="screen__header screen__header--back">
-          <a class="back-button" href="library.html">Назад</a>
           <h1 id="content-title">Содержание книги</h1>
         </header>
 
-        <div class="content-list" role="list" aria-labelledby="content-title">
-          <a class="content-item" data-level="0" href="reader.html?chapter=prologue">
-            <span class="content-item__marker content-item__marker--done">✓</span>
-            <div>
-              <h4>Пролог — Предвестие бури</h4>
-              <p>Основная глава</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </a>
+        <div class="content-list" role="list" aria-labelledby="content-title" data-status="loading"></div>
 
-          <a class="content-item" data-level="1" href="reader.html?chapter=prologue&section=0.1">
-            <span class="content-item__marker content-item__marker--current">▶</span>
-            <div>
-              <h4>0.1 Оазис на краю Вселенной</h4>
-              <p>Сюжетный блок</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </a>
-
-          <a
-            class="content-item"
-            data-level="2"
-            href="reader.html?chapter=prologue&section=0.1&point=0.1.1"
-          >
-            <span class="content-item__marker content-item__marker--done">✓</span>
-            <div>
-              <h4>0.1.1 Безмолвное величие</h4>
-              <p>Пункт главы</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </a>
-
-          <a
-            class="content-item"
-            data-level="2"
-            href="reader.html?chapter=prologue&section=0.1&point=0.1.2"
-          >
-            <span class="content-item__marker content-item__marker--current">▶</span>
-            <div>
-              <h4>0.1.2 Оазис с ледяной пустоши</h4>
-              <p>Пункт главы</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </a>
-
-          <button class="content-item" type="button" data-level="1" data-locked="true">
-            <span class="content-item__marker content-item__marker--locked">🔒</span>
-            <div>
-              <h4>0.2 Друг, а не машина</h4>
-              <p>Сюжетный блок</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </button>
-
-          <button class="content-item" type="button" data-level="2" data-locked="true">
-            <span class="content-item__marker content-item__marker--locked">🔒</span>
-            <div>
-              <h4>0.2.1 Предвестник утра</h4>
-              <p>Пункт главы</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </button>
-
-          <button class="content-item" type="button" data-level="2" data-locked="true">
-            <span class="content-item__marker content-item__marker--locked">🔒</span>
-            <div>
-              <h4>0.2.2 Появление Лука</h4>
-              <p>Пункт главы</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </button>
-
-          <button class="content-item" type="button" data-level="0" data-locked="true">
-            <span class="content-item__marker content-item__marker--locked">🔒</span>
-            <div>
-              <h4>Глава 1 — Погоня в каньоне</h4>
-              <p>Основная глава</p>
-            </div>
-            <span class="content-item__action" aria-hidden="true">›</span>
-          </button>
-        </div>
-
-        <div class="screen__footer">
-          <a class="btn btn--accent" href="index.html">OK</a>
-        </div>
       </main>
-
-            <nav class="primary-nav" aria-label="Основная навигация">
-        <a class="primary-nav__item" data-primary="store" href="store.html">
-          <span class="primary-nav__icon">🛒</span>
-          <span class="primary-nav__label">Магазин</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="map" href="map.html">
-          <span class="primary-nav__icon">🗺️</span>
-          <span class="primary-nav__label">Карта</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="lobby" href="index.html">
-          <span class="primary-nav__icon">🏠</span>
-          <span class="primary-nav__label">Лобби</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
-          <span class="primary-nav__icon">🤖</span>
-          <span class="primary-nav__label">Айви</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-          <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="primary-nav__item" data-primary="settings" href="settings.html">
-          <span class="primary-nav__icon">⚙️</span>
-          <span class="primary-nav__label">Настройки</span>
-          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
-        </a>
-      </nav>
     </div>
 
     <dialog id="locked-modal" class="modal">
@@ -158,5 +43,7 @@
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
     <script type="module" src="./js/common.js"></script>
+    <script type="module" src="./js/content.js"></script>
   </body>
 </html>
+

@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mask2077 · Лобби</title>
+    <title>&#77;&#97;&#115;&#107;&#50;&#48;&#55;&#55;&#32;&#8212;&#32;&#1051;&#1086;&#1073;&#1073;&#1080;</title>
     <meta
       name="description"
-      content="Лобби книги «Маск 2077». Следите за прогрессом чтения и переходите к следующим главам."
+      content="&#1051;&#1086;&#1073;&#1073;&#1080;&#32;&#1082;&#1085;&#1080;&#1075;&#1080;&#32;&#171;&#1052;&#1072;&#1089;&#1082;&#32;&#50;&#48;&#55;&#55;&#187;&#46;&#32;&#1044;&#1086;&#1073;&#1088;&#1086;&#32;&#1087;&#1086;&#1078;&#1072;&#1083;&#1086;&#1074;&#1072;&#1090;&#1100;&#32;&#1074;&#32;&#1080;&#1085;&#1090;&#1077;&#1088;&#1072;&#1082;&#1090;&#1080;&#1074;&#32;&#1089;&#32;&#1083;&#1102;&#1073;&#1080;&#1084;&#1099;&#1084;&#1080;&#32;&#1075;&#1077;&#1088;&#1086;&#1103;&#1084;&#1080;&#46;"
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
@@ -18,24 +18,18 @@
     <div class="app">
       <main class="screen screen--primary">
         <header class="screen__header screen__header--floating">
-          <a class="pill pill--news" href="news.html">
-            <span class="pill__icon">📰</span>
-            <span>Новости</span>
+          <a class="pill pill--news" href="news.html" aria-label="&#1053;&#1086;&#1074;&#1086;&#1089;&#1090;&#1080;">
+            <span class="pill__icon" aria-hidden="true">??</span>
           </a>
-          <a class="pill pill--premium" href="store.html#premium">
-            <span class="pill__icon">🎟️</span>
-            <span>Premium</span>
-            <span class="pill__badge">0</span>
+          <a class="pill pill--premium" href="store.html#premium" aria-label="Premium">
+            <span class="pill__icon" aria-hidden="true">??</span>
           </a>
         </header>
 
         <div class="lobby">
-          <h1 class="lobby__title">Айви ждёт продолжения…</h1>
-          <p class="lobby__subtitle">Продолжайте путь героя в книге «Маск 2077»</p>
-
-          <section class="lobby__card lobby-card lobby-card--image" aria-label="Текущая глава">
-            <div class="lobby-card__image" role="img" aria-label="Иллюстрация главы">
-              <span class="lobby-card__placeholder">АРТ ЗАГЛУШКА</span>
+          <a class="lobby__card lobby-card lobby-card--image" href="map.html" aria-label="&#1055;&#1077;&#1088;&#1077;&#1081;&#1090;&#1080;&#32;&#1082;&#32;&#1082;&#1072;&#1088;&#1090;&#1077;&#32;&#1087;&#1088;&#1080;&#1082;&#1083;&#1102;&#1095;&#1077;&#1085;&#1080;&#1081;">
+            <div class="lobby-card__image" role="img" aria-label="&#1040;&#1088;&#1090;&#32;&#1079;&#1072;&#1075;&#1083;&#1091;&#1096;&#1082;&#1072;">
+              <span class="lobby-card__placeholder">&#1040;&#1056;&#1058;&#32;&#1047;&#1040;&#1043;&#1051;&#1059;&#1064;&#1050;&#1040;</span>
             </div>
             <div class="lobby-card__footer">
               <div class="progress-track">
@@ -49,49 +43,48 @@
                 <span>4</span>
               </div>
             </div>
-          </section>
-
-          <a class="lobby__card lobby-card lobby-card--link" href="library.html">
-            <div class="lobby-card__icon icon icon--book" aria-hidden="true"></div>
-            <div class="lobby-card__body">
-              <p class="lobby-card__eyebrow">Книга 1 · Маск 2077</p>
-              <p class="lobby-card__title">Глава 3. Погоня в каньоне</p>
-              <p class="lobby-card__note">3.2.1 Текущий пункт — название под слоями сломленных скал</p>
-            </div>
-            <span class="lobby-card__chevron" aria-hidden="true">›</span>
           </a>
 
-          <a class="cta-button" href="reader.html">Старт</a>
+          <a class="lobby__card lobby-card lobby-card--link" href="content.html" data-progress-card>
+            <div class="lobby-card__icon icon icon--book" aria-hidden="true"></div>
+            <div class="lobby-card__body">
+              <p class="lobby-card__eyebrow">&#1057;&#1086;&#1076;&#1077;&#1088;&#1078;&#1072;&#1085;&#1080;&#1077;&#32;&#1082;&#1085;&#1080;&#1075;&#1080;</p>
+              <p class="lobby-card__title">&#1047;&#1072;&#1075;&#1088;&#1091;&#1078;&#1072;&#1077;&#1084;&#32;&#1087;&#1088;&#1086;&#1075;&#1088;&#1077;&#1089;&#1089;...</p>
+              <p class="lobby-card__note">&#1054;&#1090;&#1082;&#1088;&#1086;&#1081;&#1090;&#1077;&#32;&#1082;&#1085;&#1080;&#1075;&#1091;&#44;&#32;&#1095;&#1090;&#1086;&#1073;&#1099;&#32;&#1087;&#1088;&#1086;&#1076;&#1086;&#1083;&#1078;&#1080;&#1090;&#1100;&#32;&#1095;&#1090;&#1077;&#1085;&#1080;&#1077;.</p>
+            </div>
+          </a>
+
+          <a class="cta-button" href="reader.html">&#1057;&#1090;&#1072;&#1088;&#1090;</a>
         </div>
       </main>
 
-            <nav class="primary-nav" aria-label="Основная навигация">
+      <nav class="primary-nav" aria-label="&#1054;&#1089;&#1085;&#1086;&#1074;&#1085;&#1072;&#1103;&#32;&#1085;&#1072;&#1074;&#1080;&#1075;&#1072;&#1094;&#1080;&#1103;">
         <a class="primary-nav__item" data-primary="store" href="store.html">
-          <span class="primary-nav__icon">🛒</span>
-          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__icon">??</span>
+          <span class="primary-nav__label">&#1052;&#1072;&#1075;&#1072;&#1079;&#1080;&#1085;</span>
           <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
         </a>
         <a class="primary-nav__item" data-primary="map" href="map.html">
-          <span class="primary-nav__icon">🗺️</span>
-          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__icon">???</span>
+          <span class="primary-nav__label">&#1050;&#1072;&#1088;&#1090;&#1072;</span>
           <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
           <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
         </a>
         <a class="primary-nav__item" data-primary="lobby" href="index.html">
-          <span class="primary-nav__icon">🏠</span>
-          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__icon">??</span>
+          <span class="primary-nav__label">&#1051;&#1086;&#1073;&#1073;&#1080;</span>
           <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
           <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
         </a>
         <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
-          <span class="primary-nav__icon">🤖</span>
-          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__icon">??</span>
+          <span class="primary-nav__label">&#1040;&#1081;&#1074;&#1080;</span>
           <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
           <span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
         </a>
         <a class="primary-nav__item" data-primary="settings" href="settings.html">
-          <span class="primary-nav__icon">⚙️</span>
-          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__icon">??</span>
+          <span class="primary-nav__label">&#1053;&#1072;&#1089;&#1090;&#1088;&#1086;&#1081;&#1082;&#1080;</span>
           <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span>
         </a>
       </nav>
@@ -100,7 +93,6 @@
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
     <script type="module" src="./js/common.js"></script>
+    <script type="module" src="./js/lobby.js"></script>
   </body>
 </html>
-
-
