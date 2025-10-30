@@ -39,10 +39,28 @@
 
           <article class="reader__page" aria-live="polite">
             <div class="reader__zone reader__zone--prev" data-action="prev-chunk" aria-hidden="true"></div>
-            <div class="reader__content">
-              <h1 id="reader-title">Пролог — Предвестие бури</h1>
-              <p id="reader-chapter">0.1 Оазис на краю Вселенной</p>
-              <div id="reader-text" class="reader__text"></div>
+            <div class="reader__stage">
+              <div class="reader__content reader__content_prev" aria-hidden="true">
+                <div class="reader__text">
+                  <div class="reader__text-inner">
+                    <div class="reader__body"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="reader__content reader__content_current">
+                <div id="reader-text" class="reader__text">
+                  <div class="reader__text-inner">
+                    <div class="reader__body"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="reader__content reader__content_next" aria-hidden="true">
+                <div class="reader__text">
+                  <div class="reader__text-inner">
+                    <div class="reader__body"></div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="reader__zone reader__zone--next" data-action="next-chunk" aria-hidden="true"></div>
           </article>
@@ -109,10 +127,31 @@
         </label>
 
         <div class="style-popup__fonts">
-          <button class="btn btn--ghost" type="button" data-action="open-font-search">
-            Скачать другие шрифты
+          <button
+            class="style-popup__fonts-trigger"
+            type="button"
+            id="font-trigger"
+            data-action="open-fonts"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+          >
+            <span>Шрифт</span>
+            <span id="current-font-label">Roboto</span>
+            <span aria-hidden="true">v</span>
           </button>
-          <div class="font-list" id="font-list"></div>
+        </div>
+
+        <div class="style-popup__fonts-overlay" id="font-overlay" hidden aria-modal="true" role="dialog">
+          <header class="style-popup__fonts-header">
+            <button type="button" data-action="close-fonts" aria-label="Закрыть выбор шрифтов">?</button>
+            <h3>Выберите шрифт</h3>
+          </header>
+          <div class="font-list" id="font-list" role="listbox"></div>
+          <div class="style-popup__fonts-footer">
+            <button class="btn btn--ghost" type="button" data-action="open-font-search">
+              Скачать другие шрифты
+            </button>
+          </div>
         </div>
 
         <div class="style-popup__controls">
@@ -120,7 +159,7 @@
             <span>Размер шрифта</span>
             <div>
               <button type="button" data-action="font-decrease" aria-label="Уменьшить шрифт">−</button>
-              <span id="font-size-label">46</span>
+              <span id="font-size-label">24</span>
               <button type="button" data-action="font-increase" aria-label="Увеличить шрифт">+</button>
             </div>
           </div>
@@ -146,4 +185,5 @@
     <script type="module" src="./js/reader.js"></script>
   </body>
 </html>
+
 

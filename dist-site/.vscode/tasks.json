@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Serve Mask2077 (PowerShell)",
+      "type": "process",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", "./serve.ps1",
+        "-Hostname", "localhost",
+        "-Port", "4173"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": false
+      },
+      "problemMatcher": {
+        "owner": "mask2077-serve",
+        "pattern": { "regexp": ".*" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*$",
+          "endsPattern": "^READY .*"
+        }
+      }
+    }
+  ]
+}

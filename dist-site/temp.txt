@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mask2077 · Чтение</title>
+    <meta
+      name="description"
+      content="Страница чтения книги «Маск 2077». Перелистывайте текстовые фрагменты и настраивайте стиль отображения."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-primary="lobby" data-hide-nav="true">
+    <div class="app">
+      <main class="screen screen--reader">
+        <div class="reader">
+          <div class="reader__controls reader__controls--top">
+            <a class="reader__btn" href="index.html">
+              <span aria-hidden="true">←</span>
+              <span>Назад</span>
+            </a>
+            <a class="reader__btn" href="store.html#premium" aria-label="Магазин">
+              🎟️
+            </a>
+            <button class="reader__btn reader__btn--toggle" data-action="toggle-auto-voice" aria-pressed="false">
+              🔈
+            </button>
+            <button class="reader__btn" data-action="open-style" aria-controls="style-popup" aria-expanded="false">
+              🎨
+            </button>
+            <a class="reader__btn" href="tts.html" aria-label="Настройки озвучки">
+              ⚙️
+            </a>
+          </div>
+
+          <article class="reader__page" aria-live="polite">
+            <div class="reader__zone reader__zone--prev" data-action="prev-chunk" aria-hidden="true"></div>
+            <div class="reader__stage">
+              <div class="reader__content reader__content_prev" aria-hidden="true">
+                <div class="reader__text">
+                  <div class="reader__text-inner">
+                    <div class="reader__heading">
+                      <h1 class="reader__title"></h1>
+                      <p class="reader__chapter"></p>
+                    </div>
+                    <div class="reader__body"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="reader__content reader__content_current">
+                <div id="reader-text" class="reader__text">
+                  <div class="reader__text-inner">
+                    <div class="reader__heading">
+                      <h1 id="reader-title" class="reader__title">?????? ? ?????????? ????</h1>
+                      <p id="reader-chapter" class="reader__chapter">0.1 ????? ?? ???? ?????????</p>
+                    </div>
+                    <div class="reader__body"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="reader__content reader__content_next" aria-hidden="true">
+                <div class="reader__text">
+                  <div class="reader__text-inner">
+                    <div class="reader__heading">
+                      <h1 class="reader__title"></h1>
+                      <p class="reader__chapter"></p>
+                    </div>
+                    <div class="reader__body"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="reader__zone reader__zone--next" data-action="next-chunk" aria-hidden="true"></div>
+          </article>
+
+          <div class="reader__controls reader__controls--bottom" aria-label="Навигация по странице">
+            <button class="reader__btn" data-action="prev-chunk">◀</button>
+            <div class="reader__progress">
+              <span aria-hidden="true">📘</span>
+              <div class="reader__progress-bar">
+                <div class="reader__progress-fill" id="reader-progress"></div>
+              </div>
+            </div>
+            <button class="reader__btn" data-action="next-chunk">▶</button>
+          </div>
+        </div>
+      </main>
+
+      <nav class="primary-nav primary-nav--hidden" aria-label="Основная навигация">
+        <a class="primary-nav__item" data-primary="store" href="store.html">
+          <span class="primary-nav__icon">🛒</span>
+          <span class="primary-nav__label">Магазин</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span><span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="map" href="map.html">
+          <span class="primary-nav__icon">🗺️</span>
+          <span class="primary-nav__label">Карта</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span><span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="lobby" href="index.html">
+          <span class="primary-nav__icon">🏠</span>
+          <span class="primary-nav__label">Лобби</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span><span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="ivy" href="ivy.html">
+          <span class="primary-nav__icon">🤖</span>
+          <span class="primary-nav__label">Айви</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span><span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="primary-nav__item" data-primary="settings" href="settings.html">
+          <span class="primary-nav__icon">⚙️</span>
+          <span class="primary-nav__label">Настройки</span>
+          <span class="primary-nav__arrow primary-nav__arrow--left" aria-hidden="true">&#8249;</span><span class="primary-nav__arrow primary-nav__arrow--right" aria-hidden="true">&#8250;</span>
+        </a>
+      </nav>
+    </div>
+
+    <div id="style-popup" class="style-popup" hidden>
+      <header class="style-popup__header">
+        <h2>Настройки стиля</h2>
+        <button type="button" data-action="close-style" aria-label="Закрыть">✕</button>
+      </header>
+      <div class="style-popup__body">
+        <label>
+          <span>Цветовая схема</span>
+          <select id="style-theme">
+            <option value="day">День</option>
+            <option value="night">Ночь</option>
+            <option value="night-contrast">Ночь контраст</option>
+            <option value="sepia" selected>Сепия</option>
+            <option value="sepia-contrast">Сепия контраст</option>
+            <option value="dusk">Сумерки</option>
+            <option value="console">RT Sans</option>
+          </select>
+        </label>
+
+        <div class="style-popup__fonts">
+          <button
+            class="style-popup__fonts-trigger"
+            type="button"
+            id="font-trigger"
+            data-action="open-fonts"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+          >
+            <span>Шрифт</span>
+            <span id="current-font-label">Roboto</span>
+            <span aria-hidden="true">v</span>
+          </button>
+        </div>
+
+        <div class="style-popup__fonts-overlay" id="font-overlay" hidden aria-modal="true" role="dialog">
+          <header class="style-popup__fonts-header">
+            <button type="button" data-action="close-fonts" aria-label="Закрыть выбор шрифтов">?</button>
+            <h3>Выберите шрифт</h3>
+          </header>
+          <div class="font-list" id="font-list" role="listbox"></div>
+          <div class="style-popup__fonts-footer">
+            <button class="btn btn--ghost" type="button" data-action="open-font-search">
+              Скачать другие шрифты
+            </button>
+          </div>
+        </div>
+
+        <div class="style-popup__controls">
+          <div class="slider-control">
+            <span>Размер шрифта</span>
+            <div>
+              <button type="button" data-action="font-decrease" aria-label="Уменьшить шрифт">−</button>
+              <span id="font-size-label">24</span>
+              <button type="button" data-action="font-increase" aria-label="Увеличить шрифт">+</button>
+            </div>
+          </div>
+          <div class="slider-control">
+            <span>Междустрочный интервал</span>
+            <div>
+              <button type="button" data-action="line-decrease" aria-label="Уменьшить интервал">−</button>
+              <span id="line-height-label">100%</span>
+              <button type="button" data-action="line-increase" aria-label="Увеличить интервал">+</button>
+            </div>
+          </div>
+          <label class="slider-control slider-control--range">
+            <span>Жирность шрифта</span>
+            <input type="range" id="font-weight" min="300" max="900" step="100" value="500" />
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="./js/common.js"></script>
+    <script type="module" src="./js/reader.js"></script>
+  </body>
+</html>
+
+
+

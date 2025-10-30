@@ -1,5 +1,6 @@
 const BOOK_ROOT = './book';
-const BOOK_FOLDER_NAME = 'Mask_2077_Book_1_[#RU]';
+const BOOK_FILE_NAME = 'Mask_2077_Book_1_[-RU].epub';
+const BOOK_FOLDER_NAME = BOOK_FILE_NAME.replace(/\.epub$/i, '');
 const BOOK_HTTP_NAME = encodeURIComponent(BOOK_FOLDER_NAME);
 const BOOK_FOLDER = `${BOOK_ROOT}/${BOOK_HTTP_NAME}/GoogleDoc`;
 const PACKAGE_FILE = `${BOOK_FOLDER}/package.opf`;
@@ -153,6 +154,7 @@ function buildBookStructure(contentDocument) {
 }
 
 function internalBuildStructure(contentDocument) {
+  const headings = getHeadingElements(contentDocument);
   const books = {};
   const chapters = [];
   const anchorLookup = {};
@@ -161,7 +163,6 @@ function internalBuildStructure(contentDocument) {
   let currentSection = null;
   let currentSectionIndex = -1;
 
-  const headings = Array.from(contentDocument.querySelectorAll('h1, h2, h3'));
   headings.forEach((heading) => {
     const tag = heading.tagName.toUpperCase();
     const title = heading.textContent?.trim();
@@ -250,4 +251,31 @@ function internalBuildStructure(contentDocument) {
   });
 
   return { books, chapters, anchorLookup };
+}
+
+function getHeadingElements(contentDocument) {
+  if (!contentDocument) {
+    return [];
+  }
+
+  // Most browsers will match namespaced XHTML via querySelectorAll, but some parsing
+  // paths (e.g. DOMParser with application/xhtml+xml locally) return zero results.
+  const selectorResult = contentDocument.querySelectorAll?.('h1, h2, h3');
+  if (selectorResult?.length) {
+    return Array.from(selectorResult);
+  }
+
+  const allElements = contentDocument.getElementsByTagName?.('*');
+  if (!allElements?.length) {
+    return [];
+  }
+
+  const headings = [];
+  for (const element of allElements) {
+    const localName = element.localName?.toLowerCase();
+    if (localName === 'h1' || localName === 'h2' || localName === 'h3') {
+      headings.push(element);
+    }
+  }
+  return headings;
 }
