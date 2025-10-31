@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body data-primary="lobby" data-hide-nav="true">
-    <div class="app">
+    <div class="app app--reader">
       <main class="screen screen--reader">
         <div class="reader">
           <div class="reader__controls reader__controls--top">
@@ -42,7 +42,10 @@
             <div class="reader__stage">
               <div class="reader__viewport" id="reader-viewport">
                 <div class="reader__page-shell" id="reader-page" aria-live="polite">
-                  <div id="reader-flow" class="reader__flow" role="presentation"></div>
+                  <div class="reader__page-plane" id="reader-plane">
+                    <div class="reader__page-frame" id="reader-frame" aria-hidden="true"></div>
+                    <div id="reader-flow" class="reader__flow" role="presentation"></div>
+                  </div>
                 </div>
                 <div class="reader__layout-info" id="reader-layout-info" aria-hidden="true" hidden></div>
               </div>
@@ -159,6 +162,13 @@
           <label class="slider-control slider-control--range">
             <span>Жирность шрифта</span>
             <input type="range" id="font-weight" min="300" max="900" step="100" value="500" />
+          </label>
+          <label class="slider-control slider-control--range">
+            <span>Скорость перелистывания</span>
+            <div class="slider-control__range">
+              <input type="range" id="turn-speed" min="0.1" max="2" step="0.1" value="1" />
+              <span id="turn-speed-label">1×</span>
+            </div>
           </label>
         </div>
       </div>

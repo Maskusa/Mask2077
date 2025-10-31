@@ -1,0 +1,61 @@
+*** Begin Patch
+*** Update File: js/reader.js
+@@
+-function getPaginationMetrics() {
+-  if (!readerPageShell || !readerFlow) {
+-    return null;
+-  }
+-  const shellStyle = window.getComputedStyle(readerPageShell);
+-  const paddingTop = Number.parseFloat(shellStyle.paddingTop) || 0;
+-  const paddingBottom = Number.parseFloat(shellStyle.paddingBottom) || 0;
+-  const paddingLeft = Number.parseFloat(shellStyle.paddingLeft) || 0;
+-  const paddingRight = Number.parseFloat(shellStyle.paddingRight) || 0;
+-  const innerWidth = Math.max(0, readerPageShell.clientWidth - paddingLeft - paddingRight);
+-  const innerHeight = Math.max(0, readerPageShell.clientHeight - paddingTop - paddingBottom);
+-  const fontScale = Math.max(0.35, state.style.fontSize / DEFAULT_STYLE.fontSize);
+-  const columnGap = clampValue(Math.round(DEFAULT_COLUMN_GAP * Math.sqrt(fontScale)), 20, 72);
+-  const columnWidth = Math.max(1, innerWidth);
+-  const columnHeight = Math.max(1, innerHeight);
+-  return {
+-    measurementHost: readerPageShell,
+-    paddingTop,
+-    paddingBottom,
+-    paddingLeft,
+-    paddingRight,
+-    innerWidth,
+-    innerHeight,
+-    columnWidth,
+-    columnHeight,
+-    columnGap,
+-  };
+-}
++function getPaginationMetrics() {
++  if (!readerPageShell || !readerPlane || !readerFlow) {
++    return null;
++  }
++  const planeStyle = window.getComputedStyle(readerPlane);
++  const paddingTop = Number.parseFloat(planeStyle.paddingTop) || 0;
++  const paddingBottom = Number.parseFloat(planeStyle.paddingBottom) || 0;
++  const paddingLeft = Number.parseFloat(planeStyle.paddingLeft) || 0;
++  const paddingRight = Number.parseFloat(planeStyle.paddingRight) || 0;
++  const innerWidth = Math.max(0, readerPageShell.clientWidth - paddingLeft - paddingRight);
++  const innerHeight = Math.max(0, readerPageShell.clientHeight - paddingTop - paddingBottom);
++  const fontScale = Math.max(0.35, state.style.fontSize / DEFAULT_STYLE.fontSize);
++  const baseGap = clampValue(Math.round(DEFAULT_COLUMN_GAP * Math.sqrt(fontScale)), 20, 72);
++  const columnGap = baseGap * 10;
++  const columnWidth = Math.max(1, innerWidth);
++  const columnHeight = Math.max(1, innerHeight);
++  return {
++    measurementHost: readerPlane,
++    paddingTop,
++    paddingBottom,
++    paddingLeft,
++    paddingRight,
++    innerWidth,
++    innerHeight,
++    columnWidth,
++    columnHeight,
++    columnGap,
++  };
++}
+*** End Patch

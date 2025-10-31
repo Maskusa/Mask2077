@@ -24,6 +24,13 @@ const DEFAULT_STYLE = {
   fontWeight: 500,
   theme: 'sepia',
 };
+const MIN_TURN_SPEED = 0.1;
+const MAX_TURN_SPEED = 2;
+const DEFAULT_TURN_SPEED = 1;
+const COLUMN_GAP_MULTIPLIER = 10;
+const COLUMN_GAP_MIN = 240;
+const COLUMN_GAP_MAX = 720;
+const A4_RATIO = 1.4142;
 
 const THEME_PRESETS = {
   day: {
@@ -113,8 +120,10 @@ if (!readerRoot) {
 
 console.info('[Reader] Страница чтения активирована');
 
+const readerApp = document.querySelector('.app--reader');
 const readerViewport = document.getElementById('reader-viewport');
 const readerPageShell = document.getElementById('reader-page');
+const readerPlane = document.getElementById('reader-plane');
 const readerFlow = document.getElementById('reader-flow');
 const layoutInfo = document.getElementById('reader-layout-info');
 const readerProgress = document.getElementById('reader-progress');
@@ -124,12 +133,17 @@ const fontList = document.getElementById('font-list');
 const fontOverlay = document.getElementById('font-overlay');
 const fontTrigger = document.getElementById('font-trigger');
 const currentFontLabel = document.getElementById('current-font-label');
+const fontSizeLabel = document.getElementById('font-size-label');
+const lineHeightLabel = document.getElementById('line-height-label');
+const turnSpeedInput = document.getElementById('turn-speed');
+const turnSpeedLabel = document.getElementById('turn-speed-label');
+const readerStage = document.querySelector('.reader__stage');
 let controlsHidden = false;
 
 const DEFAULT_COLUMN_GAP = 32;
-const PAGE_TRANSITION_DURATION = 450;
+const PAGE_TRANSITION_BASE_DURATION = 450;
 
-if (!readerViewport || !readerPageShell || !readerFlow) {
+if (!readerViewport || !readerPageShell || !readerPlane || !readerFlow) {
   throw new Error('Reader viewport is not available');
 }
 
@@ -150,6 +164,41 @@ function setControlsVisibility(hidden) {
   readerControls.forEach((panel) => {
     panel.setAttribute('aria-hidden', hidden ? 'true' : 'false');
   });
+}
+
+
+function updateReaderAppLayout() {
+  if (!readerApp) {
+    return;
+  }
+  const viewportHeight =
+    window.innerHeight ||
+    document.documentElement?.clientHeight ||
+    readerApp.clientHeight ||
+    0;
+  const viewportWidth =
+    window.innerWidth ||
+    document.documentElement?.clientWidth ||
+    readerApp.clientWidth ||
+    0;
+  if (viewportHeight <= 0 || viewportWidth <= 0) {
+    return;
+  }
+  const maxByHeight = viewportHeight / A4_RATIO;
+  const appMaxWidth = Math.min(viewportWidth, maxByHeight);
+  readerApp.style.maxWidth = `${appMaxWidth}px`;
+  readerApp.style.width = '100%';
+  if (readerRoot) {
+    let pageMaxWidth = appMaxWidth;
+    if (readerStage) {
+      const stageStyle = window.getComputedStyle(readerStage);
+      const stagePadding =
+        (Number.parseFloat(stageStyle.paddingLeft) || 0) +
+        (Number.parseFloat(stageStyle.paddingRight) || 0);
+      pageMaxWidth = Math.max(0, appMaxWidth - stagePadding);
+    }
+    readerRoot.style.setProperty('--reader-page-max-width', `${Math.round(pageMaxWidth)}px`);
+  }
 }
 
 function createChunkPart(text, continuation = false, variant = null, meta = null) {
@@ -250,6 +299,10 @@ const initialLineHeight = Number.isFinite(Number(persistedStyle.lineHeight))
   : DEFAULT_STYLE.lineHeight;
 const initialFontWeight = normalizeFontWeight(Number(persistedStyle.fontWeight));
 const initialTheme = THEME_PRESETS[persistedStyle.theme] ? persistedStyle.theme : DEFAULT_STYLE.theme;
+const persistedTurnSpeed = Number(persistedPreferences?.turnSpeed);
+const initialTurnSpeed = Number.isFinite(persistedTurnSpeed)
+  ? clampValue(persistedTurnSpeed, MIN_TURN_SPEED, MAX_TURN_SPEED)
+  : DEFAULT_TURN_SPEED;
 const queryPage = Number(urlParams.get('page'));
 const queryChunk = Number(urlParams.get('chunk'));
 const persistedIndex = Number.isFinite(persistedProgress?.pageIndex)
@@ -270,6 +323,7 @@ const state = {
   autoAlignPage: true,
   autoVoice: false,
   readerVoiceEnabled: true,
+  turnSpeed: initialTurnSpeed,
   style: {
     font: initialFont,
     fontSize: initialFontSize,
@@ -292,6 +346,8 @@ console.info(
 
 const speechSupported = 'speechSynthesis' in window;
 let currentUtterance = null;
+let planeBaseOffset = 0;
+let cancelPlaneTransition = null;
 
 function getSection() {
   const chapter = BOOKS[state.chapterId];
@@ -413,6 +469,71 @@ function updateFontTriggerState() {
   }
 }
 
+function updateTurnSpeedControls() {
+  const rawSpeed = Number(state.turnSpeed);
+  const normalized = Number.isFinite(rawSpeed) ? clampValue(rawSpeed, MIN_TURN_SPEED, MAX_TURN_SPEED) : DEFAULT_TURN_SPEED;
+  state.turnSpeed = Number(normalized.toFixed(2));
+  if (turnSpeedInput) {
+    turnSpeedInput.value = state.turnSpeed.toFixed(1);
+  }
+  if (turnSpeedLabel) {
+    const display = Math.abs(state.turnSpeed - Math.round(state.turnSpeed)) < 0.05
+      ? Math.round(state.turnSpeed).toString()
+      : state.turnSpeed.toFixed(1);
+    turnSpeedLabel.textContent = `${display}×`;
+  }
+}
+
+function applyStyle({ skipRender = false } = {}) {
+  const resolvedFont =
+    resolveFontOption(state.style.font?.id) ??
+    state.style.font ??
+    resolveFontOption(DEFAULT_STYLE.fontId) ??
+    FONT_OPTIONS[0];
+  const fontSize = clampValue(Number(state.style.fontSize) || DEFAULT_STYLE.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE);
+  const lineHeight = clampValue(Number(state.style.lineHeight) || DEFAULT_STYLE.lineHeight, MIN_LINE_HEIGHT, MAX_LINE_HEIGHT);
+  const fontWeight = normalizeFontWeight(state.style.fontWeight);
+  const themeId = THEME_PRESETS[state.style.theme] ? state.style.theme : DEFAULT_STYLE.theme;
+  const theme = THEME_PRESETS[themeId] ?? THEME_PRESETS[DEFAULT_STYLE.theme];
+
+  state.style.font = resolvedFont;
+  state.style.fontSize = fontSize;
+  state.style.lineHeight = lineHeight;
+  state.style.fontWeight = fontWeight;
+  state.style.theme = themeId;
+
+  readerRoot.style.setProperty('--reader-font-family', resolvedFont.css);
+  readerRoot.style.setProperty('--reader-font-size', `${fontSize}px`);
+  readerRoot.style.setProperty('--reader-line-height', lineHeight.toString());
+  readerRoot.style.setProperty('--reader-font-weight', `${fontWeight}`);
+  readerRoot.style.setProperty('--reader-text-color', theme.text);
+  readerRoot.style.setProperty('--reader-backdrop', theme.backdrop);
+  readerRoot.style.setProperty('--reader-page-surface', theme.surface);
+  readerRoot.style.setProperty('--reader-page-border', theme.border);
+
+  if (fontSizeLabel) {
+    fontSizeLabel.textContent = String(Math.round(fontSize));
+  }
+  if (lineHeightLabel) {
+    lineHeightLabel.textContent = `${Math.round(lineHeight * 100)}%`;
+  }
+  if (fontWeightInput) {
+    fontWeightInput.value = String(fontWeight);
+  }
+  if (themeSelect) {
+    themeSelect.value = themeId;
+  }
+
+  updateFontTriggerState();
+  updateTurnSpeedControls();
+
+  if (!skipRender) {
+    clearPaginationState();
+    scheduleReaderRender();
+  }
+  persistPreferences();
+}
+
 function openFontOverlay() {
   if (!fontOverlay) {
     return;
@@ -433,46 +554,6 @@ function closeFontOverlay() {
   fontOverlay.hidden = true;
   updateFontTriggerState();
   console.info('[Reader] ������ ����: �������� ������ ������');
-}
-
-function applyStyle() {
-  const { font, fontSize, lineHeight, fontWeight, theme } = state.style;
-  readerRoot.style.setProperty('--reader-font-family', font.css);
-  readerRoot.style.setProperty('--reader-font-size', `${fontSize}px`);
-  readerRoot.style.setProperty('--reader-line-height', lineHeight.toFixed(2));
-  readerRoot.style.setProperty('--reader-font-weight', String(fontWeight));
-  const preset = THEME_PRESETS[theme] ?? THEME_PRESETS.sepia;
-  readerRoot.style.setProperty('--reader-text-color', preset.text);
-  readerRoot.style.setProperty('--reader-backdrop', preset.backdrop);
-  readerRoot.style.setProperty('--reader-page-surface', preset.surface ?? 'rgba(255, 255, 255, 0.9)');
-  readerRoot.style.setProperty('--reader-page-border', preset.border ?? 'rgba(0, 0, 0, 0.12)');
-
-  const fontSizeLabel = document.getElementById('font-size-label');
-  if (fontSizeLabel) {
-    fontSizeLabel.textContent = String(fontSize);
-  }
-  const lineHeightLabel = document.getElementById('line-height-label');
-  if (lineHeightLabel) {
-    lineHeightLabel.textContent = `${Math.round(lineHeight * 100)}%`;
-  }
-  const weightInput = document.getElementById('font-weight');
-  if (weightInput) {
-    weightInput.value = String(fontWeight);
-  }
-  const themeSelect = document.getElementById('style-theme');
-  if (themeSelect) {
-    themeSelect.value = theme;
-  }
-
-  persistPreferences();
-  scheduleReaderRender();
-  console.info(
-    '[Reader] Применён стиль: шрифт=%s, размер=%d, межстрочный=%d%%, тема=%s',
-    font.label,
-    fontSize,
-    Math.round(lineHeight * 100),
-    theme
-  );
 }
 
 function stopSpeaking() {
@@ -679,6 +760,17 @@ themeSelect?.addEventListener('change', () => {
   applyStyle();
 });
 
+turnSpeedInput?.addEventListener('input', () => {
+  const value = Number(turnSpeedInput.value);
+  const normalized = Number.isFinite(value) ? clampValue(value, MIN_TURN_SPEED, MAX_TURN_SPEED) : state.turnSpeed;
+  state.turnSpeed = Number(normalized.toFixed(2));
+  updateTurnSpeedControls();
+  if (state.pagination) {
+    applyPageTransform(state.pagination, state.pageIndex, { immediate: true });
+  }
+  persistPreferences();
+});
+
 const readerZones = readerRoot.querySelectorAll('.reader__zone');
 readerZones.forEach((zone) => {
   zone.addEventListener('click', () => {
@@ -705,25 +797,39 @@ function ensureFlowParts(chapterId) {
 function clearPaginationState() {
   state.pagination = null;
   state.paginationKey = null;
+  planeBaseOffset = 0;
+  if (cancelPlaneTransition) {
+    cancelPlaneTransition();
+    cancelPlaneTransition = null;
+  }
+  if (readerPlane) {
+    readerPlane.style.transition = 'none';
+    readerPlane.style.transform = 'translate3d(0, 0, 0)';
+  }
+  if (readerFlow) {
+    readerFlow.style.transition = 'none';
+    readerFlow.style.transform = 'translate3d(0, 0, 0)';
+  }
 }
 
 function getPaginationMetrics() {
-  if (!readerPageShell || !readerFlow) {
+  if (!readerPageShell || !readerPlane || !readerFlow) {
     return null;
   }
-  const shellStyle = window.getComputedStyle(readerPageShell);
-  const paddingTop = Number.parseFloat(shellStyle.paddingTop) || 0;
-  const paddingBottom = Number.parseFloat(shellStyle.paddingBottom) || 0;
-  const paddingLeft = Number.parseFloat(shellStyle.paddingLeft) || 0;
-  const paddingRight = Number.parseFloat(shellStyle.paddingRight) || 0;
+  const planeStyle = window.getComputedStyle(readerPlane);
+  const paddingTop = Number.parseFloat(planeStyle.paddingTop) || 0;
+  const paddingBottom = Number.parseFloat(planeStyle.paddingBottom) || 0;
+  const paddingLeft = Number.parseFloat(planeStyle.paddingLeft) || 0;
+  const paddingRight = Number.parseFloat(planeStyle.paddingRight) || 0;
   const innerWidth = Math.max(0, readerPageShell.clientWidth - paddingLeft - paddingRight);
   const innerHeight = Math.max(0, readerPageShell.clientHeight - paddingTop - paddingBottom);
   const fontScale = Math.max(0.35, state.style.fontSize / DEFAULT_STYLE.fontSize);
-  const columnGap = clampValue(Math.round(DEFAULT_COLUMN_GAP * Math.sqrt(fontScale)), 20, 72);
+  const baseGap = Math.max(0, Math.round(DEFAULT_COLUMN_GAP * Math.sqrt(fontScale)));
+  const columnGap = clampValue(baseGap * COLUMN_GAP_MULTIPLIER, COLUMN_GAP_MIN, COLUMN_GAP_MAX);
   const columnWidth = Math.max(1, innerWidth);
   const columnHeight = Math.max(1, innerHeight);
   return {
-    measurementHost: readerPageShell,
+    measurementHost: readerPlane,
     paddingTop,
     paddingBottom,
     paddingLeft,
@@ -838,8 +944,16 @@ function ensureFlowContent(pagination) {
   readerFlow.dataset.contentVersion = pagination.version;
 }
 
+function getPageTransitionDuration() {
+  const speed = Number.isFinite(Number(state.turnSpeed))
+    ? clampValue(Number(state.turnSpeed), MIN_TURN_SPEED, MAX_TURN_SPEED)
+    : DEFAULT_TURN_SPEED;
+  const duration = Math.round(PAGE_TRANSITION_BASE_DURATION / speed);
+  return Math.max(0, duration);
+}
+
 function applyLayout(pagination, metrics, { immediate = false } = {}) {
-  if (!readerFlow) {
+  if (!readerFlow || !readerPlane) {
     return;
   }
   ensureFlowContent(pagination);
@@ -854,24 +968,87 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
   readerFlow.style.height = `${pagination.columnHeight}px`;
   const flowWidth = Math.max(pagination.scrollWidth, pagination.columnWidth);
   readerFlow.style.width = `${flowWidth}px`;
-  readerFlow.style.transition = immediate ? 'none' : `transform ${PAGE_TRANSITION_DURATION}ms ease`;
+
+  const totalPages = Number.isFinite(pagination.totalPages) ? pagination.totalPages : 0;
+  const safeIndex = clampValue(state.pageIndex, 0, Math.max(0, totalPages - 1));
+  const maxOffset = Math.max(0, (totalPages - 1) * pagination.pageShiftWidth);
+  planeBaseOffset = clampValue(planeBaseOffset, 0, maxOffset);
+  if (immediate) {
+    planeBaseOffset = safeIndex * pagination.pageShiftWidth;
+  }
+
+  readerFlow.style.transition = 'none';
+  readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
+  readerPlane.style.transition = 'none';
+  readerPlane.style.transform = 'translate3d(0, 0, 0)';
+  if (immediate) {
+    readerFlow.dataset.pageIndex = String(safeIndex);
+    readerPlane.dataset.pageIndex = String(safeIndex);
+  }
 }
 
 function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
-  if (!readerFlow) {
+  if (!readerFlow || !readerPlane) {
     return;
   }
-  const offset = Math.max(0, pageIndex) * pagination.pageShiftWidth;
-  if (immediate) {
-    readerFlow.style.transition = 'none';
-    readerFlow.style.transform = `translateX(-${offset}px)`;
-    void readerFlow.offsetHeight;
-    readerFlow.style.transition = `transform ${PAGE_TRANSITION_DURATION}ms ease`;
-  } else {
-    readerFlow.style.transition = `transform ${PAGE_TRANSITION_DURATION}ms ease`;
-    readerFlow.style.transform = `translateX(-${offset}px)`;
+  const totalPages = Number.isFinite(pagination.totalPages) ? pagination.totalPages : 0;
+  const safeIndex = clampValue(pageIndex, 0, Math.max(0, totalPages - 1));
+  const targetOffset = Math.max(0, safeIndex) * pagination.pageShiftWidth;
+  const delta = targetOffset - planeBaseOffset;
+
+  if (cancelPlaneTransition) {
+    cancelPlaneTransition();
+    cancelPlaneTransition = null;
   }
-  readerFlow.dataset.pageIndex = String(pageIndex);
+
+  const duration = getPageTransitionDuration();
+  const shouldJump = immediate || Math.abs(delta) < 0.5 || !Number.isFinite(delta) || duration <= 0;
+  if (shouldJump) {
+    planeBaseOffset = targetOffset;
+    readerFlow.style.transition = 'none';
+    readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
+    readerPlane.style.transition = 'none';
+    readerPlane.style.transform = 'translate3d(0, 0, 0)';
+    readerFlow.dataset.pageIndex = String(safeIndex);
+    readerPlane.dataset.pageIndex = String(safeIndex);
+    cancelPlaneTransition = null;
+    return;
+  }
+
+  readerFlow.style.transition = 'none';
+  readerPlane.style.transition = 'none';
+  readerPlane.style.transform = 'translate3d(0, 0, 0)';
+  void readerPlane.offsetWidth;
+
+  const finalize = () => {
+    planeBaseOffset = targetOffset;
+    readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
+    readerFlow.style.transition = 'none';
+    readerPlane.style.transition = 'none';
+    readerPlane.style.transform = 'translate3d(0, 0, 0)';
+    readerFlow.dataset.pageIndex = String(safeIndex);
+    readerPlane.dataset.pageIndex = String(safeIndex);
+  };
+
+  const onTransitionEnd = (event) => {
+    if (event.target !== readerPlane || event.propertyName !== 'transform') {
+      return;
+    }
+    readerPlane.removeEventListener('transitionend', onTransitionEnd);
+    finalize();
+    cancelPlaneTransition = null;
+  };
+
+  cancelPlaneTransition = () => {
+    readerPlane.removeEventListener('transitionend', onTransitionEnd);
+    finalize();
+    cancelPlaneTransition = null;
+  };
+
+  readerPlane.addEventListener('transitionend', onTransitionEnd);
+  readerPlane.style.transition = duration ? `transform ${duration}ms ease` : 'none';
+  readerPlane.style.transform = `translate3d(${-delta}px, 0, 0)`;
+  readerPlane.dataset.pageIndex = String(safeIndex);
 }
 
 function resolvePageAnchor(pagination, pageIndex) {
@@ -951,13 +1128,18 @@ function renderFallbackContent(parts) {
     readerFlow.appendChild(fragment);
   }
   readerFlow.style.transition = 'none';
-  readerFlow.style.transform = 'translateX(0)';
+  readerFlow.style.transform = 'translate3d(0, 0, 0)';
   readerFlow.dataset.pageIndex = '0';
   readerFlow.dataset.contentVersion = 'fallback';
   readerFlow.style.width = '';
   readerFlow.style.height = '';
   readerFlow.style.columnWidth = '';
   readerFlow.style.columnGap = '';
+  if (readerPlane) {
+    readerPlane.style.transition = 'none';
+    readerPlane.style.transform = 'translate3d(0, 0, 0)';
+    readerPlane.dataset.pageIndex = '0';
+  }
   readerRoot.style.removeProperty('--reader-column-gap');
   readerRoot.style.removeProperty('--reader-column-width');
   readerRoot.style.removeProperty('--reader-column-rule');
@@ -1130,8 +1312,9 @@ function renderReader({ forceReflow = false } = {}) {
   console.info('[Reader] render complete: page=%d/%d', state.pageIndex + 1, totalPages);
 }
 
+updateReaderAppLayout();
 renderFontList();
-applyStyle();
+applyStyle({ skipRender: true });
 updateAutoVoiceButton();
 initializeReader();
 
@@ -1199,6 +1382,7 @@ function persistPreferences() {
         fontWeight: state.style.fontWeight,
         theme: state.style.theme,
       },
+      turnSpeed: state.turnSpeed,
       timestamp: Date.now(),
     };
     localStorage.setItem(READER_PREFERENCES_KEY, JSON.stringify(payload));
@@ -1251,4 +1435,13 @@ function persistProgress() {
   }
 }
 
+
+const viewportChangeHandler = () => {
+  updateReaderAppLayout();
+  clearPaginationState();
+  scheduleReaderRender();
+};
+
+window.addEventListener('resize', viewportChangeHandler, { passive: true });
+window.addEventListener('orientationchange', viewportChangeHandler);
 

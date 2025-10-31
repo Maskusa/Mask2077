@@ -1,34 +1,25 @@
-// .vscode/tasks.json
 {
-  "version": "2.0.0",
-  "tasks": [
+  // Launch configuration to run the static PowerShell server with F5
+  "version": "0.2.0",
+  "configurations": [
     {
-      "label": "Serve Mask2077 (PowerShell)",
-      "type": "process",
-      "command": "powershell",
+      "name": "Serve Mask2077",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/serve.ps1",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy", "Bypass",
-        "-File", "./serve.ps1",
-        "-Hostname", "localhost",
-        "-Port", "4173"
+        "-Hostname",
+        "localhost",
+        "-Port",
+        "4173"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}/dist-site"
-      },
-      "isBackground": true,
-      "problemMatcher": {
-        "owner": "mask2077-serve",
-        "pattern": { "regexp": ".*" },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "^.*$",
-          "endsPattern": "^READY .*"
-        }
+      "cwd": "${workspaceFolder}",
+      "internalConsoleOptions": "neverOpen",
+      "serverReadyAction": {
+        "pattern": "READY\\s+(http://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
       }
     }
-  ],
-  "configurations": [
-  
   ]
 }
