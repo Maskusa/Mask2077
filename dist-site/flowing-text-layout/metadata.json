@@ -1,0 +1,5 @@
+{
+  "name": "Flowing Text Layout",
+  "description": "An application that displays text flowing through four adjustable columns. Users can control the width and height of the columns, as well as the font size of the text, using a central control panel.",
+  "requestFramePermissions": []
+}

@@ -40,26 +40,11 @@
           <article class="reader__page" aria-live="polite">
             <div class="reader__zone reader__zone--prev" data-action="prev-chunk" aria-hidden="true"></div>
             <div class="reader__stage">
-              <div class="reader__content reader__content_prev" aria-hidden="true">
-                <div class="reader__text">
-                  <div class="reader__text-inner">
-                    <div class="reader__body"></div>
-                  </div>
+              <div class="reader__viewport" id="reader-viewport">
+                <div class="reader__page-shell" id="reader-page" aria-live="polite">
+                  <div id="reader-flow" class="reader__flow" role="presentation"></div>
                 </div>
-              </div>
-              <div class="reader__content reader__content_current">
-                <div id="reader-text" class="reader__text">
-                  <div class="reader__text-inner">
-                    <div class="reader__body"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="reader__content reader__content_next" aria-hidden="true">
-                <div class="reader__text">
-                  <div class="reader__text-inner">
-                    <div class="reader__body"></div>
-                  </div>
-                </div>
+                <div class="reader__layout-info" id="reader-layout-info" aria-hidden="true" hidden></div>
               </div>
             </div>
             <div class="reader__zone reader__zone--next" data-action="next-chunk" aria-hidden="true"></div>

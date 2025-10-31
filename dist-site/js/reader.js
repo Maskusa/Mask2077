@@ -29,30 +29,44 @@ const THEME_PRESETS = {
   day: {
     text: '#322216',
     backdrop: 'linear-gradient(135deg, #fef6dd, #f8e1b5)',
+    surface: 'rgba(255, 255, 255, 0.94)',
+    border: 'rgba(209, 140, 45, 0.28)',
   },
   night: {
     text: '#f2f6ff',
     backdrop: 'linear-gradient(135deg, #172033, #050b16)',
+    surface: 'rgba(12, 20, 36, 0.78)',
+    border: 'rgba(82, 142, 255, 0.28)',
   },
   'night-contrast': {
     text: '#fefefe',
     backdrop: 'linear-gradient(135deg, #1c1d3b, #011221)',
+    surface: 'rgba(6, 12, 28, 0.82)',
+    border: 'rgba(120, 170, 255, 0.32)',
   },
   sepia: {
     text: '#3a1a00',
     backdrop: 'linear-gradient(135deg, #fff1d0, #f7d5a3)',
+    surface: 'rgba(255, 244, 222, 0.92)',
+    border: 'rgba(163, 104, 44, 0.26)',
   },
   'sepia-contrast': {
     text: '#2b1700',
     backdrop: 'linear-gradient(135deg, #ffe6bb, #eec37a)',
+    surface: 'rgba(252, 232, 198, 0.92)',
+    border: 'rgba(133, 82, 24, 0.3)',
   },
   dusk: {
     text: '#361b44',
     backdrop: 'linear-gradient(135deg, #f7def7, #a8c8ff)',
+    surface: 'rgba(249, 241, 255, 0.9)',
+    border: 'rgba(120, 84, 195, 0.24)',
   },
   console: {
     text: '#21ff88',
     backdrop: 'linear-gradient(135deg, #001924, #002c38)',
+    surface: 'rgba(0, 26, 40, 0.8)',
+    border: 'rgba(33, 255, 136, 0.24)',
   },
 };
 
@@ -99,37 +113,11 @@ if (!readerRoot) {
 
 console.info('[Reader] Страница чтения активирована');
 
-const readerText = document.getElementById('reader-text');
+const readerViewport = document.getElementById('reader-viewport');
+const readerPageShell = document.getElementById('reader-page');
+const readerFlow = document.getElementById('reader-flow');
+const layoutInfo = document.getElementById('reader-layout-info');
 const readerProgress = document.getElementById('reader-progress');
-const readerContentCurrent = readerRoot.querySelector('.reader__content_current');
-const readerContentPrev = readerRoot.querySelector('.reader__content_prev');
-const readerContentNext = readerRoot.querySelector('.reader__content_next');
-const readerTextInner = readerText?.querySelector('.reader__text-inner') ?? null;
-const readerBody = readerText?.querySelector('.reader__body') ?? null;
-
-function createPaneRefs(container, overrides = {}) {
-  if (!container) {
-    return null;
-  }
-  return {
-    container,
-    text: overrides.text ?? container.querySelector('.reader__text-inner') ?? container.querySelector('.reader__text'),
-    body: overrides.body ?? container.querySelector('.reader__body'),
-  };
-}
-
-const paneCurrent = createPaneRefs(readerContentCurrent, {
-  text: readerTextInner,
-  body: readerBody,
-});
-const panePrev = createPaneRefs(readerContentPrev, {
-  text: readerContentPrev?.querySelector('.reader__text-inner') ?? null,
-  body: readerContentPrev?.querySelector('.reader__body') ?? null,
-});
-const paneNext = createPaneRefs(readerContentNext, {
-  text: readerContentNext?.querySelector('.reader__text-inner') ?? null,
-  body: readerContentNext?.querySelector('.reader__body') ?? null,
-});
 const readerControls = Array.from(readerRoot.querySelectorAll('.reader__controls'));
 const stylePopup = document.getElementById('style-popup');
 const fontList = document.getElementById('font-list');
@@ -137,6 +125,13 @@ const fontOverlay = document.getElementById('font-overlay');
 const fontTrigger = document.getElementById('font-trigger');
 const currentFontLabel = document.getElementById('current-font-label');
 let controlsHidden = false;
+
+const DEFAULT_COLUMN_GAP = 32;
+const PAGE_TRANSITION_DURATION = 450;
+
+if (!readerViewport || !readerPageShell || !readerFlow) {
+  throw new Error('Reader viewport is not available');
+}
 
 if (stylePopup) {
   stylePopup.hidden = true;
@@ -157,12 +152,16 @@ function setControlsVisibility(hidden) {
   });
 }
 
-function createChunkPart(text, continuation = false, variant = null) {
-  return {
+function createChunkPart(text, continuation = false, variant = null, meta = null) {
+  const chunk = {
     text: typeof text === 'string' ? text : '',
     continuation: Boolean(continuation),
     variant,
   };
+  if (meta !== null && meta !== undefined) {
+    chunk.meta = meta;
+  }
+  return chunk;
 }
 
 function createContentElement(part, { attachId = false } = {}) {
@@ -187,6 +186,24 @@ function createContentElement(part, { attachId = false } = {}) {
   if (part.continuation) {
     element.classList.add('reader__paragraph--continued');
   }
+  const meta = part.meta;
+  if (meta && typeof meta === 'object') {
+    if (meta.chapterId) {
+      element.dataset.chapterId = String(meta.chapterId);
+    }
+    if (meta.sectionId) {
+      element.dataset.sectionId = String(meta.sectionId);
+    }
+    if (meta.pointId) {
+      element.dataset.pointId = String(meta.pointId);
+    }
+    if (meta.type) {
+      element.dataset.partType = String(meta.type);
+    }
+    if (meta.paragraphIndex !== undefined && meta.paragraphIndex !== null) {
+      element.dataset.paragraphIndex = String(meta.paragraphIndex);
+    }
+  }
   return element;
 }
 
@@ -206,44 +223,9 @@ function chunkToSpeechText(chunk) {
   }, '');
 }
 
-function renderChunkIntoPane(pane, chunk, { ariaHidden = false } = {}) {
-  if (!pane) {
-    return;
-  }
-  const { container, body, text } = pane;
-  container?.setAttribute('aria-hidden', ariaHidden ? 'true' : 'false');
-  const target = body ?? text;
-  if (!target) {
-    return;
-  }
-  target.innerHTML = '';
-  if (!Array.isArray(chunk) || !chunk.length) {
-    return;
-  }
-  const fragment = document.createDocumentFragment();
-  const attachIds = pane.container === readerContentCurrent;
-  chunk.forEach((part) => {
-    if (!part || typeof part.text !== 'string') {
-      return;
-    }
-    const element = createContentElement(part, { attachId: attachIds });
-    fragment.appendChild(element);
-  });
-  target.appendChild(fragment);
-  if (!ariaHidden) {
-    console.info(
-      '[Reader] chunk render target metrics: client=%d offset=%d scroll=%d parts=%d',
-      target.clientHeight,
-      target.offsetHeight,
-      target.scrollHeight,
-      chunk.length
-    );
-  }
-}
-
 setControlsVisibility(true);
 
-readerContentCurrent?.addEventListener('click', (event) => {
+readerPageShell?.addEventListener('click', (event) => {
   if (event.defaultPrevented) {
     return;
   }
@@ -268,16 +250,24 @@ const initialLineHeight = Number.isFinite(Number(persistedStyle.lineHeight))
   : DEFAULT_STYLE.lineHeight;
 const initialFontWeight = normalizeFontWeight(Number(persistedStyle.fontWeight));
 const initialTheme = THEME_PRESETS[persistedStyle.theme] ? persistedStyle.theme : DEFAULT_STYLE.theme;
+const queryPage = Number(urlParams.get('page'));
 const queryChunk = Number(urlParams.get('chunk'));
+const persistedIndex = Number.isFinite(persistedProgress?.pageIndex)
+  ? persistedProgress.pageIndex
+  : Number.isFinite(persistedProgress?.chunkIndex)
+  ? persistedProgress.chunkIndex
+  : 0;
+const initialPageIndex = Number.isFinite(queryPage)
+  ? Math.max(0, queryPage)
+  : Number.isFinite(queryChunk)
+  ? Math.max(0, queryChunk)
+  : Math.max(0, persistedIndex);
 const state = {
   chapterId: urlParams.get('chapter') ?? persistedProgress?.chapterId ?? datasetDefaults.chapter,
   sectionId: urlParams.get('section') ?? persistedProgress?.sectionId ?? datasetDefaults.section,
   pointId: urlParams.get('point') ?? persistedProgress?.pointId ?? datasetDefaults.point,
-  chunkIndex: Number.isFinite(queryChunk)
-    ? queryChunk
-    : Number.isFinite(persistedProgress?.chunkIndex)
-    ? persistedProgress.chunkIndex
-    : 0,
+  pageIndex: initialPageIndex,
+  autoAlignPage: true,
   autoVoice: false,
   readerVoiceEnabled: true,
   style: {
@@ -287,7 +277,10 @@ const state = {
     fontWeight: initialFontWeight,
     theme: initialTheme,
   },
-  chunks: [],
+  flowParts: [],
+  flowChapterId: null,
+  pagination: null,
+  paginationKey: null,
 };
 
 console.info(
@@ -310,48 +303,75 @@ function getPoint() {
   return section?.points?.[state.pointId] || null;
 }
 
+function getOrderedSectionIds(chapter) {
+  if (!chapter || typeof chapter !== 'object' || !chapter.sections) {
+    return [];
+  }
+  return Object.keys(chapter.sections);
+}
+
+function getOrderedPointIds(section) {
+  if (!section || typeof section !== 'object' || !section.points) {
+    return [];
+  }
+  return Object.keys(section.points);
+}
+
 function ensureSelection() {
   if (chapterOrder.length === 0) {
     return;
   }
+  let resetPage = false;
   if (!state.chapterId || !BOOKS[state.chapterId]) {
     state.chapterId = chapterOrder[0];
-    console.info('[Reader] Используем главу по умолчанию: %s', state.chapterId);
+    resetPage = true;
+    console.info('[Reader] �ᯮ��㥬 ����� �� 㬮�砭��: %s', state.chapterId);
   }
   const chapter = BOOKS[state.chapterId];
   const sectionKeys = chapter ? Object.keys(chapter.sections) : [];
   if (!sectionKeys.length) {
-    console.warn('[Reader] В главе нет разделов: %s', state.chapterId);
+    console.warn('[Reader] � ����� ��� ࠧ�����: %s', state.chapterId);
     state.sectionId = null;
     state.pointId = null;
-    state.chunkIndex = 0;
+    state.pageIndex = 0;
+    state.autoAlignPage = true;
     return;
   }
   if (!state.sectionId || !chapter.sections[state.sectionId]) {
     state.sectionId = sectionKeys[0];
-    console.info('[Reader] Используем раздел по умолчанию: %s', state.sectionId);
+    resetPage = true;
+    console.info('[Reader] �ᯮ��㥬 ࠧ��� �� 㬮�砭��: %s', state.sectionId);
   }
   const section = chapter.sections[state.sectionId];
   const pointKeys = section ? Object.keys(section.points) : [];
   if (!pointKeys.length) {
-    console.warn('[Reader] В разделе нет пунктов: %s', state.sectionId);
+    console.warn('[Reader] � ࠧ���� ��� �㭪⮢: %s', state.sectionId);
     state.pointId = null;
-    state.chunkIndex = 0;
+    state.pageIndex = 0;
+    state.autoAlignPage = true;
     return;
   }
   if (!state.pointId || !section.points[state.pointId]) {
     state.pointId = pointKeys[0];
-    console.info('[Reader] Используем пункт по умолчанию: %s', state.pointId);
+    resetPage = true;
+    console.info('[Reader] �ᯮ��㥬 �㭪� �� 㬮�砭��: %s', state.pointId);
   }
   const point = section.points[state.pointId];
   if (!Array.isArray(point?.text) || !point.text.length) {
-    state.chunkIndex = 0;
+    state.pageIndex = 0;
+    state.autoAlignPage = true;
     console.info('[Reader] point has no paragraphs: %s', state.pointId);
     return;
   }
-  if (!Number.isFinite(state.chunkIndex) || state.chunkIndex < 0) {
-    console.info('[Reader] chunk index normalized to zero for point=%s', state.pointId);
-    state.chunkIndex = 0;
+  if (!Number.isFinite(state.pageIndex) || state.pageIndex < 0) {
+    console.info('[Reader] page index normalized to zero for point=%s', state.pointId);
+    state.pageIndex = 0;
+    state.autoAlignPage = true;
+    return;
+  }
+  if (resetPage) {
+    state.pageIndex = 0;
+    state.autoAlignPage = true;
   }
 }
 
@@ -424,6 +444,8 @@ function applyStyle() {
   const preset = THEME_PRESETS[theme] ?? THEME_PRESETS.sepia;
   readerRoot.style.setProperty('--reader-text-color', preset.text);
   readerRoot.style.setProperty('--reader-backdrop', preset.backdrop);
+  readerRoot.style.setProperty('--reader-page-surface', preset.surface ?? 'rgba(255, 255, 255, 0.9)');
+  readerRoot.style.setProperty('--reader-page-border', preset.border ?? 'rgba(0, 0, 0, 0.12)');
 
   const fontSizeLabel = document.getElementById('font-size-label');
   if (fontSizeLabel) {
@@ -480,29 +502,28 @@ function updateAutoVoiceButton() {
   toggle.setAttribute('aria-pressed', String(state.autoVoice));
 }
 
-function changeChunk(direction) {
-  const chunks = Array.isArray(state.chunks) ? state.chunks : [];
-  const currentIndex = state.chunkIndex;
-  const total = chunks.length;
-  console.info('[Reader] chunk change requested: direction=%d current=%d total=%d', direction, currentIndex + 1, total);
-  if (!chunks.length) {
-    console.warn('[Reader] chunk change skipped: no chunks available');
+function changePage(direction) {
+  const total = Number.isFinite(state.pagination?.totalPages) ? state.pagination.totalPages : 0;
+  const currentIndex = clampValue(state.pageIndex, 0, Math.max(total - 1, 0));
+  console.info('[Reader] page change requested: direction=%d current=%d total=%d', direction, currentIndex + 1, total);
+  if (!total) {
+    console.warn('[Reader] page change skipped: pagination not ready');
     return;
   }
   const nextIndex = clampValue(currentIndex + direction, 0, total - 1);
   if (nextIndex === currentIndex) {
-    console.info('[Reader] chunk change skipped: boundary reached (index=%d of %d)', currentIndex + 1, total);
+    console.info('[Reader] page change skipped: boundary reached (index=%d of %d)', currentIndex + 1, total);
     return;
   }
-  state.chunkIndex = nextIndex;
-  console.info('[Reader] chunk change applied: previous=%d next=%d total=%d', currentIndex + 1, nextIndex + 1, total);
+  state.pageIndex = nextIndex;
+  state.autoAlignPage = false;
   renderReader();
 }
 
 
 function toggleAutoVoice() {
   if (!speechSupported) {
-    showToast('Озвучка не поддерживается браузером');
+    showToast('Голосовой модуль не доступен');
     return;
   }
   state.autoVoice = !state.autoVoice;
@@ -510,10 +531,8 @@ function toggleAutoVoice() {
     stopSpeaking();
   }
   updateAutoVoiceButton();
-  const chunks = Array.isArray(state.chunks) ? state.chunks : [];
-  const chunk = chunks[state.chunkIndex];
-  if (state.autoVoice && Array.isArray(chunk) && chunk.length) {
-    const speechText = chunkToSpeechText(chunk);
+  if (state.autoVoice) {
+    const speechText = getVisiblePageText();
     if (speechText) {
       speak(speechText);
     }
@@ -569,11 +588,11 @@ function handleAction(action, event) {
   switch (action) {
     case 'prev-chunk':
       event?.preventDefault?.();
-      changeChunk(-1);
+      changePage(-1);
       break;
     case 'next-chunk':
       event?.preventDefault?.();
-      changeChunk(1);
+      changePage(1);
       break;
     case 'toggle-auto-voice':
       event?.preventDefault?.();
@@ -666,479 +685,450 @@ readerZones.forEach((zone) => {
     const { action } = zone.dataset;
     console.info('[Reader] Жест пролистывания: zone=%s', action);
     if (action === 'prev-chunk') {
-      changeChunk(-1);
+      changePage(-1);
     }
     if (action === 'next-chunk') {
-      changeChunk(1);
+      changePage(1);
     }
   });
 });
 
-function buildChunks(paragraphs, options = {}) {
-  if (!Array.isArray(paragraphs) || !paragraphs.length) {
-    return [];
-  }
-  const textHost = paneCurrent?.text ?? null;
-  const bodyHost = paneCurrent?.body ?? null;
-  const measurementHost = bodyHost ?? textHost;
-  if (!measurementHost) {
-    return paragraphs.map((paragraph) => [createChunkPart(String(paragraph ?? ''))]);
-  }
-  const computed = window.getComputedStyle(measurementHost);
-  const paddingTop = Number.parseFloat(computed.paddingTop) || 0;
-  const paddingBottom = Number.parseFloat(computed.paddingBottom) || 0;
-  const paddingLeft = Number.parseFloat(computed.paddingLeft) || 0;
-  const paddingRight = Number.parseFloat(computed.paddingRight) || 0;
 
-  console.info(
-    '[Reader] measurement host metrics: client=%d offset=%d paddingT=%d paddingB=%d paddingL=%d paddingR=%d',
-    measurementHost.clientHeight,
-    measurementHost.offsetHeight,
+function ensureFlowParts(chapterId) {
+  if (state.flowChapterId !== chapterId) {
+    state.flowParts = buildChapterFlowParts(chapterId);
+    state.flowChapterId = chapterId;
+  }
+  return state.flowParts;
+}
+
+function clearPaginationState() {
+  state.pagination = null;
+  state.paginationKey = null;
+}
+
+function getPaginationMetrics() {
+  if (!readerPageShell || !readerFlow) {
+    return null;
+  }
+  const shellStyle = window.getComputedStyle(readerPageShell);
+  const paddingTop = Number.parseFloat(shellStyle.paddingTop) || 0;
+  const paddingBottom = Number.parseFloat(shellStyle.paddingBottom) || 0;
+  const paddingLeft = Number.parseFloat(shellStyle.paddingLeft) || 0;
+  const paddingRight = Number.parseFloat(shellStyle.paddingRight) || 0;
+  const innerWidth = Math.max(0, readerPageShell.clientWidth - paddingLeft - paddingRight);
+  const innerHeight = Math.max(0, readerPageShell.clientHeight - paddingTop - paddingBottom);
+  const fontScale = Math.max(0.35, state.style.fontSize / DEFAULT_STYLE.fontSize);
+  const columnGap = clampValue(Math.round(DEFAULT_COLUMN_GAP * Math.sqrt(fontScale)), 20, 72);
+  const columnWidth = Math.max(1, innerWidth);
+  const columnHeight = Math.max(1, innerHeight);
+  return {
+    measurementHost: readerPageShell,
     paddingTop,
     paddingBottom,
     paddingLeft,
-    paddingRight
-  );
-
-  const viewportHeight = Math.max(0, measurementHost.clientHeight - paddingTop - paddingBottom);
-  if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) {
-    return paragraphs.map((paragraph) => [createChunkPart(String(paragraph ?? ''))]);
-  }
-
-  const SAFETY_OFFSET = 24;
-  const TEXT_BUFFER = 32;
-  const baseLimit = Math.ceil(viewportHeight);
-  let viewportLimit = baseLimit;
-
-  console.info(
-    '[Reader] buildChunks start: paragraphs=%d viewportHeight=%d baseLimit=%d safety=%d hostClient=%d hostOffset=%d bodyClient=%d bodyOffset=%d',
-    paragraphs.length,
-    Math.round(viewportHeight),
-    baseLimit,
-    SAFETY_OFFSET,
-    measurementHost.clientHeight,
-    measurementHost.offsetHeight,
-    bodyHost?.clientHeight ?? -1,
-    bodyHost?.offsetHeight ?? -1
-  );
-
-  const measurement = document.createElement('div');
-  measurement.className = 'reader__text--measure';
-  measurement.style.setProperty('position', 'static', 'important');
-  measurement.style.setProperty('inset', 'auto', 'important');
-  measurement.style.setProperty('top', 'auto', 'important');
-  measurement.style.setProperty('bottom', 'auto', 'important');
-  measurement.style.setProperty('left', 'auto', 'important');
-  measurement.style.setProperty('right', 'auto', 'important');
-  measurement.style.paddingTop = `${paddingTop}px`;
-  measurement.style.paddingBottom = `${paddingBottom}px`;
-  measurement.style.paddingLeft = `${paddingLeft}px`;
-  measurement.style.paddingRight = `${paddingRight}px`;
-  measurement.style.flex = '0 0 auto';
-  measurement.setAttribute('aria-hidden', 'true');
-  measurementHost.appendChild(measurement);
-
-  const chunks = [];
-  let currentChunk = [];
-  const prefixParts = Array.isArray(options.prefixParts)
-    ? options.prefixParts.filter((part) => part && typeof part.text === 'string' && part.text.length)
-    : [];
-  let prefixApplied = false;
-
-  const clonePart = (part) => ({
-    text: part.text,
-    continuation: part.continuation,
-    variant: part.variant,
-  });
-
-  const resetMeasurement = (preserveCurrent = false) => {
-    measurement.innerHTML = '';
-    if (preserveCurrent && currentChunk.length) {
-      currentChunk.forEach((existingPart) => {
-        const mount = createContentElement(existingPart);
-        measurement.appendChild(mount);
-      });
-    }
+    paddingRight,
+    innerWidth,
+    innerHeight,
+    columnWidth,
+    columnHeight,
+    columnGap,
   };
-
-  const flushChunk = () => {
-    if (!currentChunk.length) {
-      resetMeasurement();
-      return;
-    }
-    console.info('[Reader] chunk finalized: partCount=%d totalChunks=%d', currentChunk.length, chunks.length + 1);
-    chunks.push(currentChunk.map(clonePart));
-    currentChunk = [];
-    resetMeasurement();
-  };
-
-  const appendNode = (part) => {
-    const node = createContentElement(part);
-    measurement.appendChild(node);
-    return node;
-  };
-
-  const applyPrefix = () => {
-    if (prefixApplied || !prefixParts.length) {
-      return;
-    }
-    console.info('[Reader] applying prefix parts: total=%d', prefixParts.length);
-    prefixParts.forEach((part, idx) => {
-      currentChunk.push(part);
-      appendNode(part);
-      console.info(
-        '[Reader] prefix part[%d]: variant=%s length=%d text=%s',
-        idx,
-        part.variant ?? 'text',
-        part.text.length,
-        part.text.slice(0, 80)
-      );
-    });
-    prefixApplied = true;
-  };
-
-  applyPrefix();
-  const prefixHeight = Math.ceil(measurement.scrollHeight);
-  viewportLimit = Math.max(prefixHeight, baseLimit - SAFETY_OFFSET);
-  const allowableScroll = Math.max(prefixHeight, viewportLimit - TEXT_BUFFER);
-  console.info(
-    '[Reader] measurement initial scroll=%d prefix=%d baseLimit=%d effectiveLimit=%d allowableScroll=%d',
-    prefixHeight,
-    prefixHeight,
-    baseLimit,
-    viewportLimit,
-    allowableScroll
-  );
-
-  const fitsViewport = () => Math.ceil(measurement.scrollHeight) <= allowableScroll;
-
-  const tryAppendPart = (part) => {
-    const node = appendNode(part);
-    const currentScroll = Math.ceil(measurement.scrollHeight);
-    if (fitsViewport()) {
-      currentChunk.push(part);
-      console.info(
-        '[Reader] part appended: variant=%s length=%d scroll=%d limit=%d allowable=%d totalParts=%d',
-        part.variant ?? 'text',
-        part.text.length,
-        currentScroll,
-        viewportLimit,
-        allowableScroll,
-        currentChunk.length
-      );
-      return true;
-    }
-    console.info(
-      '[Reader] part overflow: variant=%s length=%d scroll=%d limit=%d allowable=%d',
-      part.variant ?? 'text',
-      part.text.length,
-      currentScroll,
-      viewportLimit,
-      allowableScroll
-    );
-    node.remove();
-    return false;
-  };
-
-  const findSplitBoundary = (text, candidateLength) => {
-    const boundaryChars = new Set([' ', '\t', '\n', '\r', '.', ',', ';', ':', '!', '?', '-', '\u2013', '\u2014', ')']);
-    const maxOffset = Math.min(80, text.length);
-    for (let offset = 0; offset < maxOffset; offset += 1) {
-      const leftIndex = candidateLength - offset - 1;
-      if (leftIndex > 0 && boundaryChars.has(text[leftIndex])) {
-        return leftIndex + 1;
-      }
-    }
-    for (let offset = 0; offset < maxOffset; offset += 1) {
-      const rightIndex = candidateLength + offset;
-      if (rightIndex < text.length && boundaryChars.has(text[rightIndex])) {
-        return rightIndex + 1;
-      }
-    }
-    return candidateLength;
-  };
-
-  const fitsStandalone = (text) => {
-    resetMeasurement(true);
-    const node = appendNode(createChunkPart(text));
-    const fits = fitsViewport();
-    node.remove();
-    resetMeasurement(true);
-    return fits;
-  };
-
-  const splitParagraph = (text) => {
-    const segments = [];
-    let remainder = text;
-    let splitIteration = 0;
-    while (remainder.length) {
-      splitIteration += 1;
-      let low = 1;
-      let high = remainder.length;
-      let bestLength = 0;
-      while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        const candidate = remainder.slice(0, mid);
-        if (!candidate.trim()) {
-          low = mid + 1;
-          continue;
-        }
-        if (fitsStandalone(candidate)) {
-          bestLength = mid;
-          low = mid + 1;
-        } else {
-          high = mid - 1;
-        }
-      }
-      if (bestLength <= 0) {
-        bestLength = 1;
-      } else {
-        const adjusted = findSplitBoundary(remainder, bestLength);
-        if (adjusted !== bestLength) {
-          const candidate = remainder.slice(0, adjusted);
-          if (fitsStandalone(candidate)) {
-            bestLength = adjusted;
-          }
-        }
-      }
-      const segment = remainder.slice(0, bestLength);
-      console.info(
-        '[Reader] split iteration=%d best=%d segmentLen=%d remaining=%d',
-        splitIteration,
-        bestLength,
-        segment.length,
-        Math.max(remainder.length - bestLength, 0)
-      );
-      if (segment.trim().length === 0) {
-        break;
-      }
-      segments.push(segment);
-      remainder = remainder.slice(bestLength).replace(/^\s+/u, ' ');
-    }
-    resetMeasurement(true);
-    console.info('[Reader] split result: totalSegments=%d originalLength=%d', segments.length, text.length);
-    return segments;
-  };
-
-  paragraphs.forEach((rawParagraph) => {
-    const paragraph = typeof rawParagraph === 'string' ? rawParagraph : String(rawParagraph ?? '');
-    if (!paragraph) {
-      const emptyPart = createChunkPart('');
-      if (!tryAppendPart(emptyPart)) {
-        flushChunk();
-        tryAppendPart(emptyPart);
-      }
-      return;
-    }
-    const initialPart = createChunkPart(paragraph);
-    if (tryAppendPart(initialPart)) {
-      return;
-    }
-    if (currentChunk.length) {
-      flushChunk();
-      applyPrefix();
-      if (tryAppendPart(initialPart)) {
-        return;
-      }
-    }
-
-    resetMeasurement(true);
-    const segments = splitParagraph(paragraph);
-    if (!segments.length) {
-      const fallbackPart = createChunkPart(paragraph);
-      if (!tryAppendPart(fallbackPart)) {
-        flushChunk();
-        applyPrefix();
-        tryAppendPart(fallbackPart);
-      }
-      return;
-    }
-    segments.forEach((segment, index) => {
-      const cleaned = index === 0 ? segment.replace(/\s+$/u, '') : segment.trim();
-      if (!cleaned) {
-        return;
-      }
-      const part = createChunkPart(cleaned, index > 0);
-      if (!tryAppendPart(part)) {
-        flushChunk();
-        applyPrefix();
-        if (!tryAppendPart(part)) {
-          const forcedChars = Array.from(part.text);
-          forcedChars.forEach((char, charIndex) => {
-            const forcedPart = createChunkPart(char, part.continuation || charIndex > 0);
-            if (!tryAppendPart(forcedPart)) {
-              flushChunk();
-              applyPrefix();
-              tryAppendPart(forcedPart);
-            }
-          });
-        }
-      }
-    });
-  });
-
-  if (currentChunk.length) {
-    chunks.push(currentChunk.map(clonePart));
-  }
-
-  measurement.remove();
-  if (prefixParts.length && chunks.length > 1) {
-    const isHeading = (part) => part.variant === 'title' || part.variant === 'chapter';
-    const firstChunk = chunks[0];
-    let hasNonHeading = firstChunk.some((part) => !isHeading(part));
-    if (!hasNonHeading) {
-      const donorChunk = chunks[1];
-      while (donorChunk.length) {
-        const moved = donorChunk.shift();
-        firstChunk.push(moved);
-        if (!isHeading(moved)) {
-          hasNonHeading = true;
-          break;
-        }
-      }
-      if (!donorChunk.length) {
-        chunks.splice(1, 1);
-      }
-    }
-  }
-  console.info('[Reader] buildChunks result: chunks=%d', chunks.length);
-  return chunks.length ? chunks : [[createChunkPart('')]];
 }
 
-function renderReader() {
-  ensureSelection();
-  const { chapterId, sectionId, pointId, chunkIndex } = state;
-  console.info('[Reader] render start: chapter=%s section=%s point=%s chunkIndex=%d', chapterId ?? 'n/a', sectionId ?? 'n/a', pointId ?? 'n/a', chunkIndex + 1);
+function createPaginationKey(chapterId, metrics) {
+  const { font, fontSize, lineHeight, fontWeight, theme } = state.style;
+  return [
+    chapterId ?? '',
+    font?.id ?? '',
+    fontSize,
+    lineHeight.toFixed(4),
+    fontWeight,
+    theme,
+    metrics?.columnWidth ?? 0,
+    metrics?.columnHeight ?? 0,
+    metrics?.columnGap ?? 0,
+  ].join('|');
+}
 
-  const chapter = BOOKS[chapterId];
-  const section = getSection();
-  const point = getPoint();
-  if (!chapter || !section || !point) {
-    if (!chapterOrder.length) {
-      console.warn('[Reader] render aborted: chapter order is empty');
+function buildPagination(flowParts, metrics) {
+  if (!metrics?.measurementHost) {
+    return null;
+  }
+  const measurement = document.createElement('div');
+  measurement.className = 'reader__flow';
+  measurement.style.position = 'absolute';
+  measurement.style.inset = '0';
+  measurement.style.visibility = 'hidden';
+  measurement.style.pointerEvents = 'none';
+  measurement.style.boxSizing = 'border-box';
+  measurement.style.width = `${metrics.columnWidth}px`;
+  measurement.style.height = `${metrics.columnHeight}px`;
+  measurement.style.columnGap = `${metrics.columnGap}px`;
+  measurement.style.columnWidth = `${metrics.columnWidth}px`;
+  measurement.style.columnFill = 'auto';
+  measurement.style.padding = '0';
+  measurement.style.margin = '0';
+  measurement.style.transform = 'none';
+  measurement.style.transition = 'none';
+  metrics.measurementHost.appendChild(measurement);
+
+  const fragment = document.createDocumentFragment();
+  flowParts.forEach((part) => {
+    fragment.appendChild(createContentElement(part));
+  });
+  measurement.appendChild(fragment);
+
+  const scrollWidth = Math.max(measurement.scrollWidth, metrics.columnWidth);
+  const pageShiftWidth = metrics.columnWidth + metrics.columnGap;
+  const rawPageCount = pageShiftWidth > 0 ? (scrollWidth + metrics.columnGap) / pageShiftWidth : 1;
+  const totalPages = Math.max(1, Math.ceil(rawPageCount - 0.001));
+
+  const anchorMap = {};
+  const pageAnchors = new Array(totalPages).fill(null);
+  const nodes = Array.from(measurement.children);
+  nodes.forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
       return;
     }
+    const offset = node.offsetLeft;
+    const pageIndex = pageShiftWidth > 0 ? Math.min(totalPages - 1, Math.floor(offset / pageShiftWidth)) : 0;
+    const existing = pageAnchors[pageIndex] ?? { chapterId: null, sectionId: null, pointId: null };
+    const { chapterId: metaChapter, sectionId: metaSection, pointId: metaPoint } = node.dataset;
+    if (metaChapter && !existing.chapterId) {
+      existing.chapterId = metaChapter;
+    }
+    if (metaSection && !existing.sectionId) {
+      existing.sectionId = metaSection;
+    }
+    if (metaPoint && !existing.pointId) {
+      existing.pointId = metaPoint;
+    }
+    pageAnchors[pageIndex] = existing;
+    if (metaPoint && anchorMap[metaPoint] === undefined) {
+      anchorMap[metaPoint] = pageIndex;
+    }
+  });
+
+  const contentHTML = measurement.innerHTML;
+  measurement.remove();
+
+  return {
+    totalPages,
+    pageShiftWidth,
+    columnWidth: metrics.columnWidth,
+    columnHeight: metrics.columnHeight,
+    columnGap: metrics.columnGap,
+    scrollWidth,
+    anchorMap,
+    pageAnchors,
+    contentHTML,
+    version: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+  };
+}
+
+function ensureFlowContent(pagination) {
+  if (!readerFlow) {
+    return;
+  }
+  if (readerFlow.dataset.contentVersion === pagination.version) {
+    return;
+  }
+  readerFlow.innerHTML = pagination.contentHTML;
+  readerFlow.dataset.contentVersion = pagination.version;
+}
+
+function applyLayout(pagination, metrics, { immediate = false } = {}) {
+  if (!readerFlow) {
+    return;
+  }
+  ensureFlowContent(pagination);
+  const themeId = state.style.theme ?? '';
+  const isDarkTheme = /night|console/.test(themeId);
+  const ruleColor = isDarkTheme ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.08)';
+  readerRoot.style.setProperty('--reader-column-gap', `${pagination.columnGap}px`);
+  readerRoot.style.setProperty('--reader-column-width', `${pagination.columnWidth}px`);
+  readerRoot.style.setProperty('--reader-column-rule', ruleColor);
+  readerFlow.style.columnGap = `${pagination.columnGap}px`;
+  readerFlow.style.columnWidth = `${pagination.columnWidth}px`;
+  readerFlow.style.height = `${pagination.columnHeight}px`;
+  const flowWidth = Math.max(pagination.scrollWidth, pagination.columnWidth);
+  readerFlow.style.width = `${flowWidth}px`;
+  readerFlow.style.transition = immediate ? 'none' : `transform ${PAGE_TRANSITION_DURATION}ms ease`;
+}
+
+function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
+  if (!readerFlow) {
+    return;
+  }
+  const offset = Math.max(0, pageIndex) * pagination.pageShiftWidth;
+  if (immediate) {
+    readerFlow.style.transition = 'none';
+    readerFlow.style.transform = `translateX(-${offset}px)`;
+    void readerFlow.offsetHeight;
+    readerFlow.style.transition = `transform ${PAGE_TRANSITION_DURATION}ms ease`;
+  } else {
+    readerFlow.style.transition = `transform ${PAGE_TRANSITION_DURATION}ms ease`;
+    readerFlow.style.transform = `translateX(-${offset}px)`;
+  }
+  readerFlow.dataset.pageIndex = String(pageIndex);
+}
+
+function resolvePageAnchor(pagination, pageIndex) {
+  if (!pagination?.pageAnchors || !pagination.pageAnchors.length) {
+    return null;
+  }
+  for (let idx = pageIndex; idx >= 0; idx -= 1) {
+    const anchor = pagination.pageAnchors[idx];
+    if (anchor && (anchor.sectionId || anchor.pointId)) {
+      return anchor;
+    }
+  }
+  return pagination.pageAnchors[pageIndex] ?? null;
+}
+
+function getVisiblePageText() {
+  if (!readerFlow || !readerPageShell) {
+    return '';
+  }
+  const viewportRect = readerPageShell.getBoundingClientRect();
+  const nodes = Array.from(readerFlow.querySelectorAll('h1, h2, h3, h4, p'));
+  const pieces = [];
+  nodes.forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+    const rect = node.getBoundingClientRect();
+    if (rect.right <= viewportRect.left || rect.left >= viewportRect.right) {
+      return;
+    }
+    if (rect.bottom <= viewportRect.top || rect.top >= viewportRect.bottom) {
+      return;
+    }
+    const text = node.textContent?.trim();
+    if (text) {
+      pieces.push(text);
+    }
+  });
+  return pieces.join('\n\n');
+}
+
+function updateLayoutInfo(pagination, metrics) {
+  if (!layoutInfo) {
+    return;
+  }
+  if (!pagination || !metrics) {
+    layoutInfo.dataset.visible = 'false';
+    layoutInfo.hidden = true;
+    layoutInfo.innerHTML = '';
+    return;
+  }
+  const lines = [
+    `pages: ${pagination.totalPages}`,
+    `column: ${Math.round(pagination.columnWidth)}px`,
+    `gap: ${Math.round(pagination.columnGap)}px`,
+    `shift: ${Math.round(pagination.pageShiftWidth)}px`,
+  ];
+  layoutInfo.innerHTML = `<strong>Layout</strong><span>${lines.join('<br/>')}</span>`;
+  const shouldReveal = layoutInfo.dataset.debug === 'true';
+  layoutInfo.dataset.visible = shouldReveal ? 'true' : 'false';
+  layoutInfo.hidden = !shouldReveal;
+}
+
+function renderFallbackContent(parts) {
+  if (!readerFlow) {
+    return;
+  }
+  readerFlow.innerHTML = '';
+  if (Array.isArray(parts) && parts.length) {
+    const fragment = document.createDocumentFragment();
+    parts.forEach((part) => {
+      if (!part || typeof part.text !== 'string') {
+        return;
+      }
+      fragment.appendChild(createContentElement(part));
+    });
+    readerFlow.appendChild(fragment);
+  }
+  readerFlow.style.transition = 'none';
+  readerFlow.style.transform = 'translateX(0)';
+  readerFlow.dataset.pageIndex = '0';
+  readerFlow.dataset.contentVersion = 'fallback';
+  readerFlow.style.width = '';
+  readerFlow.style.height = '';
+  readerFlow.style.columnWidth = '';
+  readerFlow.style.columnGap = '';
+  readerRoot.style.removeProperty('--reader-column-gap');
+  readerRoot.style.removeProperty('--reader-column-width');
+  readerRoot.style.removeProperty('--reader-column-rule');
+  readerProgress.style.width = '0%';
+  updateLayoutInfo(null, null);
+  clearPaginationState();
+}
+
+function buildChapterFlowParts(chapterId) {
+  const chapter = BOOKS[chapterId];
+  if (!chapter) {
+    return [];
+  }
+
+  const parts = [];
+  if (chapter.title) {
+    parts.push(
+      createChunkPart(chapter.title, false, 'title', {
+        chapterId,
+        type: 'chapter-title',
+      })
+    );
+  }
+
+  const sectionIds = getOrderedSectionIds(chapter);
+  sectionIds.forEach((sectionId) => {
+    const section = chapter.sections?.[sectionId];
+    if (!section) {
+      return;
+    }
+    if (section.title) {
+      parts.push(
+        createChunkPart(section.title, false, 'chapter', {
+          chapterId,
+          sectionId,
+          type: 'section-title',
+        })
+      );
+    }
+    const pointIds = getOrderedPointIds(section);
+    pointIds.forEach((pointId) => {
+      const point = section.points?.[pointId];
+      if (!point) {
+        return;
+      }
+      if (point.title) {
+        parts.push(
+          createChunkPart(point.title, false, 'chapter', {
+            chapterId,
+            sectionId,
+            pointId,
+            type: 'point-title',
+          })
+        );
+      }
+      const paragraphs = Array.isArray(point.text) ? point.text : [];
+      paragraphs.forEach((paragraph, paragraphIndex) => {
+        const textValue = typeof paragraph === 'string' ? paragraph : String(paragraph ?? '');
+        parts.push(
+          createChunkPart(textValue, false, null, {
+            chapterId,
+            sectionId,
+            pointId,
+            paragraphIndex,
+            type: 'paragraph',
+          })
+        );
+      });
+    });
+  });
+  return parts;
+}
+
+function renderReader({ forceReflow = false } = {}) {
+  ensureSelection();
+  const { chapterId, sectionId, pointId } = state;
+  console.info('[Reader] render start: chapter=%s section=%s point=%s page=%d', chapterId ?? 'n/a', sectionId ?? 'n/a', pointId ?? 'n/a', state.pageIndex + 1);
+
+  const chapter = BOOKS[chapterId];
+  if (!chapter) {
     const fallbackChunk = [
       createChunkPart('Content unavailable', false, 'title'),
       createChunkPart('Unable to resolve the requested chapter or section.'),
     ];
-    renderChunkIntoPane(paneCurrent, fallbackChunk, { ariaHidden: false });
-    renderChunkIntoPane(panePrev, [], { ariaHidden: true });
-    renderChunkIntoPane(paneNext, [], { ariaHidden: true });
-    readerProgress.style.width = '0%';
-    state.chunks = [];
-    console.warn('[Reader] render aborted: missing chapter/section/point data');
+    renderFallbackContent(fallbackChunk);
+    state.flowParts = [];
+    state.flowChapterId = null;
     return;
   }
 
-  const rawParagraphs = Array.isArray(point.text) && point.text.length
-    ? point.text
-    : ['No text available for this point.'];
-  console.info(
-    '[Reader] render paragraphs: count=%d firstLen=%d sample=%s',
-    rawParagraphs.length,
-    rawParagraphs[0]?.length ?? 0,
-    (rawParagraphs[0] ?? '').slice(0, 120)
-  );
-
-  const titleText = chapter.title ?? '';
-  const chapterText = point.title || section.title || chapter.title || '';
-  const headingParts = [];
-  if (titleText) {
-    headingParts.push(createChunkPart(titleText, false, 'title'));
-  }
-  if (chapterText && chapterText !== titleText) {
-    headingParts.push(createChunkPart(chapterText, false, 'chapter'));
+  const flowParts = ensureFlowParts(chapterId);
+  if (!flowParts.length) {
+    const fallbackChunk = [
+      createChunkPart(chapter.title || 'Content unavailable', false, 'title'),
+      createChunkPart('No readable content found for this chapter.'),
+    ];
+    renderFallbackContent(fallbackChunk);
+    return;
   }
 
-  const chunks = buildChunks(rawParagraphs, { prefixParts: headingParts });
-  console.info(
-    '[Reader] chunks prepared summary: %s',
-    JSON.stringify(
-      chunks.map((chunk, idx) => ({
-        index: idx + 1,
-        parts: chunk.length,
-        variants: chunk.map((part) => part.variant ?? 'text'),
-      }))
-    )
-  );
-  if (chunks.length) {
-    const firstVariants = chunks[0].map((part) => part.variant ?? 'text');
-    const nonHeading = chunks[0].filter((part) => (part.variant ?? 'text') === 'text');
-    console.info('[Reader] first chunk detail: variants=%s textParts=%d', JSON.stringify(firstVariants), nonHeading.length);
-  }
-  if (!chunks.length) {
-    chunks.push([createChunkPart('No chunks generated.')]);
-  }
-  console.info('[Reader] render chunks prepared: total=%d requestedIndex=%d', chunks.length, chunkIndex + 1);
-
-  state.chunks = chunks;
-  const maxIndex = Math.max(chunks.length - 1, 0);
-  const previousIndex = state.chunkIndex;
-  state.chunkIndex = clampValue(previousIndex, 0, maxIndex);
-  if (state.chunkIndex !== previousIndex) {
-    console.info('[Reader] render index corrected: previous=%d current=%d total=%d', previousIndex + 1, state.chunkIndex + 1, chunks.length);
+  const metrics = getPaginationMetrics();
+  if (!metrics || metrics.columnWidth <= 0 || metrics.columnHeight <= 0) {
+    console.warn('[Reader] layout metrics unavailable, skipping render');
+    return;
   }
 
-  const activeChunk = chunks[state.chunkIndex] ?? [];
-  const previousChunk = state.chunkIndex > 0 ? chunks[state.chunkIndex - 1] : [];
-  const nextChunk = state.chunkIndex < chunks.length - 1 ? chunks[state.chunkIndex + 1] : [];
-  console.info('[Reader] render chunk sizes: previous=%d current=%d next=%d', previousChunk.length, activeChunk.length, nextChunk.length);
-
-  renderChunkIntoPane(paneCurrent, activeChunk, { ariaHidden: false });
-  renderChunkIntoPane(panePrev, previousChunk, { ariaHidden: true });
-  renderChunkIntoPane(paneNext, nextChunk, { ariaHidden: true });
-
-  console.info(
-    '[Reader] chunk metrics: total=%d currentParts=%d prevParts=%d nextParts=%d',
-    chunks.length,
-    activeChunk.length,
-    previousChunk.length,
-    nextChunk.length
-  );
-  const currentBody = paneCurrent.body;
-  const currentInner = paneCurrent.text;
-  const currentText = currentInner?.parentElement ?? null;
-  if (currentBody && currentInner && currentText) {
-    console.info(
-      '[Reader] layout metrics: text={client:%d,offset:%d} inner={client:%d,offset:%d,scroll:%d} body={client:%d,offset:%d,scroll:%d}',
-      currentText.clientHeight,
-      currentText.offsetHeight,
-      currentInner.clientHeight,
-      currentInner.offsetHeight,
-      currentInner.scrollHeight,
-      currentBody.clientHeight,
-      currentBody.offsetHeight,
-      currentBody.scrollHeight
-    );
+  const paginationKey = createPaginationKey(chapterId, metrics);
+  let layoutRebuilt = forceReflow || !state.pagination || state.paginationKey !== paginationKey;
+  if (layoutRebuilt) {
+    const pagination = buildPagination(flowParts, metrics);
+    if (!pagination || !Number.isFinite(pagination.totalPages) || pagination.totalPages <= 0) {
+      const fallbackChunk = [
+        createChunkPart('Layout error', false, 'title'),
+        createChunkPart('Unable to prepare pagination for this content.'),
+      ];
+      renderFallbackContent(fallbackChunk);
+      return;
+    }
+    state.pagination = pagination;
+    state.paginationKey = paginationKey;
+    console.info('[Reader] layout rebuilt: pages=%d gap=%d width=%d', pagination.totalPages, Math.round(pagination.columnGap), Math.round(pagination.columnWidth));
   }
 
-  const progressValue = chunks.length
-    ? ((state.chunkIndex + 1) / chunks.length) * 100
-    : 0;
+  const pagination = state.pagination;
+  const totalPages = Number.isFinite(pagination?.totalPages) ? pagination.totalPages : 0;
+  if (!totalPages) {
+    const fallbackChunk = [
+      createChunkPart('Layout error', false, 'title'),
+      createChunkPart('Pagination produced no pages.'),
+    ];
+    renderFallbackContent(fallbackChunk);
+    return;
+  }
+
+  if (state.autoAlignPage && pointId && pagination.anchorMap) {
+    const anchorIndex = pagination.anchorMap[pointId];
+    if (Number.isInteger(anchorIndex)) {
+      state.pageIndex = clampValue(anchorIndex, 0, totalPages - 1);
+    }
+  }
+  state.autoAlignPage = false;
+  state.pageIndex = clampValue(state.pageIndex, 0, totalPages - 1);
+
+  applyLayout(pagination, metrics, { immediate: layoutRebuilt });
+  applyPageTransform(pagination, state.pageIndex, { immediate: layoutRebuilt });
+  updateLayoutInfo(pagination, metrics);
+
+  const anchor = resolvePageAnchor(pagination, state.pageIndex);
+  if (anchor) {
+    if (anchor.sectionId && anchor.sectionId !== sectionId) {
+      state.sectionId = anchor.sectionId;
+    }
+    if (anchor.pointId && anchor.pointId !== pointId) {
+      state.pointId = anchor.pointId;
+    }
+  }
+
+  const progressValue = totalPages ? ((state.pageIndex + 1) / totalPages) * 100 : 0;
   readerProgress.style.width = `${progressValue}%`;
-  console.info('[Reader] render progress updated: value=%d%%', Math.round(progressValue));
 
-  if (state.autoVoice && activeChunk.length) {
-    const speechText = chunkToSpeechText(activeChunk);
+  if (state.autoVoice) {
+    const speechText = getVisiblePageText();
     if (speechText) {
-      console.info('[Reader] render auto-voice triggered for chunk length=%d', activeChunk.length);
       speak(speechText);
     }
   }
 
   persistProgress();
 
-  console.info(
-    '[Reader] render complete: chapter=%s section=%s point=%s chunks=%d current=%d',
-    state.chapterId,
-    state.sectionId,
-    state.pointId,
-    chunks.length,
-    state.chunkIndex + 1
-  );
+  console.info('[Reader] render complete: page=%d/%d', state.pageIndex + 1, totalPages);
 }
-
 
 renderFontList();
 applyStyle();
@@ -1177,14 +1167,10 @@ function initializeReader() {
         createChunkPart('Load error', false, 'title'),
         createChunkPart('Unable to load book content. Please refresh the page.'),
       ];
-      renderChunkIntoPane(paneCurrent, fallbackChunk, {
-        ariaHidden: false,
-      });
-      renderChunkIntoPane(panePrev, [], { ariaHidden: true });
-      renderChunkIntoPane(paneNext, [], { ariaHidden: true });
-      readerProgress.style.width = '0%';
-      state.chunks = [];
-      state.chunkIndex = 0;
+      renderFallbackContent(fallbackChunk);
+      state.flowParts = [];
+      state.flowChapterId = null;
+      state.pageIndex = 0;
     });
 }
 
@@ -1249,7 +1235,7 @@ function persistProgress() {
       chapterId: state.chapterId,
       sectionId: state.sectionId,
       pointId: state.pointId,
-      chunkIndex: state.chunkIndex,
+      chunkIndex: state.pageIndex,
       timestamp: Date.now(),
     };
     localStorage.setItem(READER_PROGRESS_KEY, JSON.stringify(payload));
@@ -1264,3 +1250,5 @@ function persistProgress() {
     console.warn('[Reader] Не удалось сохранить прогресс', error);
   }
 }
+
+
