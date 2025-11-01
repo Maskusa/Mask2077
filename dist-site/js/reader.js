@@ -149,6 +149,7 @@ const PAGE_TRANSITION_BASE_DURATION = 450;
 const PAGE_REVEAL_PRE_SCALE = 0.95;
 const PAGE_REVEAL_DURATION = 200;
 const PAGE_REVEAL_DELAY = 200;
+const ENABLE_PAGE_BACKGROUNDS = false;
 const PAGE_BACKGROUND_IMAGES = ['images/page_v1.svg', 'images/page_v2.svg'];
 
 if (!readerViewport || !readerPageShell || !readerPlane || !readerFlow) {
@@ -971,6 +972,11 @@ function resolveBackgroundAsset(pageIndex) {
 
 function applyBackground(element, pageIndex) {
   if (!element) {
+    return null;
+  }
+  if (!ENABLE_PAGE_BACKGROUNDS) {
+    element.style.backgroundImage = 'none';
+    element.dataset.pageBackground = '';
     return null;
   }
   if (!Number.isFinite(pageIndex)) {
