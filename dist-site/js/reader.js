@@ -96,7 +96,10 @@ function normalizeFontWeight(value) {
   return clampValue(rounded, FONT_WEIGHT_MIN, FONT_WEIGHT_MAX);
 }
 
-function scheduleReaderRender() {
+function scheduleReaderRender({ forceReflow = false } = {}) {
+  if (forceReflow) {
+    pendingRenderOptions.forceReflow = true;
+  }
   if (renderScheduled) {
     return;
   }
@@ -104,13 +107,16 @@ function scheduleReaderRender() {
   const runner = window.requestAnimationFrame ?? ((cb) => setTimeout(cb, 16));
   runner(() => {
     renderScheduled = false;
-    renderReader();
+    const options = pendingRenderOptions;
+    pendingRenderOptions = { forceReflow: false };
+    renderReader(options);
   });
 }
 
 let BOOKS = {};
 let chapterOrder = [];
 let renderScheduled = false;
+let pendingRenderOptions = { forceReflow: false };
 
 const readerRoot = document.querySelector('.reader');
 if (!readerRoot) {
@@ -124,6 +130,7 @@ const readerApp = document.querySelector('.app--reader');
 const readerViewport = document.getElementById('reader-viewport');
 const readerPageShell = document.getElementById('reader-page');
 const readerPlane = document.getElementById('reader-plane');
+const readerFrame = document.getElementById('reader-frame');
 const readerPageBuffer = document.getElementById('reader-page-buffer');
 const readerBackgroundBuffer = document.getElementById('reader-background-buffer');
 const readerBackgroundActive = document.getElementById('reader-background-active');
@@ -149,6 +156,8 @@ const PAGE_TRANSITION_BASE_DURATION = 450;
 const PAGE_REVEAL_PRE_SCALE = 0.95;
 const PAGE_REVEAL_DURATION = 200;
 const PAGE_REVEAL_DELAY = 200;
+const PAGE_FRAME_INSET = 12;
+const OVERFLOW_HEIGHT_TOLERANCE = 4;
 const ENABLE_PAGE_BACKGROUNDS = false;
 const PAGE_BACKGROUND_IMAGES = ['images/page_v1.svg', 'images/page_v2.svg'];
 const flowLogState = {
@@ -183,7 +192,7 @@ function setControlsVisibility(hidden) {
 
 function updateReaderAppLayout() {
   if (!readerApp) {
-    return;
+    return null;
   }
   const viewportHeight =
     window.innerHeight ||
@@ -196,14 +205,19 @@ function updateReaderAppLayout() {
     readerApp.clientWidth ||
     0;
   if (viewportHeight <= 0 || viewportWidth <= 0) {
-    return;
+    return {
+      viewportWidth,
+      viewportHeight,
+      appMaxWidth: 0,
+      pageMaxWidth: 0,
+    };
   }
   const maxByHeight = viewportHeight / A4_RATIO;
   const appMaxWidth = Math.min(viewportWidth, maxByHeight);
   readerApp.style.maxWidth = `${appMaxWidth}px`;
   readerApp.style.width = '100%';
+  let pageMaxWidth = appMaxWidth;
   if (readerRoot) {
-    let pageMaxWidth = appMaxWidth;
     if (readerStage) {
       const stageStyle = window.getComputedStyle(readerStage);
       const stagePadding =
@@ -213,6 +227,12 @@ function updateReaderAppLayout() {
     }
     readerRoot.style.setProperty('--reader-page-max-width', `${Math.round(pageMaxWidth)}px`);
   }
+  return {
+    viewportWidth,
+    viewportHeight,
+    appMaxWidth,
+    pageMaxWidth,
+  };
 }
 
 function createChunkPart(text, continuation = false, variant = null, meta = null) {
@@ -608,7 +628,25 @@ function changePage(direction) {
   }
   const nextIndex = clampValue(currentIndex + direction, 0, total - 1);
   if (nextIndex === currentIndex) {
-    console.info('[Reader] page change skipped: boundary reached (index=%d of %d)', currentIndex + 1, total);
+    const pagination = state.pagination;
+    const columnHeight = Number.isFinite(pagination?.columnHeight) ? pagination.columnHeight : 0;
+    const columnWidth = Number.isFinite(pagination?.columnWidth) ? pagination.columnWidth : 0;
+    const scrollWidth = Number.isFinite(pagination?.scrollWidth) ? pagination.scrollWidth : 0;
+    const scrollHeight = readerFlow?.scrollHeight ?? 0;
+    const flowWidth = readerFlow?.scrollWidth ?? 0;
+    const overflowHeight = Math.round(scrollHeight - columnHeight);
+    const overflowWidth = Math.round(flowWidth - scrollWidth);
+    console.info(
+      '[Reader] page change skipped: boundary reached (index=%d of %d) overflowHeight=%d overflowWidth=%d column=%dx%d flow=%dx%d',
+      currentIndex + 1,
+      total,
+      overflowHeight,
+      overflowWidth,
+      Math.round(columnWidth),
+      Math.round(columnHeight),
+      Math.round(flowWidth),
+      Math.round(scrollHeight)
+    );
     return;
   }
   state.pageIndex = nextIndex;
@@ -679,6 +717,53 @@ function adjustLineHeight(delta) {
   console.info('[Reader] �������� ���ࢠ� ������: %d%%', Math.round(state.style.lineHeight * 100));
 }
 
+function refreshLayout() {
+  console.info('[Reader] manual layout refresh triggered');
+  if (bufferRevealTimer) {
+    window.clearTimeout(bufferRevealTimer);
+    bufferRevealTimer = null;
+  }
+  widthMismatchReflowAttempts.clear();
+  lastWidthMismatchKey = null;
+  state.autoAlignPage = true;
+  clearPaginationState();
+  const shellWidthBefore = readerPageShell?.clientWidth ?? 0;
+  const schedule = () => {
+    const layoutMetrics = updateReaderAppLayout();
+    const shellWidthAfter = readerPageShell?.clientWidth ?? 0;
+    const viewportWidth = layoutMetrics?.viewportWidth ?? 0;
+    const viewportHeight = layoutMetrics?.viewportHeight ?? 0;
+    const appWidth = layoutMetrics?.appMaxWidth ?? 0;
+    const pageWidth = layoutMetrics?.pageMaxWidth ?? 0;
+    console.info(
+      '[Reader] manual refresh metrics: viewport=%dx%d appWidth=%d pageWidth=%d shellBefore=%d shellAfter=%d',
+      Math.round(viewportWidth),
+      Math.round(viewportHeight),
+      Math.round(appWidth),
+      Math.round(pageWidth),
+      Math.round(shellWidthBefore),
+      Math.round(shellWidthAfter)
+    );
+    const frameRect = readerFrame?.getBoundingClientRect?.();
+    const flowRect = readerFlow?.getBoundingClientRect?.();
+    if (frameRect && flowRect) {
+      console.info(
+        '[Reader] manual refresh rects: frameWidth=%d flowWidth=%d frameX=%d flowX=%d',
+        Math.round(frameRect.width),
+        Math.round(flowRect.width),
+        Math.round(frameRect.left),
+        Math.round(flowRect.left)
+      );
+    }
+    scheduleReaderRender({ forceReflow: true });
+  };
+  if (typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(schedule);
+  } else {
+    setTimeout(schedule, 0);
+  }
+}
+
 
 function handleAction(action, event) {
   switch (action) {
@@ -701,6 +786,10 @@ function handleAction(action, event) {
     case 'close-style':
       event?.preventDefault?.();
       closeStylePopup();
+      break;
+    case 'refresh-layout':
+      event?.preventDefault?.();
+      refreshLayout();
       break;
     case 'font-increase':
       event?.preventDefault?.();
@@ -837,13 +926,24 @@ function getPaginationMetrics() {
   const paddingBottom = Number.parseFloat(planeStyle.paddingBottom) || 0;
   const paddingLeft = Number.parseFloat(planeStyle.paddingLeft) || 0;
   const paddingRight = Number.parseFloat(planeStyle.paddingRight) || 0;
-  const innerWidth = Math.max(0, readerPageShell.clientWidth - paddingLeft - paddingRight);
-  const innerHeight = Math.max(0, readerPageShell.clientHeight - paddingTop - paddingBottom);
+  const planeClientWidth = readerPlane.clientWidth || readerPageShell.clientWidth;
+  const planeClientHeight = readerPlane.clientHeight || readerPageShell.clientHeight;
+  const frameHorizontalInset = PAGE_FRAME_INSET * 2;
+  const frameVerticalInset = PAGE_FRAME_INSET * 2;
+  const innerWidth = Math.max(0, planeClientWidth - paddingLeft - paddingRight - frameHorizontalInset);
+  const innerHeight = Math.max(0, planeClientHeight - paddingTop - paddingBottom - frameVerticalInset);
+  const flowStyle = readerFlow ? window.getComputedStyle(readerFlow) : null;
+  const flowPaddingTop = flowStyle ? Number.parseFloat(flowStyle.paddingTop) || 0 : 0;
+  const flowPaddingBottom = flowStyle ? Number.parseFloat(flowStyle.paddingBottom) || 0 : 0;
+  const flowPaddingLeft = flowStyle ? Number.parseFloat(flowStyle.paddingLeft) || 0 : 0;
+  const flowPaddingRight = flowStyle ? Number.parseFloat(flowStyle.paddingRight) || 0 : 0;
+  const effectiveWidth = Math.max(0, innerWidth - flowPaddingLeft - flowPaddingRight);
+  const effectiveHeight = Math.max(0, innerHeight - flowPaddingTop - flowPaddingBottom);
   const fontScale = Math.max(0.35, state.style.fontSize / DEFAULT_STYLE.fontSize);
   const baseGap = Math.max(0, Math.round(DEFAULT_COLUMN_GAP * Math.sqrt(fontScale)));
   const columnGap = clampValue(baseGap * COLUMN_GAP_MULTIPLIER, COLUMN_GAP_MIN, COLUMN_GAP_MAX);
-  const columnWidth = Math.max(1, innerWidth);
-  const columnHeight = Math.max(1, innerHeight);
+  const columnWidth = Math.max(1, effectiveWidth);
+  const columnHeight = Math.max(1, effectiveHeight);
   return {
     measurementHost: readerPlane,
     paddingTop,
@@ -855,6 +955,10 @@ function getPaginationMetrics() {
     columnWidth,
     columnHeight,
     columnGap,
+    flowPaddingTop,
+    flowPaddingBottom,
+    flowPaddingLeft,
+    flowPaddingRight,
   };
 }
 
@@ -889,7 +993,10 @@ function buildPagination(flowParts, metrics) {
   measurement.style.columnGap = `${metrics.columnGap}px`;
   measurement.style.columnWidth = `${metrics.columnWidth}px`;
   measurement.style.columnFill = 'auto';
-  measurement.style.padding = '0';
+  measurement.style.paddingTop = '0';
+  measurement.style.paddingBottom = '0';
+  measurement.style.paddingLeft = `${metrics.flowPaddingLeft}px`;
+  measurement.style.paddingRight = `${metrics.flowPaddingRight}px`;
   measurement.style.margin = '0';
   measurement.style.transform = 'none';
   measurement.style.transition = 'none';
@@ -901,10 +1008,20 @@ function buildPagination(flowParts, metrics) {
   });
   measurement.appendChild(fragment);
 
-  const scrollWidth = Math.max(measurement.scrollWidth, metrics.columnWidth);
+  let scrollWidth = Math.max(measurement.scrollWidth, metrics.columnWidth);
   const pageShiftWidth = metrics.columnWidth + metrics.columnGap;
+  const overflowHeight = Math.max(0, measurement.scrollHeight - metrics.columnHeight);
+  if (overflowHeight > OVERFLOW_HEIGHT_TOLERANCE && pageShiftWidth > 0) {
+    const extraColumns = Math.max(1, Math.ceil(overflowHeight / metrics.columnHeight));
+    scrollWidth += extraColumns * pageShiftWidth;
+    console.info(
+      '[Reader] pagination overflow compensation: overflowHeight=%d extraColumns=%d',
+      Math.round(overflowHeight),
+      extraColumns
+    );
+  }
   const rawPageCount = pageShiftWidth > 0 ? (scrollWidth + metrics.columnGap) / pageShiftWidth : 1;
-  const totalPages = Math.max(1, Math.ceil(rawPageCount - 0.001));
+  const totalPages = Math.max(1, Math.ceil(rawPageCount));
 
   const anchorMap = {};
   const pageAnchors = new Array(totalPages).fill(null);
@@ -1355,53 +1472,74 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
   readerRoot.style.setProperty('--reader-column-gap', `${pagination.columnGap}px`);
   readerRoot.style.setProperty('--reader-column-width', `${pagination.columnWidth}px`);
   readerRoot.style.setProperty('--reader-column-rule', ruleColor);
-  const flowWidth = Math.max(pagination.scrollWidth, pagination.columnWidth);
-  applyFlowDimensions(readerFlow, pagination, flowWidth);
-  applyFlowDimensions(readerFlowBuffer, pagination, flowWidth);
+  const flowViewportWidth = Math.max(pagination.columnWidth, metrics.innerWidth, 1);
+  applyFlowDimensions(readerFlow, pagination, flowViewportWidth);
+  applyFlowDimensions(readerFlowBuffer, pagination, flowViewportWidth);
   const currentFlowWidth = readerFlow?.scrollWidth ?? 0;
   if (Number.isFinite(currentFlowWidth)) {
-    const widthDiff = Math.abs(currentFlowWidth - pagination.scrollWidth);
+    const normalizedWidth = Math.max(currentFlowWidth, pagination.scrollWidth || 0);
+    const widthDiff = Math.abs(normalizedWidth - (pagination.scrollWidth || 0));
     const mismatchThreshold = Math.max(pagination.columnWidth * 0.25, 48);
-    if (widthDiff > mismatchThreshold) {
-      const attemptKey = state.paginationKey ?? pagination.version ?? 'unknown';
-      const columnCount =
-        Number.isFinite(pagination.pageShiftWidth) && pagination.pageShiftWidth > 0
-          ? Math.round(pagination.scrollWidth / pagination.pageShiftWidth)
-          : -1;
-      const attempts = widthMismatchReflowAttempts.get(attemptKey) ?? 0;
-      if (attempts === 0) {
-        widthMismatchReflowAttempts.set(attemptKey, attempts + 1);
-        console.warn(
-          '[Reader] layout width mismatch detected: expected=%d actual=%d diff=%d columns=%d gap=%d width=%d -> scheduling reflow',
-          Math.round(pagination.scrollWidth),
-          Math.round(currentFlowWidth),
-          Math.round(widthDiff),
-          columnCount,
-          Math.round(pagination.columnGap),
-          Math.round(pagination.columnWidth)
-        );
-        state.pagination = null;
-        state.paginationKey = null;
-        scheduleReaderRender();
-        return;
+    const pageShift = pagination.pageShiftWidth || (pagination.columnWidth + pagination.columnGap);
+    const domTotalPages =
+      pageShift > 0 ? Math.max(1, Math.ceil((normalizedWidth + pagination.columnGap) / pageShift)) : pagination.totalPages;
+    if (domTotalPages > pagination.totalPages) {
+      const previousPages = pagination.totalPages;
+      pagination.totalPages = domTotalPages;
+      pagination.scrollWidth = normalizedWidth;
+      while (pagination.pageAnchors.length < pagination.totalPages) {
+        pagination.pageAnchors.push(null);
       }
-      if (lastWidthMismatchKey !== attemptKey) {
-        console.warn(
-          '[Reader] layout width mismatch persists after retry: expected=%d actual=%d diff=%d columns=%d gap=%d width=%d',
-          Math.round(pagination.scrollWidth),
-          Math.round(currentFlowWidth),
-          Math.round(widthDiff),
-          columnCount,
-          Math.round(pagination.columnGap),
-          Math.round(pagination.columnWidth)
-        );
-        lastWidthMismatchKey = attemptKey;
-      }
+      console.info(
+        '[Reader] pagination extended by DOM measurement: pages=%d->%d width=%d',
+        previousPages,
+        pagination.totalPages,
+        Math.round(normalizedWidth)
+      );
+      widthMismatchReflowAttempts.clear();
+      lastWidthMismatchKey = null;
     } else {
-      const attemptKey = state.paginationKey ?? pagination.version ?? 'unknown';
-      widthMismatchReflowAttempts.delete(attemptKey);
-      if (lastWidthMismatchKey === attemptKey) {
-        lastWidthMismatchKey = null;
+      if (widthDiff > mismatchThreshold) {
+        const attemptKey = state.paginationKey ?? pagination.version ?? 'unknown';
+        const columnCount =
+          Number.isFinite(pagination.pageShiftWidth) && pagination.pageShiftWidth > 0
+            ? Math.round(pagination.scrollWidth / pagination.pageShiftWidth)
+            : -1;
+        const attempts = widthMismatchReflowAttempts.get(attemptKey) ?? 0;
+        if (attempts === 0) {
+          widthMismatchReflowAttempts.set(attemptKey, attempts + 1);
+          console.warn(
+            '[Reader] layout width mismatch detected: expected=%d actual=%d diff=%d columns=%d gap=%d width=%d -> scheduling reflow',
+            Math.round(pagination.scrollWidth),
+            Math.round(currentFlowWidth),
+            Math.round(widthDiff),
+            columnCount,
+            Math.round(pagination.columnGap),
+            Math.round(pagination.columnWidth)
+          );
+          state.pagination = null;
+          state.paginationKey = null;
+          scheduleReaderRender();
+          return;
+        }
+        if (lastWidthMismatchKey !== attemptKey) {
+          console.warn(
+            '[Reader] layout width mismatch persists after retry: expected=%d actual=%d diff=%d columns=%d gap=%d width=%d',
+            Math.round(pagination.scrollWidth),
+            Math.round(currentFlowWidth),
+            Math.round(widthDiff),
+            columnCount,
+            Math.round(pagination.columnGap),
+            Math.round(pagination.columnWidth)
+          );
+          lastWidthMismatchKey = attemptKey;
+        }
+      } else {
+        const attemptKey = state.paginationKey ?? pagination.version ?? 'unknown';
+        widthMismatchReflowAttempts.delete(attemptKey);
+        if (lastWidthMismatchKey === attemptKey) {
+          lastWidthMismatchKey = null;
+        }
       }
     }
   }
@@ -1431,6 +1569,27 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
   prepareBufferForPage(bufferIndex, { preScale: 1 });
   setActivePageBackground(bufferIndex);
   setBufferPageBackground(bufferIndex);
+  const frameBounds = readerFrame?.getBoundingClientRect?.();
+  const flowBounds = readerFlow?.getBoundingClientRect?.();
+  if (frameBounds && flowBounds) {
+    console.info(
+      '[Reader] layout bounds: frameWidth=%d flowWidth=%d frameX=%d flowX=%d',
+      Math.round(frameBounds.width),
+      Math.round(flowBounds.width),
+      Math.round(frameBounds.left),
+      Math.round(flowBounds.left)
+    );
+  }
+  const flowScrollHeight = readerFlow?.scrollHeight ?? 0;
+  if (Number.isFinite(flowScrollHeight) && pagination.columnHeight) {
+    const overflow = flowScrollHeight - pagination.columnHeight;
+    console.info(
+      '[Reader] layout height check: column=%d scroll=%d overflow=%d',
+      Math.round(pagination.columnHeight),
+      Math.round(flowScrollHeight),
+      Math.round(overflow)
+    );
+  }
 }
 
 function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
@@ -1818,6 +1977,15 @@ function renderReader({ forceReflow = false } = {}) {
   }
 
   const paginationKey = createPaginationKey(chapterId, metrics);
+  console.info(
+    '[Reader] layout metrics: inner=%dx%d column=%d gap=%d plane=%d shell=%d',
+    Math.round(metrics.innerWidth),
+    Math.round(metrics.innerHeight),
+    Math.round(metrics.columnWidth),
+    Math.round(metrics.columnGap),
+    Math.round(readerPlane?.clientWidth ?? 0),
+    Math.round(readerPageShell?.clientWidth ?? 0)
+  );
   let layoutRebuilt = forceReflow || !state.pagination || state.paginationKey !== paginationKey;
   if (layoutRebuilt) {
     const pagination = buildPagination(flowParts, metrics);

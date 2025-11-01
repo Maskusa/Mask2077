@@ -1946,6 +1946,20 @@ body[data-primary='lobby'] .lobby-card__placeholder {
   justify-content: center;
 }
 
+.style-popup__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.style-popup__actions .btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+}
+
 .font-list {
   display: grid;
   gap: 10px;
