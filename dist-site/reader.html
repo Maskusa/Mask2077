@@ -42,7 +42,25 @@
             <div class="reader__stage">
               <div class="reader__viewport" id="reader-viewport">
                 <div class="reader__page-shell" id="reader-page" aria-live="polite">
+                  <div class="reader__page-buffer" id="reader-page-buffer" aria-hidden="true">
+                    <div
+                      class="reader__page-background reader__page-background--buffer"
+                      id="reader-background-buffer"
+                      aria-hidden="true"
+                    ></div>
+                    <div
+                      class="reader__flow reader__flow--buffer"
+                      id="reader-flow-buffer"
+                      role="presentation"
+                      aria-hidden="true"
+                    ></div>
+                  </div>
                   <div class="reader__page-plane" id="reader-plane">
+                    <div
+                      class="reader__page-background reader__page-background--active"
+                      id="reader-background-active"
+                      aria-hidden="true"
+                    ></div>
                     <div class="reader__page-frame" id="reader-frame" aria-hidden="true"></div>
                     <div id="reader-flow" class="reader__flow" role="presentation"></div>
                   </div>

@@ -1047,6 +1047,7 @@ a {
 
 .reader__page-shell {
   position: relative;
+  --reader-page-padding: clamp(20px, 3.5vw, 32px);
   flex: 0 1 var(--reader-page-max-width, 880px);
   width: min(100%, var(--reader-page-max-width, 880px));
   max-width: var(--reader-page-max-width, 880px);
@@ -1067,7 +1068,7 @@ a {
   min-width: 100%;
   height: 100%;
   min-height: 100%;
-  padding: clamp(20px, 3.5vw, 32px);
+  padding: var(--reader-page-padding);
   box-sizing: border-box;
   border-radius: inherit;
   display: flex;
@@ -1079,6 +1080,7 @@ a {
   backdrop-filter: blur(18px);
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  z-index: 1;
 }
 
 .reader__page-frame {
@@ -1086,19 +1088,9 @@ a {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 222, 188, 0.32) 0%,
-      rgba(255, 222, 188, 0.32) 34%,
-      rgba(255, 245, 220, 0.18) 34%,
-      rgba(255, 245, 220, 0.18) 68%,
-      rgba(210, 238, 198, 0.28) 68%,
-      rgba(210, 238, 198, 0.28) 100%
-    ),
-    var(--reader-page-surface, rgba(255, 255, 255, 0.82));
+  background: transparent;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-  z-index: 0;
+  z-index: 4;
 }
 
 .reader__page-frame::before {
@@ -1117,9 +1109,38 @@ a {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
+.reader__page-background {
+  position: absolute;
+  border-radius: 16px;
+  pointer-events: none;
+  background-color: var(--reader-page-surface, rgba(255, 244, 222, 0.92));
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  transition: none;
+  will-change: opacity, transform;
+}
+
+.reader__page-background--buffer {
+  top: var(--reader-page-padding);
+  right: var(--reader-page-padding);
+  bottom: var(--reader-page-padding);
+  left: var(--reader-page-padding);
+  z-index: 0;
+}
+
+.reader__page-background--active {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+}
+
 .reader__flow {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   flex: 0 0 auto;
   min-height: 100%;
   width: 100%;

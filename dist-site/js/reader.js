@@ -124,6 +124,8 @@ const readerApp = document.querySelector('.app--reader');
 const readerViewport = document.getElementById('reader-viewport');
 const readerPageShell = document.getElementById('reader-page');
 const readerPlane = document.getElementById('reader-plane');
+const readerBackgroundBuffer = document.getElementById('reader-background-buffer');
+const readerBackgroundActive = document.getElementById('reader-background-active');
 const readerFlow = document.getElementById('reader-flow');
 const layoutInfo = document.getElementById('reader-layout-info');
 const readerProgress = document.getElementById('reader-progress');
@@ -142,6 +144,7 @@ let controlsHidden = false;
 
 const DEFAULT_COLUMN_GAP = 32;
 const PAGE_TRANSITION_BASE_DURATION = 450;
+const PAGE_BACKGROUND_IMAGES = ['images/page_v1.svg', 'images/page_v2.svg'];
 
 if (!readerViewport || !readerPageShell || !readerPlane || !readerFlow) {
   throw new Error('Reader viewport is not available');
@@ -810,6 +813,7 @@ function clearPaginationState() {
     readerFlow.style.transition = 'none';
     readerFlow.style.transform = 'translate3d(0, 0, 0)';
   }
+  resetPageBackgrounds();
 }
 
 function getPaginationMetrics() {
@@ -944,6 +948,74 @@ function ensureFlowContent(pagination) {
   readerFlow.dataset.contentVersion = pagination.version;
 }
 
+let activeBackgroundPageIndex = null;
+let bufferBackgroundPageIndex = null;
+
+function resolveBackgroundAsset(pageIndex) {
+  if (!PAGE_BACKGROUND_IMAGES.length) {
+    return null;
+  }
+  if (!Number.isFinite(pageIndex)) {
+    return null;
+  }
+  const totalAssets = PAGE_BACKGROUND_IMAGES.length;
+  const normalized = ((Math.trunc(pageIndex) % totalAssets) + totalAssets) % totalAssets;
+  return PAGE_BACKGROUND_IMAGES[normalized] ?? null;
+}
+
+function applyBackground(element, pageIndex) {
+  if (!element) {
+    return null;
+  }
+  if (!Number.isFinite(pageIndex)) {
+    element.style.backgroundImage = 'none';
+    element.dataset.pageBackground = '';
+    return null;
+  }
+  const normalizedIndex = Math.trunc(pageIndex);
+  if (!Number.isFinite(normalizedIndex) || normalizedIndex < 0) {
+    element.style.backgroundImage = 'none';
+    element.dataset.pageBackground = '';
+    return null;
+  }
+  const asset = resolveBackgroundAsset(normalizedIndex);
+  if (!asset) {
+    element.style.backgroundImage = 'none';
+    element.dataset.pageBackground = '';
+    return null;
+  }
+  element.style.backgroundImage = `url('${asset}')`;
+  element.dataset.pageBackground = String(normalizedIndex);
+  return normalizedIndex;
+}
+
+function setActivePageBackground(pageIndex) {
+  if (activeBackgroundPageIndex === pageIndex) {
+    return;
+  }
+  activeBackgroundPageIndex = applyBackground(readerBackgroundActive, pageIndex);
+}
+
+function setBufferPageBackground(pageIndex) {
+  if (bufferBackgroundPageIndex === pageIndex) {
+    return;
+  }
+  bufferBackgroundPageIndex = applyBackground(readerBackgroundBuffer, pageIndex);
+}
+
+function resetPageBackgrounds() {
+  activeBackgroundPageIndex = null;
+  bufferBackgroundPageIndex = null;
+  if (readerBackgroundActive) {
+    readerBackgroundActive.style.backgroundImage = 'none';
+    readerBackgroundActive.dataset.pageBackground = '';
+  }
+  if (readerBackgroundBuffer) {
+    readerBackgroundBuffer.style.backgroundImage = 'none';
+    readerBackgroundBuffer.dataset.pageBackground = '';
+  }
+}
+
 function getPageTransitionDuration() {
   const speed = Number.isFinite(Number(state.turnSpeed))
     ? clampValue(Number(state.turnSpeed), MIN_TURN_SPEED, MAX_TURN_SPEED)
@@ -981,9 +1053,17 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
   readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
   readerPlane.style.transition = 'none';
   readerPlane.style.transform = 'translate3d(0, 0, 0)';
+  const renderedIndexRaw = Number.parseInt(readerFlow.dataset.pageIndex ?? '', 10);
+  const renderedIndexBase = Number.isFinite(renderedIndexRaw) ? renderedIndexRaw : safeIndex;
+  const renderedIndex = clampValue(renderedIndexBase, 0, Math.max(0, totalPages - 1));
   if (immediate) {
     readerFlow.dataset.pageIndex = String(safeIndex);
     readerPlane.dataset.pageIndex = String(safeIndex);
+    setActivePageBackground(safeIndex);
+    setBufferPageBackground(safeIndex);
+  } else {
+    setActivePageBackground(renderedIndex);
+    setBufferPageBackground(renderedIndex);
   }
 }
 
@@ -1001,6 +1081,8 @@ function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
     cancelPlaneTransition = null;
   }
 
+  setBufferPageBackground(safeIndex);
+
   const duration = getPageTransitionDuration();
   const shouldJump = immediate || Math.abs(delta) < 0.5 || !Number.isFinite(delta) || duration <= 0;
   if (shouldJump) {
@@ -1011,6 +1093,8 @@ function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
     readerPlane.style.transform = 'translate3d(0, 0, 0)';
     readerFlow.dataset.pageIndex = String(safeIndex);
     readerPlane.dataset.pageIndex = String(safeIndex);
+    setActivePageBackground(safeIndex);
+    setBufferPageBackground(safeIndex);
     cancelPlaneTransition = null;
     return;
   }
@@ -1028,6 +1112,8 @@ function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
     readerPlane.style.transform = 'translate3d(0, 0, 0)';
     readerFlow.dataset.pageIndex = String(safeIndex);
     readerPlane.dataset.pageIndex = String(safeIndex);
+    setActivePageBackground(safeIndex);
+    setBufferPageBackground(safeIndex);
   };
 
   const onTransitionEnd = (event) => {
