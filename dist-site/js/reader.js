@@ -151,6 +151,11 @@ const PAGE_REVEAL_DURATION = 200;
 const PAGE_REVEAL_DELAY = 200;
 const ENABLE_PAGE_BACKGROUNDS = false;
 const PAGE_BACKGROUND_IMAGES = ['images/page_v1.svg', 'images/page_v2.svg'];
+const flowLogState = {
+  lastVersion: new Map(),
+};
+let lastWidthMismatchKey = null;
+const widthMismatchReflowAttempts = new Map();
 
 if (!readerViewport || !readerPageShell || !readerPlane || !readerFlow) {
   throw new Error('Reader viewport is not available');
@@ -944,6 +949,196 @@ function buildPagination(flowParts, metrics) {
   };
 }
 
+function safeParagraphKeyPart(value) {
+  return value === undefined || value === null ? '' : String(value);
+}
+
+function buildParagraphKeyFromMeta(meta) {
+  if (!meta || meta.paragraphIndex === undefined || meta.paragraphIndex === null) {
+    return null;
+  }
+  return [
+    safeParagraphKeyPart(meta.chapterId),
+    safeParagraphKeyPart(meta.sectionId),
+    safeParagraphKeyPart(meta.pointId),
+    safeParagraphKeyPart(meta.paragraphIndex),
+  ].join('|');
+}
+
+function buildParagraphKeyFromDataset(dataset) {
+  if (!dataset) {
+    return null;
+  }
+  const paragraphIndex = dataset.paragraphIndex;
+  if (paragraphIndex === undefined || paragraphIndex === null || paragraphIndex === '') {
+    return null;
+  }
+  return [
+    safeParagraphKeyPart(dataset.chapterId),
+    safeParagraphKeyPart(dataset.sectionId),
+    safeParagraphKeyPart(dataset.pointId),
+    safeParagraphKeyPart(paragraphIndex),
+  ].join('|');
+}
+
+function formatParagraphKey(key) {
+  if (!key) {
+    return '?';
+  }
+  const [chapterId = '', sectionId = '', pointId = '', paragraphIndex = ''] = key.split('|');
+  const chapterLabel = chapterId || '?';
+  const sectionLabel = sectionId || '?';
+  const pointLabel = pointId || '?';
+  const indexLabel = paragraphIndex || '?';
+  return `${chapterLabel}>${sectionLabel}>${pointLabel}#${indexLabel}`;
+}
+
+// Debug helper that logs rendered block statistics for a given flow container.
+function logSingleFlowState(targetFlow, label, pagination, expected) {
+  if (!targetFlow) {
+    return;
+  }
+  const version = pagination?.version ?? null;
+  if (version && flowLogState.lastVersion.get(label) === version) {
+    return;
+  }
+  if (version) {
+    flowLogState.lastVersion.set(label, version);
+  }
+  const blockNodes = Array.from(targetFlow.children).filter((node) => node instanceof HTMLElement);
+  const textLength = targetFlow.textContent ? targetFlow.textContent.length : 0;
+  const paragraphNodes = Array.from(targetFlow.querySelectorAll('[data-paragraph-index]'));
+  const actualKeys = new Set();
+  const duplicateKeys = new Set();
+  let incompleteParagraphs = 0;
+  const lengthMismatches = [];
+  const expectedParagraphs = expected?.paragraphs;
+  paragraphNodes.forEach((node) => {
+    const key = buildParagraphKeyFromDataset(node.dataset);
+    if (!key) {
+      incompleteParagraphs += 1;
+      return;
+    }
+    if (actualKeys.has(key)) {
+      duplicateKeys.add(key);
+    } else {
+      actualKeys.add(key);
+    }
+    const expectedInfo = expectedParagraphs?.get?.(key);
+    if (expectedInfo) {
+      const actualLength = (node.textContent ?? '').length;
+      if (Math.abs(actualLength - expectedInfo.length) > 4) {
+        lengthMismatches.push({
+          key,
+          expected: expectedInfo.length,
+          actual: actualLength,
+          preview: (node.textContent ?? '').trim().slice(0, 96).replace(/\s+/g, ' '),
+          tagName: node.tagName,
+        });
+      }
+    }
+  });
+
+  const missingKeys = [];
+  expected.keys.forEach((key) => {
+    if (!actualKeys.has(key)) {
+      missingKeys.push(key);
+    }
+  });
+  const extraKeys = [];
+  actualKeys.forEach((key) => {
+    if (!expected.keys.has(key)) {
+      extraKeys.push(key);
+    }
+  });
+
+  if (lengthMismatches.length) {
+    lengthMismatches.slice(0, 5).forEach((entry) => {
+      console.warn(
+        '[Reader] css chunk paragraph length mismatch: target=%s element=%s id=%s expected=%d actual=%d sample=%s',
+        label,
+        entry.tagName ?? '?',
+        formatParagraphKey(entry.key),
+        entry.expected,
+        entry.actual,
+        entry.preview
+      );
+    });
+  }
+
+  const sampleNodes = paragraphNodes.slice(-3);
+  const tailSample = sampleNodes
+    .map((node) => {
+      const key = buildParagraphKeyFromDataset(node.dataset);
+      const id = key ? formatParagraphKey(key) : '?:?:?:?';
+      const rawText = (node.textContent || '').trim().replace(/\s+/g, ' ');
+      const preview = rawText.length > 48 ? `${rawText.slice(0, 45)}...` : rawText;
+      return `${id}:${preview}`;
+    })
+    .join(' | ') || 'n/a';
+
+  console.info(
+    '[Reader] css chunks ready: target=%s version=%s blocks=%d paragraphs=%d/%d textChars=%d duplicates=%d missing=%d extra=%d incomplete=%d totalParts=%d',
+    label,
+    pagination?.version ?? '?',
+    blockNodes.length,
+    actualKeys.size,
+    expected.paragraphCount,
+    textLength,
+    duplicateKeys.size,
+    missingKeys.length,
+    extraKeys.length,
+    incompleteParagraphs,
+    expected.totalParts
+  );
+  if (missingKeys.length) {
+    const sample = missingKeys.slice(0, 5).map(formatParagraphKey).join(', ');
+    console.warn('[Reader] css chunk missing paragraphs: target=%s count=%d sample=%s', label, missingKeys.length, sample);
+  }
+  if (duplicateKeys.size) {
+    const sample = Array.from(duplicateKeys).slice(0, 5).map(formatParagraphKey).join(', ');
+    console.warn('[Reader] css chunk duplicate paragraphs: target=%s count=%d sample=%s', label, duplicateKeys.size, sample);
+  }
+  if (extraKeys.length) {
+    const sample = extraKeys.slice(0, 5).map(formatParagraphKey).join(', ');
+    console.warn('[Reader] css chunk unexpected paragraphs: target=%s count=%d sample=%s', label, extraKeys.length, sample);
+  }
+  if (incompleteParagraphs) {
+    console.warn('[Reader] css chunk paragraphs without metadata: target=%s count=%d', label, incompleteParagraphs);
+  }
+  console.info('[Reader] css chunk tail sample: target=%s %s', label, tailSample);
+}
+
+// Collects logging data after CSS column content has been updated.
+function logFlowContentState(pagination) {
+  if (!pagination) {
+    return;
+  }
+  const flowParts = Array.isArray(state.flowParts) ? state.flowParts : [];
+  const expectedKeys = new Set();
+  const expectedParagraphs = new Map();
+  flowParts.forEach((part) => {
+    if (!part || part.meta?.type !== 'paragraph') {
+      return;
+    }
+    const key = buildParagraphKeyFromMeta(part.meta);
+    if (key) {
+      expectedKeys.add(key);
+      expectedParagraphs.set(key, {
+        length: typeof part.text === 'string' ? part.text.length : 0,
+      });
+    }
+  });
+  const expected = {
+    keys: expectedKeys,
+    paragraphCount: expectedKeys.size,
+    totalParts: flowParts.length,
+    paragraphs: expectedParagraphs,
+  };
+  logSingleFlowState(readerFlow, 'flow', pagination, expected);
+  logSingleFlowState(readerFlowBuffer, 'buffer-flow', pagination, expected);
+}
+
 function ensureFlowContent(pagination) {
   if (!readerFlow) {
     return;
@@ -1153,6 +1348,7 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
   }
   ensureFlowContent(pagination);
   ensureBufferContent(pagination);
+  logFlowContentState(pagination);
   const themeId = state.style.theme ?? '';
   const isDarkTheme = /night|console/.test(themeId);
   const ruleColor = isDarkTheme ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.08)';
@@ -1162,6 +1358,53 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
   const flowWidth = Math.max(pagination.scrollWidth, pagination.columnWidth);
   applyFlowDimensions(readerFlow, pagination, flowWidth);
   applyFlowDimensions(readerFlowBuffer, pagination, flowWidth);
+  const currentFlowWidth = readerFlow?.scrollWidth ?? 0;
+  if (Number.isFinite(currentFlowWidth)) {
+    const widthDiff = Math.abs(currentFlowWidth - pagination.scrollWidth);
+    const mismatchThreshold = Math.max(pagination.columnWidth * 0.25, 48);
+    if (widthDiff > mismatchThreshold) {
+      const attemptKey = state.paginationKey ?? pagination.version ?? 'unknown';
+      const columnCount =
+        Number.isFinite(pagination.pageShiftWidth) && pagination.pageShiftWidth > 0
+          ? Math.round(pagination.scrollWidth / pagination.pageShiftWidth)
+          : -1;
+      const attempts = widthMismatchReflowAttempts.get(attemptKey) ?? 0;
+      if (attempts === 0) {
+        widthMismatchReflowAttempts.set(attemptKey, attempts + 1);
+        console.warn(
+          '[Reader] layout width mismatch detected: expected=%d actual=%d diff=%d columns=%d gap=%d width=%d -> scheduling reflow',
+          Math.round(pagination.scrollWidth),
+          Math.round(currentFlowWidth),
+          Math.round(widthDiff),
+          columnCount,
+          Math.round(pagination.columnGap),
+          Math.round(pagination.columnWidth)
+        );
+        state.pagination = null;
+        state.paginationKey = null;
+        scheduleReaderRender();
+        return;
+      }
+      if (lastWidthMismatchKey !== attemptKey) {
+        console.warn(
+          '[Reader] layout width mismatch persists after retry: expected=%d actual=%d diff=%d columns=%d gap=%d width=%d',
+          Math.round(pagination.scrollWidth),
+          Math.round(currentFlowWidth),
+          Math.round(widthDiff),
+          columnCount,
+          Math.round(pagination.columnGap),
+          Math.round(pagination.columnWidth)
+        );
+        lastWidthMismatchKey = attemptKey;
+      }
+    } else {
+      const attemptKey = state.paginationKey ?? pagination.version ?? 'unknown';
+      widthMismatchReflowAttempts.delete(attemptKey);
+      if (lastWidthMismatchKey === attemptKey) {
+        lastWidthMismatchKey = null;
+      }
+    }
+  }
 
   const totalPages = Number.isFinite(pagination.totalPages) ? pagination.totalPages : 0;
   const safeIndex = clampValue(state.pageIndex, 0, Math.max(0, totalPages - 1));
@@ -1409,6 +1652,29 @@ function buildChapterFlowParts(chapterId) {
     return [];
   }
 
+  const diagnostics = {
+    totalSections: 0,
+    totalPoints: 0,
+    totalParagraphs: 0,
+    emptyPoints: [],
+    shortParagraphSamples: [],
+    totalTextLength: 0,
+    longestParagraph: {
+      key: null,
+      textLength: 0,
+    },
+  };
+
+  const updateLongestParagraph = (metaKey, paragraphText) => {
+    const textLength = typeof paragraphText === 'string' ? paragraphText.length : 0;
+    if (textLength > diagnostics.longestParagraph.textLength) {
+      diagnostics.longestParagraph = {
+        key: metaKey,
+        textLength,
+      };
+    }
+  };
+
   const parts = [];
   if (chapter.title) {
     parts.push(
@@ -1425,6 +1691,7 @@ function buildChapterFlowParts(chapterId) {
     if (!section) {
       return;
     }
+    diagnostics.totalSections += 1;
     if (section.title) {
       parts.push(
         createChunkPart(section.title, false, 'chapter', {
@@ -1440,6 +1707,7 @@ function buildChapterFlowParts(chapterId) {
       if (!point) {
         return;
       }
+      diagnostics.totalPoints += 1;
       if (point.title) {
         parts.push(
           createChunkPart(point.title, false, 'chapter', {
@@ -1451,8 +1719,19 @@ function buildChapterFlowParts(chapterId) {
         );
       }
       const paragraphs = Array.isArray(point.text) ? point.text : [];
+      if (!paragraphs.length) {
+        diagnostics.emptyPoints.push({
+          chapterId,
+          sectionId,
+          pointId,
+          title: point.title ?? '',
+          anchorId: point.anchorId ?? '',
+        });
+      }
       paragraphs.forEach((paragraph, paragraphIndex) => {
         const textValue = typeof paragraph === 'string' ? paragraph : String(paragraph ?? '');
+        diagnostics.totalParagraphs += 1;
+        diagnostics.totalTextLength += textValue.length;
         parts.push(
           createChunkPart(textValue, false, null, {
             chapterId,
@@ -1462,9 +1741,46 @@ function buildChapterFlowParts(chapterId) {
             type: 'paragraph',
           })
         );
+        const metaKey = `${chapterId}>${sectionId}>${pointId}#${paragraphIndex}`;
+        updateLongestParagraph(metaKey, textValue);
+        if (textValue.length < 120) {
+          diagnostics.shortParagraphSamples.push(`${metaKey}:${textValue.slice(0, 64).replace(/\s+/g, ' ')}${textValue.length > 64 ? '…' : ''}`);
+        }
       });
     });
   });
+
+  console.info(
+    '[Reader] flow diagnostics: chapter=%s sections=%d points=%d paragraphs=%d parts=%d emptyPoints=%d totalChars=%d longest=%s(%d chars)',
+    chapterId,
+    diagnostics.totalSections,
+    diagnostics.totalPoints,
+    diagnostics.totalParagraphs,
+    parts.length,
+    diagnostics.emptyPoints.length,
+    diagnostics.totalTextLength,
+    diagnostics.longestParagraph.key ?? 'n/a',
+    diagnostics.longestParagraph.textLength
+  );
+  if (diagnostics.emptyPoints.length) {
+    const sample = diagnostics.emptyPoints.slice(0, 5).map((point) => {
+      return `${point.chapterId}>${point.sectionId}>${point.pointId}(${point.title || '∅'})`;
+    });
+    console.warn(
+      '[Reader] flow diagnostics empty points: chapter=%s count=%d sample=%s',
+      chapterId,
+      diagnostics.emptyPoints.length,
+      sample.join(', ')
+    );
+  }
+  if (diagnostics.shortParagraphSamples.length) {
+    console.info(
+      '[Reader] flow diagnostics short paragraphs: chapter=%s samples=%s',
+      chapterId,
+      diagnostics.shortParagraphSamples.slice(0, 5).join(' | ')
+    );
+  }
+
   return parts;
 }
 
