@@ -167,11 +167,13 @@ if (lockedModal) {
   });
 }
 
-document.querySelectorAll('[data-locked="true"]').forEach((element) => {
-  element.addEventListener('click', (event) => {
-    event.preventDefault();
-    openLockedModal(element.dataset.lockDestination);
-  });
+document.addEventListener('click', (event) => {
+  const lockedTarget = event.target.closest('[data-locked="true"]');
+  if (!lockedTarget) {
+    return;
+  }
+  event.preventDefault();
+  openLockedModal(lockedTarget.dataset.lockDestination);
 });
 
 const fileInput = document.getElementById('file-input');

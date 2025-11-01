@@ -1,5 +1,11 @@
 ﻿import { showToast } from './common.js';
 import { loadBookData } from './book-data.js';
+import {
+  loadChapterUnlocks,
+  persistChapterUnlocks,
+  ensureChapterUnlocked,
+  isChapterLocked,
+} from './reading-state.js';
 
 const READER_PROGRESS_KEY = 'mask2077:reader-progress';
 const READER_PREFERENCES_KEY = 'mask2077:reader-preferences';
@@ -119,6 +125,7 @@ let renderScheduled = false;
 let pendingRenderOptions = { forceReflow: false };
 let bannerCollapsed = false;
 let bannerChapterId = null;
+let unlockedChapters = new Set();
 
 const readerRoot = document.querySelector('.reader');
 if (!readerRoot) {
@@ -159,6 +166,7 @@ const lineHeightLabel = document.getElementById('line-height-label');
 const turnSpeedInput = document.getElementById('turn-speed');
 const turnSpeedLabel = document.getElementById('turn-speed-label');
 const readerStage = document.querySelector('.reader__stage');
+const readerScreen = document.querySelector('.screen--reader');
 let controlsHidden = false;
 
 const DEFAULT_COLUMN_GAP = 32;
@@ -178,6 +186,29 @@ const widthMismatchReflowAttempts = new Map();
 
 if (!readerViewport || !readerPageShell || !readerPlane || !readerFlow) {
   throw new Error('Reader viewport is not available');
+}
+
+function logPaddingDiagnostics() {
+  if (typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') {
+    return;
+  }
+  const targets = [
+    { element: readerScreen, label: 'screen--reader' },
+    { element: readerStage, label: 'reader__stage' },
+  ];
+  targets.forEach(({ element, label }) => {
+    if (!element) {
+      return;
+    }
+    const styles = window.getComputedStyle(element);
+    console.info(
+      `[ReaderLayout] ${label} padding top=${styles.paddingTop} right=${styles.paddingRight} bottom=${styles.paddingBottom} left=${styles.paddingLeft}`
+    );
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.requestAnimationFrame?.(logPaddingDiagnostics) ?? setTimeout(logPaddingDiagnostics, 0);
 }
 
 if (stylePopup) {
@@ -418,15 +449,36 @@ function getOrderedPointIds(section) {
   return Object.keys(section.points);
 }
 
+function getFirstUnlockedChapterId() {
+  if (!Array.isArray(chapterOrder) || chapterOrder.length === 0) {
+    return null;
+  }
+  for (const chapterId of chapterOrder) {
+    if (!isChapterLocked(unlockedChapters, chapterId)) {
+      return chapterId;
+    }
+  }
+  return chapterOrder[0] ?? null;
+}
+
 function ensureSelection() {
   if (chapterOrder.length === 0) {
     return;
   }
   let resetPage = false;
   if (!state.chapterId || !BOOKS[state.chapterId]) {
-    state.chapterId = chapterOrder[0];
+    const fallbackChapter = getFirstUnlockedChapterId();
+    state.chapterId = fallbackChapter ?? chapterOrder[0];
     resetPage = true;
     console.info('[Reader] �ᯮ��㥬 ����� �� 㬮�砭��: %s', state.chapterId);
+  }
+  if (state.chapterId && isChapterLocked(unlockedChapters, state.chapterId)) {
+    const unlockedCandidate = getFirstUnlockedChapterId();
+    if (unlockedCandidate && unlockedCandidate !== state.chapterId) {
+      state.chapterId = unlockedCandidate;
+      resetPage = true;
+      console.info("[Reader] normalized chapter to unlocked: %s", state.chapterId);
+    }
   }
   const chapter = BOOKS[state.chapterId];
   const sectionKeys = chapter ? Object.keys(chapter.sections) : [];
@@ -660,6 +712,7 @@ function getNextChapterInfo() {
     id: nextChapterId,
     title,
     order: orderNumber,
+    locked: isChapterLocked(unlockedChapters, nextChapterId),
   };
 }
 
@@ -716,7 +769,7 @@ function updateChapterBanner({ forceExpand = false } = {}) {
   const safeTotal = Math.max(0, totalPages);
   const isLastPage = safeTotal > 0 && state.pageIndex >= safeTotal - 1;
   const nextChapter = getNextChapterInfo();
-  if (!isLastPage || !nextChapter) {
+  if (!isLastPage || !nextChapter || !nextChapter.locked) {
     hideChapterBannerElements();
     return;
   }
@@ -750,6 +803,11 @@ function openNextChapter() {
     return;
   }
   console.info('[Reader] opening next chapter: %s', nextChapter.id);
+  const unlockedNow = ensureChapterUnlocked(unlockedChapters, nextChapter.id);
+  if (unlockedNow) {
+    persistChapterUnlocks(unlockedChapters);
+    console.info("[Reader] chapter unlocked via banner: %s", nextChapter.id);
+  }
   state.chapterId = nextChapter.id;
   state.sectionId = null;
   state.pointId = null;
@@ -775,6 +833,7 @@ function changePage(direction) {
     if (direction > 0 && currentIndex >= total - 1) {
       updateChapterBanner({ forceExpand: true });
     }
+    const nextChapterCandidate = getNextChapterInfo();
     const pagination = state.pagination;
     const columnHeight = Number.isFinite(pagination?.columnHeight) ? pagination.columnHeight : 0;
     const columnWidth = Number.isFinite(pagination?.columnWidth) ? pagination.columnWidth : 0;
@@ -794,6 +853,31 @@ function changePage(direction) {
       Math.round(flowWidth),
       Math.round(scrollHeight)
     );
+    if (direction > 0 && currentIndex >= total - 1) {
+      const lockedState = nextChapterCandidate ? String(nextChapterCandidate.locked) : 'n/a';
+      const chapterId = nextChapterCandidate?.id ?? '∅';
+      const navigationHint =
+        !nextChapterCandidate
+          ? 'no-next-chapter'
+          : nextChapterCandidate.locked
+          ? 'locked-show-modal'
+          : 'awaiting-banner-confirmation';
+      console.info(
+        '[Reader] next chapter check: candidate=%s locked=%s bannerCollapsed=%s next-action=%s',
+        chapterId,
+        lockedState,
+        String(bannerCollapsed),
+        navigationHint
+      );
+      if (nextChapterCandidate && !nextChapterCandidate.locked) {
+        if (!bannerCollapsed) {
+          console.info('[Reader] invoking openNextChapter() due to boundary navigation');
+          openNextChapter();
+          return;
+        }
+        updateChapterBanner({ forceExpand: true });
+      }
+    }
     return;
   }
   state.pageIndex = nextIndex;
@@ -2264,6 +2348,11 @@ function initializeReader() {
     .then((data) => {
       BOOKS = data.books ?? {};
       chapterOrder = Array.isArray(data.chapters) ? data.chapters.map((chapter) => chapter.id) : [];
+      const unlockResult = loadChapterUnlocks(chapterOrder, data.defaultChapterId ?? null);
+      unlockedChapters = unlockResult.unlocks;
+      if (unlockResult.changed) {
+        persistChapterUnlocks(unlockedChapters);
+      }
 
       if (!state.chapterId && data.defaultChapterId) {
         state.chapterId = data.defaultChapterId;
@@ -2276,6 +2365,17 @@ function initializeReader() {
         console.info('[Reader] Дефолтный пункт: %s', data.defaultPointId);
       }
 
+      if (state.chapterId && isChapterLocked(unlockedChapters, state.chapterId)) {
+        const fallbackChapter = getFirstUnlockedChapterId();
+        if (fallbackChapter && fallbackChapter !== state.chapterId) {
+          state.chapterId = fallbackChapter;
+          state.sectionId = null;
+          state.pointId = null;
+          state.pageIndex = 0;
+          state.autoAlignPage = true;
+          console.info("[Reader] fallback to unlocked chapter after load: %s", state.chapterId);
+        }
+      }
       readerRoot.dataset.defaultChapter = data.defaultChapterId ?? '';
       readerRoot.dataset.defaultSection = data.defaultSectionId ?? '';
       readerRoot.dataset.defaultPoint = data.defaultPointId ?? '';
@@ -2384,4 +2484,16 @@ const viewportChangeHandler = () => {
 
 window.addEventListener('resize', viewportChangeHandler, { passive: true });
 window.addEventListener('orientationchange', viewportChangeHandler);
+
+
+
+
+
+
+
+
+
+
+
+
 

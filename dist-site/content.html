@@ -1,12 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mask2077 · Содержание</title>
+    <title>Mask2077 � ����ঠ���</title>
     <meta
       name="description"
-      content="Содержание книги «Маск 2077». Выберите главу, часть или пункт для перехода к чтению."
+      content="����ঠ��� ����� <��� 2077>. �롥�� �����, ���� ��� �㭪� ��� ���室� � �⥭��."
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Alice&family=Droid+Serif&family=PT+Sans&family=Comfortaa:wght@600&display=swap"
@@ -14,28 +14,41 @@
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body data-primary="lobby">
-    <div class="app">
-      <main class="screen screen--secondary">
-        <header class="screen__header screen__header--back">
-          <h1 id="content-title">Содержание книги</h1>
+  <body data-primary="lobby" data-free-scroll="true">
+    <div class="app app--reader">
+      <main class="screen screen--primary screen--content">
+        <header class="screen__header">
+          <h1 id="content-title">����ঠ��� �����</h1>
+          <p class="screen__subtitle">������� �����, ���� ��� ������</p>
         </header>
 
-        <div class="content-list" role="list" aria-labelledby="content-title" data-status="loading"></div>
-
+        <section class="content-section" aria-labelledby="content-title">
+          <div class="content-wrapper">
+            <div
+              class="content-list"
+              role="list"
+              aria-labelledby="content-title"
+              data-status="loading"
+            ></div>
+          </div>
+        </section>
       </main>
+
+      <div class="panel-ok" role="toolbar">
+        <button type="button" class="panel-ok__button" data-action="panel-ok">���</button>
+      </div>
     </div>
 
     <dialog id="locked-modal" class="modal">
       <form method="dialog" class="modal__content">
-        <h3>Глава заблокирована!</h3>
+        <h3>����� �������஢���!</h3>
         <p>
-          Вы можете открыть главу после прочтения предыдущей. Или оформите премиальный пропуск, чтобы получить
-          мгновенный доступ.
+          �� ����� ������ ����� ��᫥ ���⥭�� �।��饩. ��� ��ନ� �६����� �ய��, �⮡� �������
+          ��������� �����.
         </p>
         <div class="modal__actions">
-          <button value="cancel" class="btn btn--ghost">Не открывать</button>
-          <button value="store" class="btn btn--accent">Открыть</button>
+          <button value="cancel" class="btn btn--ghost">�� ���뢠��</button>
+          <button value="store" class="btn btn--accent">������</button>
         </div>
       </form>
     </dialog>
@@ -46,4 +59,3 @@
     <script type="module" src="./js/content.js"></script>
   </body>
 </html>
-

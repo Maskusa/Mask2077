@@ -1,66 +1,39 @@
-﻿import { loadBookData } from './book-data.js';
+import { loadBookData } from './book-data.js';
+import { readStoredProgress, normalizeProgress } from './reading-state.js';
 
-const PROGRESS_KEY = 'mask2077:reader-progress';
 const progressCard = document.querySelector('[data-progress-card]');
 
 if (!progressCard) {
-  console.warn('[Lobby] Карточка прогресса не найдена');
+  console.warn('[Lobby] ����窠 �ண��� �� �������');
 } else {
-  console.info('[Lobby] Инициализация карточки прогресса');
+  console.info('[Lobby] ���樠������ ����窨 �ண���');
   loadBookData()
     .then((data) => {
-      const storedProgress = readProgress();
+      const storedProgress = readStoredProgress();
+      const normalized = normalizeProgress(storedProgress, data);
       const fallback = {
         chapterId: data.defaultChapterId,
         sectionId: data.defaultSectionId,
         pointId: data.defaultPointId,
         chunkIndex: 0,
       };
-      const normalized = normalizeProgress(storedProgress, data);
+
       if (normalized) {
         console.info(
-          '[Lobby] Используем сохранённый прогресс: %s / %s / %s',
+          '[Lobby] �ᯮ��㥬 ��࠭�� �ண���: %s / %s / %s',
           normalized.chapterId,
           normalized.sectionId,
           normalized.pointId
         );
         updateCard(progressCard, data, normalized);
       } else {
-        console.info('[Lobby] Прогресс отсутствует, используем значения по умолчанию');
+        console.info('[Lobby] �ண��� ���������, �ᯮ��㥬 ���祭�� �� 㬮�砭��');
         updateCard(progressCard, data, fallback);
       }
     })
     .catch((error) => {
-      console.error('[Lobby] Не удалось загрузить данные книги', error);
+      console.error('[Lobby] �� 㤠���� ����㧨�� ����� �����', error);
     });
-}
-
-function readProgress() {
-  try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (error) {
-    console.warn('[Lobby] Ошибка чтения прогресса', error);
-    return null;
-  }
-}
-
-function normalizeProgress(progress, data) {
-  if (!progress || typeof progress !== 'object') {
-    return null;
-  }
-  const chapter = data.books?.[progress.chapterId];
-  const section = chapter?.sections?.[progress.sectionId];
-  const point = section?.points?.[progress.pointId];
-  if (!chapter || !section || !point) {
-    return null;
-  }
-  return {
-    chapterId: progress.chapterId,
-    sectionId: progress.sectionId,
-    pointId: progress.pointId,
-    chunkIndex: Number.isFinite(progress.chunkIndex) ? progress.chunkIndex : 0,
-  };
 }
 
 function buildSequence(data) {
@@ -113,14 +86,14 @@ function updateCard(card, data, progress) {
     eyebrow.textContent = current.chapterTitle || 'Mask 2077';
   }
   if (title) {
-    title.textContent = current.sectionTitle || current.chapterTitle || 'Начните чтение';
+    title.textContent = current.sectionTitle || current.chapterTitle || '��筨� �⥭��';
   }
   if (note) {
     const label =
       currentIndex >= 0 && total > 0
-        ? `Фрагмент ${currentIndex + 1} из ${total}`
-        : 'Фрагмент 1 из 1';
-    note.textContent = current.pointTitle ? `${label} • ${current.pointTitle}` : label;
+        ? `�ࠣ���� ${currentIndex + 1} �� ${total}`
+        : '�ࠣ���� 1 �� 1';
+    note.textContent = current.pointTitle ? `${label}  ${current.pointTitle}` : label;
   }
 
   const targetUrl = buildContentUrl(progress);
@@ -129,7 +102,7 @@ function updateCard(card, data, progress) {
   }
 
   console.info(
-    '[Lobby] Прогресс обновлён: %s → %s → %s (фрагмент %d из %d)',
+    '[Lobby] �ண��� �������: %s  %s  %s (�ࠣ���� %d �� %d)',
     progress.chapterId,
     progress.sectionId,
     progress.pointId,
