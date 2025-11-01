@@ -26,7 +26,7 @@ const DEFAULT_STYLE = {
 };
 const MIN_TURN_SPEED = 0.1;
 const MAX_TURN_SPEED = 2;
-const DEFAULT_TURN_SPEED = 1;
+const DEFAULT_TURN_SPEED = 0.5;
 const COLUMN_GAP_MULTIPLIER = 10;
 const COLUMN_GAP_MIN = 240;
 const COLUMN_GAP_MAX = 720;
@@ -124,9 +124,11 @@ const readerApp = document.querySelector('.app--reader');
 const readerViewport = document.getElementById('reader-viewport');
 const readerPageShell = document.getElementById('reader-page');
 const readerPlane = document.getElementById('reader-plane');
+const readerPageBuffer = document.getElementById('reader-page-buffer');
 const readerBackgroundBuffer = document.getElementById('reader-background-buffer');
 const readerBackgroundActive = document.getElementById('reader-background-active');
 const readerFlow = document.getElementById('reader-flow');
+const readerFlowBuffer = document.getElementById('reader-flow-buffer');
 const layoutInfo = document.getElementById('reader-layout-info');
 const readerProgress = document.getElementById('reader-progress');
 const readerControls = Array.from(readerRoot.querySelectorAll('.reader__controls'));
@@ -144,6 +146,9 @@ let controlsHidden = false;
 
 const DEFAULT_COLUMN_GAP = 32;
 const PAGE_TRANSITION_BASE_DURATION = 450;
+const PAGE_REVEAL_PRE_SCALE = 0.95;
+const PAGE_REVEAL_DURATION = 200;
+const PAGE_REVEAL_DELAY = 200;
 const PAGE_BACKGROUND_IMAGES = ['images/page_v1.svg', 'images/page_v2.svg'];
 
 if (!readerViewport || !readerPageShell || !readerPlane || !readerFlow) {
@@ -351,6 +356,7 @@ const speechSupported = 'speechSynthesis' in window;
 let currentUtterance = null;
 let planeBaseOffset = 0;
 let cancelPlaneTransition = null;
+let bufferRevealTimer = null;
 
 function getSection() {
   const chapter = BOOKS[state.chapterId];
@@ -776,15 +782,15 @@ turnSpeedInput?.addEventListener('input', () => {
 
 const readerZones = readerRoot.querySelectorAll('.reader__zone');
 readerZones.forEach((zone) => {
-  zone.addEventListener('click', () => {
+  zone.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     const { action } = zone.dataset;
     console.info('[Reader] Жест пролистывания: zone=%s', action);
-    if (action === 'prev-chunk') {
-      changePage(-1);
+    if (!action) {
+      return;
     }
-    if (action === 'next-chunk') {
-      changePage(1);
-    }
+    handleAction(action, event);
   });
 });
 
@@ -1014,6 +1020,117 @@ function resetPageBackgrounds() {
     readerBackgroundBuffer.style.backgroundImage = 'none';
     readerBackgroundBuffer.dataset.pageBackground = '';
   }
+  resetBufferFlow();
+}
+
+function resetBufferFlow() {
+  if (readerFlowBuffer) {
+    readerFlowBuffer.innerHTML = '';
+    readerFlowBuffer.style.transition = 'none';
+    readerFlowBuffer.style.transform = 'translate3d(0, 0, 0)';
+    readerFlowBuffer.style.width = '';
+    readerFlowBuffer.style.height = '';
+    readerFlowBuffer.style.columnWidth = '';
+    readerFlowBuffer.style.columnGap = '';
+    readerFlowBuffer.dataset.pageIndex = '0';
+    readerFlowBuffer.dataset.contentVersion = '';
+  }
+  if (readerPageBuffer) {
+    readerPageBuffer.style.transition = 'none';
+    readerPageBuffer.style.transform = 'translate3d(0, 0, 0) scale(1)';
+    readerPageBuffer.dataset.pageIndex = '0';
+    readerPageBuffer.dataset.revealPage = '';
+  }
+  if (bufferRevealTimer) {
+    window.clearTimeout(bufferRevealTimer);
+    bufferRevealTimer = null;
+  }
+}
+
+function ensureBufferContent(pagination) {
+  if (!readerFlowBuffer) {
+    return;
+  }
+  if (readerFlowBuffer.dataset.contentVersion === pagination.version) {
+    return;
+  }
+  readerFlowBuffer.innerHTML = pagination.contentHTML;
+  readerFlowBuffer.dataset.contentVersion = pagination.version;
+}
+
+function applyFlowDimensions(targetFlow, pagination, flowWidth) {
+  if (!targetFlow) {
+    return;
+  }
+  targetFlow.style.columnGap = `${pagination.columnGap}px`;
+  targetFlow.style.columnWidth = `${pagination.columnWidth}px`;
+  targetFlow.style.height = `${pagination.columnHeight}px`;
+  targetFlow.style.width = `${flowWidth}px`;
+}
+
+function alignFlowToPage(targetFlow, pagination, pageIndex) {
+  if (!targetFlow) {
+    return 0;
+  }
+  const totalPages = Number.isFinite(pagination.totalPages) ? pagination.totalPages : 0;
+  const safeIndex = clampValue(pageIndex, 0, Math.max(0, totalPages - 1));
+  const targetOffset = Math.max(0, safeIndex) * pagination.pageShiftWidth;
+  targetFlow.style.transition = 'none';
+  targetFlow.style.transform = `translate3d(-${targetOffset}px, 0, 0)`;
+  targetFlow.dataset.pageIndex = String(safeIndex);
+  if (targetFlow === readerFlowBuffer && readerPageBuffer) {
+    readerPageBuffer.dataset.pageIndex = String(safeIndex);
+  }
+  const targetName = targetFlow === readerFlow ? 'flow' : targetFlow === readerFlowBuffer ? 'buffer-flow' : 'unknown-flow';
+  console.info('[Reader] alignFlowToPage: target=%s page=%d offset=%d', targetName, safeIndex, Math.round(targetOffset));
+  return targetOffset;
+}
+
+function setBufferRevealScale(scale, { duration = 0 } = {}) {
+  if (!readerPageBuffer) {
+    return;
+  }
+  if (duration > 0) {
+    readerPageBuffer.style.transition = `transform ${duration}ms ease-out`;
+  } else {
+    readerPageBuffer.style.transition = 'none';
+  }
+  readerPageBuffer.style.transform = `translate3d(0, 0, 0) scale(${scale})`;
+  console.info('[Reader] setBufferRevealScale: page=%s scale=%s duration=%d', readerPageBuffer.dataset.revealPage ?? '?', scale.toFixed(2), duration);
+}
+
+function prepareBufferForPage(pageIndex, { preScale = 1 } = {}) {
+  if (!readerPageBuffer) {
+    return;
+  }
+  if (bufferRevealTimer) {
+    window.clearTimeout(bufferRevealTimer);
+    bufferRevealTimer = null;
+    console.info('[Reader] buffer reveal timer cleared before prepare');
+  }
+  readerPageBuffer.dataset.revealPage = Number.isFinite(pageIndex) ? String(pageIndex) : '';
+  setBufferRevealScale(preScale, { duration: 0 });
+  if (Number.isFinite(pageIndex)) {
+    console.info('[Reader] buffer prepared: page=%d scale=%s', pageIndex, preScale.toFixed(2));
+  }
+}
+
+function scheduleBufferReveal(pageIndex, delayMs) {
+  if (!readerPageBuffer) {
+    return;
+  }
+  if (bufferRevealTimer) {
+    window.clearTimeout(bufferRevealTimer);
+    bufferRevealTimer = null;
+    console.info('[Reader] buffer reveal timer cleared before reschedule');
+  }
+  const revealDelay = Math.max(0, delayMs);
+  console.info('[Reader] buffer reveal scheduled: page=%d delay=%dms', pageIndex, revealDelay);
+  bufferRevealTimer = window.setTimeout(() => {
+    setBufferRevealScale(1, { duration: PAGE_REVEAL_DURATION });
+    console.info('[Reader] buffer reveal start: page=%d delay=%dms', pageIndex, revealDelay);
+    bufferRevealTimer = null;
+  }, revealDelay);
 }
 
 function getPageTransitionDuration() {
@@ -1029,17 +1146,16 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
     return;
   }
   ensureFlowContent(pagination);
+  ensureBufferContent(pagination);
   const themeId = state.style.theme ?? '';
   const isDarkTheme = /night|console/.test(themeId);
   const ruleColor = isDarkTheme ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.08)';
   readerRoot.style.setProperty('--reader-column-gap', `${pagination.columnGap}px`);
   readerRoot.style.setProperty('--reader-column-width', `${pagination.columnWidth}px`);
   readerRoot.style.setProperty('--reader-column-rule', ruleColor);
-  readerFlow.style.columnGap = `${pagination.columnGap}px`;
-  readerFlow.style.columnWidth = `${pagination.columnWidth}px`;
-  readerFlow.style.height = `${pagination.columnHeight}px`;
   const flowWidth = Math.max(pagination.scrollWidth, pagination.columnWidth);
-  readerFlow.style.width = `${flowWidth}px`;
+  applyFlowDimensions(readerFlow, pagination, flowWidth);
+  applyFlowDimensions(readerFlowBuffer, pagination, flowWidth);
 
   const totalPages = Number.isFinite(pagination.totalPages) ? pagination.totalPages : 0;
   const safeIndex = clampValue(state.pageIndex, 0, Math.max(0, totalPages - 1));
@@ -1047,24 +1163,25 @@ function applyLayout(pagination, metrics, { immediate = false } = {}) {
   planeBaseOffset = clampValue(planeBaseOffset, 0, maxOffset);
   if (immediate) {
     planeBaseOffset = safeIndex * pagination.pageShiftWidth;
+    console.info('[Reader] applyLayout immediate: page=%d offset=%d', safeIndex, Math.round(planeBaseOffset));
   }
 
   readerFlow.style.transition = 'none';
   readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
   readerPlane.style.transition = 'none';
-  readerPlane.style.transform = 'translate3d(0, 0, 0)';
+  readerPlane.style.transform = 'translate3d(0, 0, 0) scale(1)';
   const renderedIndexRaw = Number.parseInt(readerFlow.dataset.pageIndex ?? '', 10);
   const renderedIndexBase = Number.isFinite(renderedIndexRaw) ? renderedIndexRaw : safeIndex;
   const renderedIndex = clampValue(renderedIndexBase, 0, Math.max(0, totalPages - 1));
   if (immediate) {
     readerFlow.dataset.pageIndex = String(safeIndex);
     readerPlane.dataset.pageIndex = String(safeIndex);
-    setActivePageBackground(safeIndex);
-    setBufferPageBackground(safeIndex);
-  } else {
-    setActivePageBackground(renderedIndex);
-    setBufferPageBackground(renderedIndex);
   }
+  const bufferIndex = immediate ? safeIndex : renderedIndex;
+  alignFlowToPage(readerFlowBuffer, pagination, bufferIndex);
+  prepareBufferForPage(bufferIndex, { preScale: 1 });
+  setActivePageBackground(bufferIndex);
+  setBufferPageBackground(bufferIndex);
 }
 
 function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
@@ -1075,13 +1192,37 @@ function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
   const safeIndex = clampValue(pageIndex, 0, Math.max(0, totalPages - 1));
   const targetOffset = Math.max(0, safeIndex) * pagination.pageShiftWidth;
   const delta = targetOffset - planeBaseOffset;
+  const currentIndex = Number.parseInt(readerFlow.dataset.pageIndex ?? '0', 10) || 0;
+  const shouldReveal = !immediate && Math.abs(delta) >= 0.5;
+  console.info(
+    '[Reader] page turn start: from=%d to=%d delta=%d immediate=%s reveal=%s',
+    currentIndex,
+    safeIndex,
+    Math.round(delta),
+    immediate ? 'true' : 'false',
+    shouldReveal ? 'yes' : 'no'
+  );
 
   if (cancelPlaneTransition) {
+    console.info('[Reader] cancelPlaneTransition invoked before new turn');
     cancelPlaneTransition();
     cancelPlaneTransition = null;
   }
 
+  alignFlowToPage(readerFlowBuffer, pagination, safeIndex);
   setBufferPageBackground(safeIndex);
+  console.info('[Reader] buffer prepared for page %d', safeIndex);
+  const bufferPreScale = shouldReveal ? PAGE_REVEAL_PRE_SCALE : 1;
+  console.info(
+    '[Reader] buffer pre-scale decision: page=%d scale=%s reveal=%s',
+    safeIndex,
+    bufferPreScale.toFixed(2),
+    shouldReveal ? 'yes' : 'no'
+  );
+  prepareBufferForPage(safeIndex, { preScale: bufferPreScale });
+  if (shouldReveal) {
+    scheduleBufferReveal(safeIndex, PAGE_REVEAL_DELAY);
+  }
 
   const duration = getPageTransitionDuration();
   const shouldJump = immediate || Math.abs(delta) < 0.5 || !Number.isFinite(delta) || duration <= 0;
@@ -1090,30 +1231,49 @@ function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
     readerFlow.style.transition = 'none';
     readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
     readerPlane.style.transition = 'none';
-    readerPlane.style.transform = 'translate3d(0, 0, 0)';
+    readerPlane.style.transform = 'translate3d(0, 0, 0) scale(1)';
     readerFlow.dataset.pageIndex = String(safeIndex);
     readerPlane.dataset.pageIndex = String(safeIndex);
     setActivePageBackground(safeIndex);
     setBufferPageBackground(safeIndex);
+    alignFlowToPage(readerFlowBuffer, pagination, safeIndex);
+    prepareBufferForPage(safeIndex, { preScale: 1 });
+    console.info(
+      '[Reader] page turn applied instantly to page %d (reveal=%s)',
+      safeIndex,
+      shouldReveal ? 'yes' : 'no'
+    );
     cancelPlaneTransition = null;
     return;
   }
 
   readerFlow.style.transition = 'none';
   readerPlane.style.transition = 'none';
-  readerPlane.style.transform = 'translate3d(0, 0, 0)';
+  readerPlane.style.transform = 'translate3d(0, 0, 0) scale(1)';
   void readerPlane.offsetWidth;
 
-  const finalize = () => {
+  const finalize = (reason = 'complete') => {
     planeBaseOffset = targetOffset;
-    readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
     readerFlow.style.transition = 'none';
+    readerFlow.style.transform = `translate3d(-${planeBaseOffset}px, 0, 0)`;
     readerPlane.style.transition = 'none';
-    readerPlane.style.transform = 'translate3d(0, 0, 0)';
+    readerPlane.style.transform = 'translate3d(0, 0, 0) scale(1)';
     readerFlow.dataset.pageIndex = String(safeIndex);
     readerPlane.dataset.pageIndex = String(safeIndex);
     setActivePageBackground(safeIndex);
     setBufferPageBackground(safeIndex);
+    alignFlowToPage(readerFlowBuffer, pagination, safeIndex);
+    if (reason === 'complete') {
+      prepareBufferForPage(safeIndex, { preScale: 1 });
+    } else {
+      console.info('[Reader] finalize skip reveal due to reason=%s', reason);
+    }
+    console.info(
+      '[Reader] page turn finalize: now at page %d (reveal=%s reason=%s)',
+      safeIndex,
+      shouldReveal ? 'yes' : 'no',
+      reason
+    );
   };
 
   const onTransitionEnd = (event) => {
@@ -1121,20 +1281,23 @@ function applyPageTransform(pagination, pageIndex, { immediate = false } = {}) {
       return;
     }
     readerPlane.removeEventListener('transitionend', onTransitionEnd);
-    finalize();
+    console.info('[Reader] plane transition end event captured');
+    finalize('complete');
     cancelPlaneTransition = null;
   };
 
   cancelPlaneTransition = () => {
     readerPlane.removeEventListener('transitionend', onTransitionEnd);
-    finalize();
+    console.info('[Reader] cancelPlaneTransition executed (during turn)');
+    finalize('cancel');
     cancelPlaneTransition = null;
   };
 
   readerPlane.addEventListener('transitionend', onTransitionEnd);
   readerPlane.style.transition = duration ? `transform ${duration}ms ease` : 'none';
-  readerPlane.style.transform = `translate3d(${-delta}px, 0, 0)`;
+  readerPlane.style.transform = `translate3d(${-delta}px, 0, 0) scale(1)`;
   readerPlane.dataset.pageIndex = String(safeIndex);
+  console.info('[Reader] plane transition: offset=%d duration=%dms', Math.round(delta), duration);
 }
 
 function resolvePageAnchor(pagination, pageIndex) {

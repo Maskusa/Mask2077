@@ -1079,8 +1079,28 @@ a {
   overflow: hidden;
   backdrop-filter: blur(18px);
   will-change: transform;
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center center;
   z-index: 1;
+}
+
+.reader__page-buffer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: var(--reader-page-padding);
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+  z-index: 0;
+  color: var(--reader-text-color);
+  backdrop-filter: blur(18px);
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center center;
 }
 
 .reader__page-frame {
@@ -1123,19 +1143,18 @@ a {
 }
 
 .reader__page-background--buffer {
-  top: var(--reader-page-padding);
-  right: var(--reader-page-padding);
-  bottom: var(--reader-page-padding);
-  left: var(--reader-page-padding);
+  inset: 0;
   z-index: 0;
 }
 
 .reader__page-background--active {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   z-index: 1;
+}
+
+.reader__flow--buffer {
+  z-index: 1;
+  pointer-events: none;
 }
 
 .reader__flow {
