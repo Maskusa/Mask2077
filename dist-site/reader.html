@@ -72,15 +72,68 @@
           </article>
 
           <div class="reader__controls reader__controls--bottom" aria-label="Навигация по странице">
-            <button class="reader__btn" data-action="prev-chunk">◀</button>
-            <div class="reader__progress">
-              <span aria-hidden="true">📘</span>
-              <div class="reader__progress-bar">
-                <div class="reader__progress-fill" id="reader-progress"></div>
+            <button
+              class="reader__nav-btn reader__nav-btn--prev"
+              data-action="prev-chunk"
+              type="button"
+              aria-label="Предыдущая страница"
+            >
+              <span aria-hidden="true">◀</span>
+            </button>
+            <div class="reader__pager" role="group" aria-label="Прогресс чтения">
+              <span class="reader__pager-boundary" id="reader-page-start">1</span>
+              <div class="reader__pager-track">
+                <div class="reader__pager-fill" id="reader-progress"></div>
+                <div class="reader__pager-marker" id="reader-page-marker">
+                  <span id="reader-page-current">1</span>
+                </div>
+                <input
+                  type="range"
+                  id="reader-page-slider"
+                  class="reader__pager-slider"
+                  min="1"
+                  max="1"
+                  step="1"
+                  value="1"
+                  aria-label="Перейти к странице"
+                />
               </div>
+              <span class="reader__pager-boundary" id="reader-page-end">1</span>
             </div>
-            <button class="reader__btn" data-action="next-chunk">▶</button>
+            <button
+              class="reader__nav-btn reader__nav-btn--next"
+              data-action="next-chunk"
+              type="button"
+              aria-label="Следующая страница"
+            >
+              <span aria-hidden="true">▶</span>
+            </button>
           </div>
+          <div class="chapter-banner" id="chapter-banner" hidden>
+            <div class="chapter-banner__lock" aria-hidden="true">🔒</div>
+            <div class="chapter-banner__content">
+              <div class="chapter-banner__title" id="chapter-banner-title">Глава</div>
+              <button class="chapter-banner__open" type="button" data-action="open-next-chapter">Открыть</button>
+            </div>
+            <button
+              class="chapter-banner__close"
+              type="button"
+              data-action="close-chapter-banner"
+              aria-label="Закрыть баннер"
+            >
+              ✕
+            </button>
+          </div>
+          <button
+            class="chapter-banner__toggle"
+            id="chapter-banner-toggle"
+            type="button"
+            data-action="show-chapter-banner"
+            aria-label="Показать баннер следующей главы"
+            hidden
+          >
+            <span aria-hidden="true">…</span>
+          </button>
         </div>
       </main>
 

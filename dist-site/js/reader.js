@@ -117,6 +117,8 @@ let BOOKS = {};
 let chapterOrder = [];
 let renderScheduled = false;
 let pendingRenderOptions = { forceReflow: false };
+let bannerCollapsed = false;
+let bannerChapterId = null;
 
 const readerRoot = document.querySelector('.reader');
 if (!readerRoot) {
@@ -138,6 +140,14 @@ const readerFlow = document.getElementById('reader-flow');
 const readerFlowBuffer = document.getElementById('reader-flow-buffer');
 const layoutInfo = document.getElementById('reader-layout-info');
 const readerProgress = document.getElementById('reader-progress');
+const readerPageStart = document.getElementById('reader-page-start');
+const readerPageEnd = document.getElementById('reader-page-end');
+const readerPageCurrent = document.getElementById('reader-page-current');
+const readerPageMarker = document.getElementById('reader-page-marker');
+const readerPageSlider = document.getElementById('reader-page-slider');
+const chapterBanner = document.getElementById('chapter-banner');
+const chapterBannerTitle = document.getElementById('chapter-banner-title');
+const chapterBannerToggle = document.getElementById('chapter-banner-toggle');
 const readerControls = Array.from(readerRoot.querySelectorAll('.reader__controls'));
 const stylePopup = document.getElementById('style-popup');
 const fontList = document.getElementById('font-list');
@@ -618,6 +628,140 @@ function updateAutoVoiceButton() {
   toggle.setAttribute('aria-pressed', String(state.autoVoice));
 }
 
+function hideChapterBannerElements() {
+  if (chapterBanner) {
+    chapterBanner.hidden = true;
+  }
+  if (chapterBannerToggle) {
+    chapterBannerToggle.hidden = true;
+  }
+}
+
+function getNextChapterInfo() {
+  if (!state.chapterId || !Array.isArray(chapterOrder) || chapterOrder.length === 0) {
+    return null;
+  }
+  const currentIndex = chapterOrder.indexOf(state.chapterId);
+  if (currentIndex < 0 || currentIndex >= chapterOrder.length - 1) {
+    return null;
+  }
+  const nextChapterId = chapterOrder[currentIndex + 1];
+  const nextChapter = BOOKS[nextChapterId];
+  if (!nextChapter) {
+    return null;
+  }
+  const orderNumber = currentIndex + 2;
+  const fallbackLabel = `Глава ${String(orderNumber).padStart(2, '0')}`;
+  const title =
+    typeof nextChapter.title === 'string' && nextChapter.title.trim().length
+      ? nextChapter.title.trim()
+      : fallbackLabel;
+  return {
+    id: nextChapterId,
+    title,
+    order: orderNumber,
+  };
+}
+
+function updatePager(totalPages) {
+  const safeTotal = Number.isFinite(totalPages) ? Math.max(0, totalPages) : 0;
+  const safeIndex = clampValue(state.pageIndex, 0, Math.max(safeTotal - 1, 0));
+  const currentNumber = safeTotal > 0 ? safeIndex + 1 : 0;
+
+  if (readerPageStart) {
+    readerPageStart.textContent = safeTotal > 0 ? '1' : '0';
+  }
+  if (readerPageEnd) {
+    readerPageEnd.textContent = safeTotal > 0 ? String(safeTotal) : '0';
+  }
+  if (readerPageCurrent) {
+    readerPageCurrent.textContent = currentNumber > 0 ? String(currentNumber) : '0';
+  }
+  if (readerProgress) {
+    const fillPercent = safeTotal > 0 ? clampValue((currentNumber / safeTotal) * 100, 0, 100) : 0;
+    readerProgress.style.width = `${fillPercent}%`;
+  }
+  if (readerPageMarker) {
+    if (safeTotal > 0) {
+      readerPageMarker.hidden = false;
+      const markerPercent =
+        safeTotal > 1 ? clampValue((safeIndex / (safeTotal - 1)) * 100, 0, 100) : 50;
+      readerPageMarker.style.left = `${markerPercent}%`;
+    } else {
+      readerPageMarker.hidden = true;
+    }
+  }
+  if (readerPageSlider) {
+    const sliderMax = safeTotal > 0 ? safeTotal : 1;
+    const sliderValue = currentNumber > 0 ? currentNumber : 1;
+    readerPageSlider.max = String(sliderMax);
+    readerPageSlider.value = String(sliderValue);
+    readerPageSlider.disabled = safeTotal <= 1;
+  }
+}
+
+function updateChapterBanner({ forceExpand = false } = {}) {
+  if (!chapterBanner || !chapterBannerToggle) {
+    return;
+  }
+  if (bannerChapterId !== state.chapterId) {
+    bannerChapterId = state.chapterId;
+    bannerCollapsed = false;
+  }
+  if (forceExpand) {
+    bannerCollapsed = false;
+  }
+  const pagination = state.pagination;
+  const totalPages = Number.isFinite(pagination?.totalPages) ? pagination.totalPages : 0;
+  const safeTotal = Math.max(0, totalPages);
+  const isLastPage = safeTotal > 0 && state.pageIndex >= safeTotal - 1;
+  const nextChapter = getNextChapterInfo();
+  if (!isLastPage || !nextChapter) {
+    hideChapterBannerElements();
+    return;
+  }
+  if (chapterBannerTitle) {
+    chapterBannerTitle.textContent = nextChapter.title;
+  }
+  if (bannerCollapsed) {
+    chapterBanner.hidden = true;
+    chapterBannerToggle.hidden = false;
+  } else {
+    chapterBanner.hidden = false;
+    chapterBannerToggle.hidden = true;
+  }
+}
+
+function collapseChapterBanner() {
+  bannerCollapsed = true;
+  updateChapterBanner();
+}
+
+function expandChapterBanner() {
+  bannerCollapsed = false;
+  updateChapterBanner({ forceExpand: true });
+}
+
+function openNextChapter() {
+  const nextChapter = getNextChapterInfo();
+  if (!nextChapter) {
+    console.info('[Reader] next chapter is not available');
+    showToast('Это последняя глава');
+    return;
+  }
+  console.info('[Reader] opening next chapter: %s', nextChapter.id);
+  state.chapterId = nextChapter.id;
+  state.sectionId = null;
+  state.pointId = null;
+  state.pageIndex = 0;
+  state.autoAlignPage = true;
+  bannerCollapsed = false;
+  hideChapterBannerElements();
+  clearPaginationState();
+  renderReader({ forceReflow: true });
+  showToast(`Открыта ${nextChapter.title}`);
+}
+
 function changePage(direction) {
   const total = Number.isFinite(state.pagination?.totalPages) ? state.pagination.totalPages : 0;
   const currentIndex = clampValue(state.pageIndex, 0, Math.max(total - 1, 0));
@@ -628,6 +772,9 @@ function changePage(direction) {
   }
   const nextIndex = clampValue(currentIndex + direction, 0, total - 1);
   if (nextIndex === currentIndex) {
+    if (direction > 0 && currentIndex >= total - 1) {
+      updateChapterBanner({ forceExpand: true });
+    }
     const pagination = state.pagination;
     const columnHeight = Number.isFinite(pagination?.columnHeight) ? pagination.columnHeight : 0;
     const columnWidth = Number.isFinite(pagination?.columnWidth) ? pagination.columnWidth : 0;
@@ -775,6 +922,18 @@ function handleAction(action, event) {
       event?.preventDefault?.();
       changePage(1);
       break;
+    case 'open-next-chapter':
+      event?.preventDefault?.();
+      openNextChapter();
+      break;
+    case 'close-chapter-banner':
+      event?.preventDefault?.();
+      collapseChapterBanner();
+      break;
+    case 'show-chapter-banner':
+      event?.preventDefault?.();
+      expandChapterBanner();
+      break;
     case 'toggle-auto-voice':
       event?.preventDefault?.();
       toggleAutoVoice();
@@ -888,6 +1047,38 @@ readerZones.forEach((zone) => {
     handleAction(action, event);
   });
 });
+
+if (readerPageSlider) {
+  const handleSliderChange = () => {
+    if (readerPageSlider.disabled) {
+      return;
+    }
+    const sliderValue = Number(readerPageSlider.value);
+    if (!Number.isFinite(sliderValue)) {
+      return;
+    }
+    const pagination = state.pagination;
+    const totalPages = Number.isFinite(pagination?.totalPages) ? pagination.totalPages : 0;
+    if (!totalPages) {
+      return;
+    }
+    const currentIndex = clampValue(state.pageIndex, 0, Math.max(totalPages - 1, 0));
+    const targetIndex = clampValue(Math.round(sliderValue) - 1, 0, totalPages - 1);
+    if (targetIndex === currentIndex) {
+      if (targetIndex >= totalPages - 1) {
+        updateChapterBanner({ forceExpand: true });
+      }
+      return;
+    }
+    console.info('[Reader] page change via slider: target=%d total=%d', targetIndex + 1, totalPages);
+    state.pageIndex = targetIndex;
+    state.autoAlignPage = false;
+    renderReader();
+  };
+
+  readerPageSlider.addEventListener('input', handleSliderChange);
+  readerPageSlider.addEventListener('change', handleSliderChange);
+}
 
 
 function ensureFlowParts(chapterId) {
@@ -1957,6 +2148,8 @@ function renderReader({ forceReflow = false } = {}) {
     renderFallbackContent(fallbackChunk);
     state.flowParts = [];
     state.flowChapterId = null;
+    updatePager(0);
+    hideChapterBannerElements();
     return;
   }
 
@@ -1967,12 +2160,16 @@ function renderReader({ forceReflow = false } = {}) {
       createChunkPart('No readable content found for this chapter.'),
     ];
     renderFallbackContent(fallbackChunk);
+    updatePager(0);
+    hideChapterBannerElements();
     return;
   }
 
   const metrics = getPaginationMetrics();
   if (!metrics || metrics.columnWidth <= 0 || metrics.columnHeight <= 0) {
     console.warn('[Reader] layout metrics unavailable, skipping render');
+    updatePager(0);
+    hideChapterBannerElements();
     return;
   }
 
@@ -1995,6 +2192,8 @@ function renderReader({ forceReflow = false } = {}) {
         createChunkPart('Unable to prepare pagination for this content.'),
       ];
       renderFallbackContent(fallbackChunk);
+      updatePager(0);
+      hideChapterBannerElements();
       return;
     }
     state.pagination = pagination;
@@ -2010,6 +2209,8 @@ function renderReader({ forceReflow = false } = {}) {
       createChunkPart('Pagination produced no pages.'),
     ];
     renderFallbackContent(fallbackChunk);
+    updatePager(0);
+    hideChapterBannerElements();
     return;
   }
 
@@ -2036,8 +2237,8 @@ function renderReader({ forceReflow = false } = {}) {
     }
   }
 
-  const progressValue = totalPages ? ((state.pageIndex + 1) / totalPages) * 100 : 0;
-  readerProgress.style.width = `${progressValue}%`;
+  updatePager(totalPages);
+  updateChapterBanner();
 
   if (state.autoVoice) {
     const speechText = getVisiblePageText();
