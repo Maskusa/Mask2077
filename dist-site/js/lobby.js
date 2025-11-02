@@ -96,6 +96,42 @@ function updateCard(card, data, progress) {
     note.textContent = current.pointTitle ? `${label}  ${current.pointTitle}` : label;
   }
 
+  const progressCurrentEl = card.querySelector('[data-progress-current]');
+  const progressTotalEl = card.querySelector('[data-progress-total]');
+  const progressFillEl = card.querySelector('[data-progress-fill]');
+  const safeTotal = total > 0 ? total : 1;
+  const safeCurrent = currentIndex >= 0 ? currentIndex + 1 : 1;
+
+  if (progressCurrentEl) {
+    progressCurrentEl.textContent = String(Math.min(safeCurrent, safeTotal));
+  }
+  if (progressTotalEl) {
+    progressTotalEl.textContent = String(safeTotal);
+  }
+  if (progressFillEl) {
+    const ratio = Math.min(Math.max(safeCurrent / safeTotal, 0), 1);
+    progressFillEl.style.width = `${ratio * 100}%`;
+  }
+
+  let fillRect;
+  let trackRect;
+  if (progressFillEl) {
+    fillRect = progressFillEl.getBoundingClientRect();
+    trackRect = progressFillEl.parentElement?.getBoundingClientRect() ?? null;
+  }
+
+  console.debug('[Lobby] progress bar update', {
+    total,
+    currentIndex,
+    safeTotal,
+    safeCurrent,
+    ratio: safeTotal ? safeCurrent / safeTotal : 0,
+    hasFillElement: Boolean(progressFillEl),
+    widthStyle: progressFillEl?.style.width ?? null,
+    fillRect,
+    trackRect,
+  });
+
   const targetUrl = buildContentUrl(progress);
   if (targetUrl) {
     card.setAttribute('href', targetUrl);
