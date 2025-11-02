@@ -90,20 +90,30 @@ function updateNavMetrics() {
   if (nav && !nav.classList.contains('primary-nav--hidden')) {
     rootStyle.setProperty('--nav-height', `${nav.offsetHeight}px`);
     const navRect = nav.getBoundingClientRect();
-    console.info(
-      `[Navigation] position: top=${Math.round(navRect.top)}px; bottom=${Math.round(
-        navRect.bottom
-      )}px`
-    );
     const primaryScreen = document.querySelector('.screen--primary');
+    let gapInfo = '';
     if (primaryScreen) {
       const screenRect = primaryScreen.getBoundingClientRect();
-      console.info(
-        `[Screen] scrollTop=${Math.round(primaryScreen.scrollTop)}; top=${Math.round(
-          screenRect.top
-        )}px; bottom=${Math.round(screenRect.bottom)}px`
-      );
+      const computedStyles = window.getComputedStyle(primaryScreen);
+      const marginBottom = computedStyles.marginBottom;
+      const marginTop = computedStyles.marginTop;
+      const gap = Math.round(navRect.top - screenRect.bottom);
+      let ctaInfo = '';
+      const cta = primaryScreen.querySelector('.cta-button');
+      if (cta) {
+        const ctaRect = cta.getBoundingClientRect();
+        const ctaGap = Math.round(navRect.top - ctaRect.bottom);
+        ctaInfo = `; cta-bottom=${Math.round(ctaRect.bottom)}px; cta-gap=${ctaGap}px`;
+      }
+      gapInfo = `; screen-top=${Math.round(screenRect.top)}px; screen-bottom=${Math.round(
+        screenRect.bottom
+      )}px; margin-top=${marginTop}; margin-bottom=${marginBottom}; gap=${gap}px${ctaInfo}`;
     }
+    console.info(
+      `[Navigation] height=${nav.offsetHeight}px; top=${Math.round(navRect.top)}px; bottom=${Math.round(
+        navRect.bottom
+      )}px${gapInfo}`
+    );
     scheduleNavLabelFit();
     return;
   }
@@ -112,7 +122,7 @@ function updateNavMetrics() {
     rootStyle.setProperty('--nav-height', `${panelOk.offsetHeight}px`);
     const panelRect = panelOk.getBoundingClientRect();
     console.info(
-      `[PanelOK] position: top=${Math.round(panelRect.top)}px; bottom=${Math.round(
+      `[PanelOK] height=${panelOk.offsetHeight}px; top=${Math.round(panelRect.top)}px; bottom=${Math.round(
         panelRect.bottom
       )}px`
     );
@@ -120,9 +130,20 @@ function updateNavMetrics() {
   }
 
   rootStyle.setProperty('--nav-height', '0px');
+  console.info('[Navigation] hidden; --nav-height reset to 0px');
 }
 
 updateNavMetrics();
+
+window.addEventListener('load', () => {
+  console.info('[Navigation] window load event - recalculating metrics');
+  updateNavMetrics();
+});
+
+window.addEventListener('resize', () => {
+  console.info('[Navigation] resize event - recalculating metrics');
+  updateNavMetrics();
+});
 
 const toastEl = document.getElementById('toast');
 let toastTimer;

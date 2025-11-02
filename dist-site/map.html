@@ -15,130 +15,30 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body data-primary="map">
-    <div class="app">
-      <main class="screen screen--primary screen--map">
+    <div class="app app--reader" style="max-width: 611.653px; width: 100%;">
+      <main class="screen screen--primary screen--map scrollview--no-scrollbar">
         <header class="screen__header">
           <h1 id="map-title">Карта прогресса</h1>
           <p class="screen__subtext">Следите за открытыми и закрытыми главами</p>
         </header>
 
         <div class="map" aria-labelledby="map-title">
-          <aside class="map__scale" aria-hidden="true">
-            <span>3.1</span>
-            <span>3.2</span>
-            <span>3.3</span>
-            <span>3.4</span>
-            <span>3.7</span>
-            <span>3.8</span>
-            <span>3.9</span>
-            <span>4</span>
-            <span>4.1</span>
-            <span>4.2</span>
+          <aside class="map__progress">
+            <div class="map-progress" data-map-progress>
+              <div class="map-progress__layout">
+                <div class="map-progress__track" data-map-progress-track>
+                  <div class="map-progress__fill" data-map-progress-fill></div>
+                  <div class="map-progress__markers" data-map-progress-markers aria-hidden="true"></div>
+                  <div class="map-progress__pointer" data-map-progress-pointer role="presentation" aria-hidden="true">
+                    <span class="map-progress__pointer-flag">&#9654;</span>
+                  </div>
+                </div>
+                <div class="map-progress__labels" data-map-progress-labels aria-hidden="true"></div>
+              </div>
+            </div>
           </aside>
 
-          <div class="map__column">
-            <button
-              type="button"
-              class="map-card map-card--medium map-card--locked"
-              data-locked="true"
-              data-lock-destination="store.html#premium"
-            >
-              <div class="map-card__cover" aria-hidden="true">🔒</div>
-              <div class="map-card__body">
-                <h4>Заблокировано</h4>
-                <p>Откройте предыдущие главы</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              class="map-card map-card--medium map-card--locked"
-              data-locked="true"
-              data-lock-destination="store.html#premium"
-            >
-              <div class="map-card__cover" aria-hidden="true">🔒</div>
-              <div class="map-card__body">
-                <h4>Заблокировано</h4>
-                <p>Откройте предыдущие главы</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              class="map-card map-card--medium map-card--locked"
-              data-locked="true"
-            >
-              <div class="map-card__cover" aria-hidden="true">🔒</div>
-              <div class="map-card__body">
-                <h4>Заблокировано</h4>
-                <p>Подготовка следующего акта</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              class="map-card map-card--medium map-card--locked"
-              data-locked="true"
-            >
-              <div class="map-card__cover" aria-hidden="true">🔒</div>
-              <div class="map-card__body">
-                <h4>Заблокировано</h4>
-                <p>Нужен прогресс по сюжету</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              class="map-card map-card--medium map-card--locked"
-              data-locked="true"
-            >
-              <div class="map-card__cover" aria-hidden="true">🔒</div>
-              <div class="map-card__body">
-                <h4>Заблокировано</h4>
-                <p>Откроется в следующем обновлении</p>
-              </div>
-            </button>
-
-            <a class="map-card map-card--large" href="reader.html?chapter=prologue&section=0.1&point=0.1.2">
-              <div class="map-card__cover" aria-hidden="true">🛰️</div>
-              <div class="map-card__body">
-                <h4>Чистилище на Ио</h4>
-                <p>Текущий прогресс</p>
-              </div>
-            </a>
-
-            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
-              <div class="map-card__cover" aria-hidden="true">🛰️</div>
-              <div class="map-card__body">
-                <h4>Станция наблюдения</h4>
-                <p>Можно открыть</p>
-              </div>
-            </a>
-
-            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
-              <div class="map-card__cover" aria-hidden="true">🛰️</div>
-              <div class="map-card__body">
-                <h4>Лаборатория Айви</h4>
-                <p>Можно открыть</p>
-              </div>
-            </a>
-
-            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
-              <div class="map-card__cover" aria-hidden="true">🛰️</div>
-              <div class="map-card__body">
-                <h4>Контур памяти</h4>
-                <p>Можно открыть</p>
-              </div>
-            </a>
-
-            <a class="map-card map-card--section" href="reader.html?chapter=prologue&section=0.1">
-              <div class="map-card__cover" aria-hidden="true">🛰️</div>
-              <div class="map-card__body">
-                <h4>Терминал связи</h4>
-                <p>Можно открыть</p>
-              </div>
-            </a>
-          </div>
+          <div class="map__column" data-map-column></div>
         </div>
       </main>
 
@@ -191,5 +91,6 @@
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
     <script type="module" src="./js/common.js"></script>
+    <script type="module" src="./js/map.js"></script>
   </body>
 </html>
