@@ -96,9 +96,15 @@ function updateCard(card, data, progress) {
     note.textContent = current.pointTitle ? `${label}  ${current.pointTitle}` : label;
   }
 
-  const progressCurrentEl = card.querySelector('[data-progress-current]');
-  const progressTotalEl = card.querySelector('[data-progress-total]');
-  const progressFillEl = card.querySelector('[data-progress-fill]');
+  const progressCurrentEl =
+    card.querySelector('[data-progress-current]') ||
+    document.querySelector('[data-progress-current]');
+  const progressTotalEl =
+    card.querySelector('[data-progress-total]') ||
+    document.querySelector('[data-progress-total]');
+  const progressFillEl =
+    card.querySelector('[data-progress-fill]') ||
+    document.querySelector('[data-progress-fill]');
   const safeTotal = total > 0 ? total : 1;
   const safeCurrent = currentIndex >= 0 ? currentIndex + 1 : 1;
 
