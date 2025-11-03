@@ -85,7 +85,7 @@ a {
   width: min(100%, 420px);
   min-height: 640px;
   background: linear-gradient(145deg, rgba(18, 30, 58, 0.95) 0%, rgba(9, 18, 34, 0.92) 60%, rgba(5, 10, 20, 0.94) 100%);
-  border-radius: calc(var(--radius-lg) + 8px);
+  border-radius: calc(var(--radius-md) + 4px);
   border: 1px solid rgba(8, 247, 254, 0.16);
   box-shadow: 0 22px 60px rgba(3, 6, 16, 0.85), 0 0 60px rgba(132, 56, 255, 0.35);
   overflow: hidden;
@@ -93,6 +93,11 @@ a {
   flex-direction: column;
   backdrop-filter: blur(24px);
   position: relative;
+}
+
+.app:focus,
+.app:focus-visible {
+  outline: none;
 }
 
 body[data-primary='lobby']:not([data-free-scroll='true']) .app {
@@ -236,6 +241,7 @@ body[data-primary='lobby']:not([data-free-scroll='true']) .app > .screen--primar
   font-weight: 600;
   letter-spacing: 0.02em;
   box-shadow: var(--shadow-sm);
+  text-decoration: none;
 }
 
 .pill__icon {
@@ -409,6 +415,7 @@ body[data-primary='lobby']:not([data-free-scroll='true']) .app > .screen--primar
   font-weight: 700;
   color: rgba(225, 237, 255, 0.7);
   text-shadow: 0 0 10px rgba(8, 247, 254, 0.5);
+  margin-top: 10px;
 }
 
 .lobby-card--link {
@@ -497,9 +504,10 @@ body[data-primary='lobby']:not([data-free-scroll='true']) .app > .screen--primar
 
 
 .cta-button {
-  border: 1px solid rgba(8, 247, 254, 0.4);
-  background: linear-gradient(135deg, rgba(8, 247, 254, 0.95) 0%, rgba(255, 61, 223, 0.95) 100%);
-  color: #04111d;
+  border: 1px solid rgba(255, 153, 51, 0.5);
+  background: linear-gradient(135deg, #ffb347 0%, #ff6f3c 100%);
+  color: #2b1402;
+  text-decoration: none;
   font-weight: 800;
   border-radius: 999px;
   padding: 18px 48px;
@@ -2331,10 +2339,10 @@ body[data-primary='lobby']:not([data-free-scroll='true']) .app > .screen--primar
   display: flex;
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(180deg, rgba(15, 28, 52, 0.95) 0%, rgba(6, 12, 24, 0.96) 100%);
-  padding-top: 8px;
+  left: 50%;
+  background: linear-gradient(180deg, rgba(15, 28, 52, 1) 0%, rgba(6, 12, 24, 1) 100%);
+  height: 78px;
+  padding-top: 0;
   padding-bottom: 0;
   padding-left: var(--safe-inset-left);
   padding-right: var(--safe-inset-right);
@@ -2342,61 +2350,64 @@ body[data-primary='lobby']:not([data-free-scroll='true']) .app > .screen--primar
   align-items: stretch;
   gap: 0;
   z-index: 100;
-  width: auto;
+  width: min(100%, 420px);
+  max-width: calc(420px + var(--safe-inset-left) + var(--safe-inset-right));
+  transform: translateX(-50%);
   box-shadow: 0 -18px 48px rgba(2, 6, 14, 0.85), 0 0 40px rgba(8, 247, 254, 0.18);
   border-top: 1px solid rgba(8, 247, 254, 0.2);
 }
 
 .primary-nav__item {
   flex: 1 1 0%;
-  min-width: clamp(58px, 16vw, 120px);
-  max-width: clamp(118px, 22vw, 168px);
+  min-width: 0;
   border: none;
-  background: rgba(18, 38, 68, 0.76);
-  border-radius: 16px;
-  padding: 12px 8px 14px;
+  background: rgba(18, 38, 68, 1);
+  border-radius: 0;
+  padding: 8px 4px 10px;
   color: var(--text-main);
   font-weight: 700;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  text-decoration: none;
   position: relative;
   transition: transform 0.22s ease, background 0.2s ease, box-shadow 0.2s ease, flex-basis 0.25s ease, max-width 0.25s ease;
   box-shadow: inset 0 0 0 1px rgba(8, 247, 254, 0.06);
 }
 
 .primary-nav__item::after {
-  content: '';
-  position: absolute;
-  top: 18%;
-  bottom: 18%;
-  right: 0;
-  width: 1px;
-  background: rgba(8, 247, 254, 0.12);
-  pointer-events: none;
-}
-
-.primary-nav__item:last-child::after {
   display: none;
 }
 
 .primary-nav__item--active {
-  background: linear-gradient(135deg, rgba(8, 247, 254, 0.92) 0%, rgba(255, 61, 223, 0.92) 100%);
+  background: linear-gradient(135deg, rgba(8, 247, 254, 1) 0%, rgba(255, 61, 223, 1) 100%);
   color: #04111d;
   box-shadow: 0 0 40px rgba(255, 61, 223, 0.45), 0 0 28px rgba(8, 247, 254, 0.45);
-  flex-grow: 1.15;
+  justify-content: center;
+  flex-grow: 1;
   flex-basis: 0;
-  max-width: clamp(140px, 26vw, 192px);
-  transform: translateY(-6px);
+  transform: none;
+  padding-top: 6px;
+  padding-bottom: 10px;
+  border-radius: 0;
 }
 
 .primary-nav__icon {
-  font-size: clamp(1.1rem, 3.2vw, 1.4rem);
+  font-size: clamp(2.4rem, 7vw, 3.12rem);
+  line-height: 1;
+}
+
+.primary-nav__item--active .primary-nav__icon {
+  transform: translateY(-12px);
+  margin-bottom: 6px;
 }
 
 .primary-nav__label {
-  font-size: clamp(0.64rem, 2.3vw, 0.82rem);
+  display: none;
+  width: 100%;
+  font-size: clamp(0.5rem, 1.4vw, 0.64rem);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   line-height: 1.05;
@@ -2405,7 +2416,13 @@ body[data-primary='lobby']:not([data-free-scroll='true']) .app > .screen--primar
   overflow: hidden;
   word-break: keep-all;
   hyphens: none;
-  max-width: calc(100% - 4px);
+  max-width: 100%;
+  margin-top: auto;
+  padding: 0 2px 15px;
+}
+
+.primary-nav__item--active .primary-nav__label {
+  display: block;
 }
 
 .primary-nav__arrow {
@@ -2519,7 +2536,7 @@ body[data-hide-nav='true'] .app {
 body[data-primary='lobby'] .app {
   background: linear-gradient(180deg, rgba(10, 20, 38, 0.75), rgba(4, 8, 18, 0.92));
   box-shadow: 0 32px 72px rgba(0, 0, 0, 0.75), 0 0 60px rgba(8, 247, 254, 0.22);
-  border-radius: calc(var(--radius-lg) + 12px);
+  border-radius: calc(var(--radius-md) + 6px);
   backdrop-filter: blur(18px);
   border: 1px solid rgba(8, 247, 254, 0.2);
 }
@@ -2906,7 +2923,14 @@ body[data-primary='lobby'] .lobby-card__placeholder {
 
 @media (max-width: 480px) {
   .app {
-    border-radius: 24px;
+    border-radius: calc(var(--radius-md));
+  }
+
+  .primary-nav {
+    gap: 0;
+    padding-bottom: var(--safe-inset-bottom);
+    padding-left: var(--safe-inset-left);
+    padding-right: var(--safe-inset-right);
   }
 
   .screen {
@@ -2944,15 +2968,9 @@ body[data-primary='lobby'] .lobby-card__placeholder {
     grid-template-columns: auto 1fr;
   }
 
-  .primary-nav {
-    padding-left: 8px;
-    padding-right: 8px;
-    padding-bottom: var(--safe-inset-bottom);
-  }
-
   .primary-nav__item {
-    padding: 10px 6px 12px;
-    border-radius: 12px;
+    padding: 8px 4px 10px;
+    border-radius: 0;
   }
 
   .content-wrapper {
@@ -2991,11 +3009,12 @@ body[data-primary='lobby'] .lobby-card__placeholder {
 
 @media (max-width: 360px) {
   .primary-nav {
-    padding-top: 6px;
+    padding-top: 0;
+    gap: 0;
   }
 
   .primary-nav__icon {
-    font-size: clamp(1rem, 4vw, 1.25rem);
+    font-size: clamp(2.16rem, 8.6vw, 2.7rem);
   }
 
   .primary-nav__label {

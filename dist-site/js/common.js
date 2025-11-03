@@ -12,28 +12,57 @@ function fitPrimaryNavLabels() {
   }
   const items = nav.querySelectorAll('.primary-nav__item');
   const minFontSize = 10;
+  const step = 0.5;
+  const tolerance = 0.75;
   items.forEach((item) => {
     const label = item.querySelector('.primary-nav__label');
-    if (!label) {
+    if (!label || label.offsetParent === null) {
       return;
     }
     label.style.fontSize = '';
     const itemStyles = window.getComputedStyle(item);
-    const maxWidth =
-      item.clientWidth -
-      (parseFloat(itemStyles.paddingLeft || '0') + parseFloat(itemStyles.paddingRight || '0'));
+    const itemPaddingLeft = parseFloat(itemStyles.paddingLeft || '0');
+    const itemPaddingRight = parseFloat(itemStyles.paddingRight || '0');
+    const itemAvailableWidth = item.clientWidth - (itemPaddingLeft + itemPaddingRight);
+    if (itemAvailableWidth <= 0) {
+      return;
+    }
+
+    const labelStyles = window.getComputedStyle(label);
+    const labelPaddingLeft = parseFloat(labelStyles.paddingLeft || '0');
+    const labelPaddingRight = parseFloat(labelStyles.paddingRight || '0');
+    const maxWidth = itemAvailableWidth - (labelPaddingLeft + labelPaddingRight);
     if (maxWidth <= 0) {
       return;
     }
-    const computed = window.getComputedStyle(label);
-    let fontSize = parseFloat(computed.fontSize) || 12;
-    label.style.fontSize = `${fontSize}px`;
+
+    const baseFontSize = parseFloat(labelStyles.fontSize) || 12;
+    let fontSize = baseFontSize;
     let guard = 0;
-    while (label.scrollWidth > maxWidth && fontSize > minFontSize && guard < 24) {
-      fontSize -= 0.5;
+    label.style.fontSize = `${fontSize}px`;
+
+    while (label.scrollWidth > maxWidth + tolerance && fontSize > minFontSize && guard < 40) {
+      fontSize = Math.max(minFontSize, fontSize - step);
       label.style.fontSize = `${fontSize}px`;
       guard += 1;
     }
+
+    while (
+      fontSize + step <= baseFontSize &&
+      label.scrollWidth <= maxWidth - tolerance &&
+      guard < 80
+    ) {
+      fontSize += step;
+      label.style.fontSize = `${fontSize}px`;
+      guard += 1;
+      if (label.scrollWidth > maxWidth + tolerance) {
+        fontSize -= step;
+        label.style.fontSize = `${fontSize}px`;
+        break;
+      }
+    }
+
+    label.style.fontSize = `${fontSize}px`;
   });
 }
 

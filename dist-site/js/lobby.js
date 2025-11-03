@@ -89,11 +89,13 @@ function updateCard(card, data, progress) {
     title.textContent = current.sectionTitle || current.chapterTitle || '��筨� �⥭��';
   }
   if (note) {
-    const label =
-      currentIndex >= 0 && total > 0
-        ? `�ࠣ���� ${currentIndex + 1} �� ${total}`
-        : '�ࠣ���� 1 �� 1';
-    note.textContent = current.pointTitle ? `${label}  ${current.pointTitle}` : label;
+    if (current.pointTitle) {
+      note.textContent = current.pointTitle;
+    } else if (currentIndex >= 0 && total > 0) {
+      note.textContent = String(currentIndex + 1) + ' / ' + String(total);
+    } else {
+      note.textContent = '';
+    }
   }
 
   const progressCurrentEl =
