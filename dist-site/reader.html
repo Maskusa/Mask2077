@@ -13,6 +13,32 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .reader__speech-highlight {
+        background: rgba(255, 223, 128, 0.35);
+        border-radius: 0.35em;
+        transition: background-color 0.25s ease, box-shadow 0.25s ease;
+        box-shadow: 0 0 0 1px rgba(255, 223, 128, 0.5);
+      }
+      .reader__speech-caret {
+        position: absolute;
+        width: 2px;
+        background: var(--reader-text-color, #2b1600);
+        animation: reader-caret-blink 1s steps(1, end) infinite;
+        pointer-events: none;
+        transform: translate(-9999px, -9999px);
+        z-index: 10;
+      }
+      @keyframes reader-caret-blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+    </style>
   </head>
   <body data-primary="lobby" data-hide-nav="true">
     <div class="app app--reader">
