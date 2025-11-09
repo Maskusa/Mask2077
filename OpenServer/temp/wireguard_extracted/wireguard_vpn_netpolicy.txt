@@ -1,0 +1,2411 @@
+﻿System ready: true
+Restrict background: false
+Restrict power: false
+Device idle: false
+Restricted networking mode: false
+Low Power Standby mode: false
+Metered ifaces: {}
+
+mRestrictBackgroundLowPowerMode: false
+mRestrictBackgroundBeforeBsm: false
+mLoadedRestrictBackground: false
+mRestrictBackgroundChangedInBsm: false
+
+Network policies:
+  NetworkPolicy{template=NetworkTemplate: matchRule=CARRIER, matchSubscriberIds=[250026...], matchWifiNetworkKeys=[], metered=YES cycleRule=RecurrenceRule{start=2021-01-14T00:00+03:00[Europe/Moscow] end=null period=P1M} warningBytes=10485760 limitBytes=-1 lastWarningSnooze=-1 lastLimitSnooze=-1 lastRapidSnooze=-1 metered=true inferred=true}
+  NetworkPolicy{template=NetworkTemplate: matchRule=CARRIER, matchSubscriberIds=[250329...], matchWifiNetworkKeys=[], metered=YES cycleRule=RecurrenceRule{start=2024-01-20T00:00+03:00[Europe/Moscow] end=null period=P1M} warningBytes=10485760 limitBytes=-1 lastWarningSnooze=-1 lastLimitSnooze=-1 lastRapidSnooze=-1 metered=true inferred=true}
+  NetworkPolicy{template=NetworkTemplate: matchRule=CARRIER, matchSubscriberIds=[250016...], matchWifiNetworkKeys=[], metered=YES cycleRule=RecurrenceRule{start=2024-01-21T00:00+03:00[Europe/Moscow] end=null period=P1M} warningBytes=10485760 limitBytes=-1 lastWarningSnooze=-1 lastLimitSnooze=-1 lastRapidSnooze=-1 metered=true inferred=true}
+
+Subscription plans:
+
+Active subscriptions:
+  2=250329...
+  3=250016...
+
+Merged subscriptions: [250016...]
+Merged subscriptions: [250329...]
+
+Policy for UIDs:
+  UID=10102 policy=4 (ALLOW_METERED_BACKGROUND)
+  UID=10205 policy=4 (ALLOW_METERED_BACKGROUND)
+  UID=10207 policy=4 (ALLOW_METERED_BACKGROUND)
+Power save whitelist (except idle) app ids:
+  UID=1001: true
+  UID=2000: true
+  UID=6102: true
+  UID=10069: true
+  UID=10083: true
+  UID=10098: true
+  UID=10102: true
+  UID=10105: true
+  UID=10107: true
+  UID=10113: true
+  UID=10118: true
+  UID=10120: true
+  UID=10123: true
+  UID=10124: true
+  UID=10140: true
+  UID=10142: true
+  UID=10153: true
+  UID=10160: true
+  UID=10164: true
+  UID=10171: true
+  UID=10173: true
+  UID=10176: true
+  UID=10178: true
+  UID=10201: true
+  UID=10207: true
+  UID=10210: true
+  UID=10224: true
+  UID=10235: true
+  UID=10237: true
+  UID=10257: true
+  UID=10268: true
+  UID=10272: true
+  UID=10316: true
+  UID=10327: true
+  UID=10343: true
+  UID=10349: true
+Power save whitelist app ids:
+  UID=1001: true
+  UID=2000: true
+  UID=6102: true
+  UID=10069: true
+  UID=10083: true
+  UID=10098: true
+  UID=10102: true
+  UID=10113: true
+  UID=10118: true
+  UID=10120: true
+  UID=10123: true
+  UID=10124: true
+  UID=10140: true
+  UID=10142: true
+  UID=10153: true
+  UID=10160: true
+  UID=10164: true
+  UID=10171: true
+  UID=10173: true
+  UID=10176: true
+  UID=10178: true
+  UID=10207: true
+  UID=10224: true
+  UID=10235: true
+  UID=10237: true
+  UID=10257: true
+  UID=10268: true
+  UID=10272: true
+  UID=10316: true
+  UID=10327: true
+  UID=10343: true
+  UID=10349: true
+Default restrict background allowlist uids:
+  UID=10102
+  UID=10207
+Status for all known UIDs:
+  UID=-1 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=1000 state=null blocked_state={blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info=null 
+  UID=1001 state={procState=PER ,seq=17,cap=LCMNFU} blocked_state={blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info={uid=1001,proc_state=PER ,seq=17,cap=LCMNFU,pending=false} 
+  UID=1002 state={procState=RCVR,seq=52669,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=1002,proc_state=RCVR,seq=52669,cap=------,pending=false} 
+  UID=1027 state={procState=PER ,seq=995,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=1027,proc_state=PER ,seq=995,cap=LCMNFU,pending=false} 
+  UID=1068 state={procState=PER ,seq=18,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=1068,proc_state=PER ,seq=18,cap=LCMNFU,pending=false} 
+  UID=1073 state={procState=PER ,seq=13,cap=LCMNFU} blocked_state={blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info={uid=1073,proc_state=PER ,seq=13,cap=LCMNFU,pending=false} 
+  UID=2000 state=null blocked_state={blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info={uid=2000,proc_state=RCVR,seq=16844,cap=------,pending=false} 
+  UID=6100 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=6101 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=6102 state={procState=RCVR,seq=1400,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=6102,proc_state=RCVR,seq=1400,cap=------,pending=false} 
+  UID=6110 state={procState=TRNB,seq=68851,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=6110,proc_state=TRNB,seq=68851,cap=------,pending=false} 
+  UID=6120 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10000 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10001 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10002 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10003 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10004 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10005 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10006 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10007 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10008 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10009 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10010 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10011 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10012 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10013 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10014 state={procState=PER ,seq=1153,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10014,proc_state=PER ,seq=1153,cap=LCMNFU,pending=false} 
+  UID=10015 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10016 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10017 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10018 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10019 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10020 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10021 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10022 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10023 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10024 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10025 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10026 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10027 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10028 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10029 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10030 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10031 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10032 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10033 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10034 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10035 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10036 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10037 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10038 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10039 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10040 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10041 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10042 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10043 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10044 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10045 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10046 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10047 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10048 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10049 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10050 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10051 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10052 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10053 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10054 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10055 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10056 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10057 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10058 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10059 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10060 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10061 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10062 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10063 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10064 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10065 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10066 state={procState=BFGS,seq=974,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10066,proc_state=BFGS,seq=974,cap=LCMNFU,pending=false} 
+  UID=10067 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10068 state={procState=TRNB,seq=106651,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10068,proc_state=TRNB,seq=106651,cap=------,pending=false} 
+  UID=10069 state={procState=RCVR,seq=52142,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10069,proc_state=RCVR,seq=52142,cap=------,pending=false} 
+  UID=10070 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10071 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10072 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10073 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10074 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10075 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10076 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10077 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10078 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10079 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10080 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10081 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10082 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10083 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10083,proc_state=CEM ,seq=30814,cap=------,pending=false} 
+  UID=10084 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10085 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10086 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10087 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10088 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10089 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10090 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10091 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10092 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10093 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10093,proc_state=RCVR,seq=357,cap=------,pending=false} 
+  UID=10094 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10095 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10096 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10097 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10098 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10098,proc_state=SVC ,seq=20273,cap=------,pending=false} 
+  UID=10099 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10099,proc_state=RCVR,seq=331,cap=------,pending=false} 
+  UID=10100 state={procState=PER ,seq=1000,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10100,proc_state=PER ,seq=1000,cap=LCMNFU,pending=false} 
+  UID=10101 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10101,proc_state=RCVR,seq=23575,cap=------,pending=false} 
+  UID=10102 state={procState=LAST,seq=7883,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED,effective=NONE} 
+    callback_info={uid=10102,proc_state=LAST,seq=7883,cap=------,pending=false} 
+  UID=10103 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10104 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10105 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info=null 
+  UID=10106 state={procState=TRNB,seq=117187,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10106,proc_state=TRNB,seq=117187,cap=------,pending=false} 
+  UID=10107 state={procState=LAST,seq=148425,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10107,proc_state=LAST,seq=148425,cap=------,pending=false} 
+  UID=10108 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10109 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10110 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10111 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10112 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10112,proc_state=RCVR,seq=17095,cap=------,pending=false} 
+  UID=10113 state={procState=SVC ,seq=2617,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10113,proc_state=SVC ,seq=2617,cap=------,pending=false} 
+  UID=10114 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10114,proc_state=RCVR,seq=1973,cap=------,pending=false} 
+  UID=10115 state={procState=RCVR,seq=47520,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10115,proc_state=RCVR,seq=47520,cap=------,pending=false} 
+  UID=10116 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10117 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10118 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info=null 
+  UID=10119 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10120 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10120,proc_state=CEM ,seq=32804,cap=------,pending=false} 
+  UID=10121 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10122 state={procState=LAST,seq=156882,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10122,proc_state=LAST,seq=156882,cap=------,pending=false} 
+  UID=10123 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10124 state={procState=TOP ,seq=157126,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10124,proc_state=TOP ,seq=157127,cap=LCMNFU,pending=false} 
+  UID=10125 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10125,proc_state=LAST,seq=20764,cap=------,pending=false} 
+  UID=10126 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10127 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10128 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10129 state={procState=RCVR,seq=144831,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10129,proc_state=RCVR,seq=144831,cap=------,pending=false} 
+  UID=10130 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10131 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10132 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10133 state={procState=SVC ,seq=145249,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10133,proc_state=SVC ,seq=145249,cap=------,pending=false} 
+  UID=10134 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10135 state={procState=CEM ,seq=92840,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10135,proc_state=CEM ,seq=92840,cap=------,pending=false} 
+  UID=10136 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10136,proc_state=RCVR,seq=14287,cap=------,pending=false} 
+  UID=10137 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10137,proc_state=RCVR,seq=31569,cap=------,pending=false} 
+  UID=10138 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10139 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10140 state={procState=BFGS,seq=1180,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10140,proc_state=BFGS,seq=1180,cap=---NFU,pending=false} 
+  UID=10141 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10141,proc_state=RCVR,seq=46994,cap=------,pending=false} 
+  UID=10142 state={procState=BTOP,seq=19620,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10142,proc_state=BTOP,seq=19620,cap=---NFU,pending=false} 
+  UID=10143 state={procState=FGS ,seq=144925,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10143,proc_state=FGS ,seq=144925,cap=---NFU,pending=false} 
+  UID=10144 state={procState=PER ,seq=1143,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10144,proc_state=PER ,seq=1143,cap=LCMNFU,pending=false} 
+  UID=10145 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10146 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10147 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10148 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10148,proc_state=CEM ,seq=25243,cap=------,pending=false} 
+  UID=10149 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10150 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10151 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10152 state=null blocked_state={blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info={uid=10152,proc_state=RCVR,seq=500,cap=------,pending=false} 
+  UID=10153 state={procState=CEM ,seq=91742,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10153,proc_state=CEM ,seq=91742,cap=------,pending=false} 
+  UID=10154 state={procState=TRNB,seq=148753,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10154,proc_state=TRNB,seq=148753,cap=------,pending=false} 
+  UID=10155 state={procState=BTOP,seq=3589,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10155,proc_state=BTOP,seq=3589,cap=---NFU,pending=false} 
+  UID=10156 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10157 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10158 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10159 state={procState=BTOP,seq=26,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10159,proc_state=BTOP,seq=26,cap=LCMNFU,pending=false} 
+  UID=10160 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10160,proc_state=CEM ,seq=29500,cap=------,pending=false} 
+  UID=10161 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10162 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10163 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10163,proc_state=IMPF,seq=1576,cap=------,pending=false} 
+  UID=10164 state={procState=TRNB,seq=145926,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10164,proc_state=TRNB,seq=145926,cap=------,pending=false} 
+  UID=10165 state=null blocked_state={blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info=null 
+  UID=10166 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10167 state={procState=TRNB,seq=68956,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10167,proc_state=TRNB,seq=68956,cap=------,pending=false} 
+  UID=10169 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10169,proc_state=LAST,seq=7641,cap=------,pending=false} 
+  UID=10170 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10171 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info=null 
+  UID=10172 state={procState=LAST,seq=156885,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10172,proc_state=LAST,seq=156885,cap=------,pending=false} 
+  UID=10173 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10173,proc_state=SVC ,seq=136085,cap=------,pending=false} 
+  UID=10174 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10175 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10176 state={procState=SVC ,seq=140910,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10176,proc_state=SVC ,seq=140910,cap=------,pending=false} 
+  UID=10177 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10177,proc_state=RCVR,seq=4233,cap=------,pending=false} 
+  UID=10178 state={procState=TRNB,seq=145922,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10178,proc_state=TRNB,seq=145922,cap=------,pending=false} 
+  UID=10179 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10180 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10181 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10182 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10183 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10184 state={procState=TRNB,seq=68846,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10184,proc_state=TRNB,seq=68846,cap=------,pending=false} 
+  UID=10185 state={procState=SVC ,seq=131838,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10185,proc_state=SVC ,seq=131838,cap=------,pending=false} 
+  UID=10186 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10186,proc_state=RCVR,seq=52504,cap=------,pending=false} 
+  UID=10187 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10187,proc_state=RCVR,seq=52515,cap=------,pending=false} 
+  UID=10188 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10189 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10190 state={procState=PER ,seq=14,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|RESTRICTED_MODE_PERMISSIONS|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10190,proc_state=PER ,seq=14,cap=LCMNFU,pending=false} 
+  UID=10191 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10192 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10193 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10195 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10196 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10197 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10197,proc_state=CEM ,seq=11156,cap=------,pending=false} 
+  UID=10198 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10199 state={procState=RCVR,seq=50988,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10199,proc_state=RCVR,seq=50988,cap=------,pending=false} 
+  UID=10200 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10200,proc_state=CEM ,seq=10767,cap=------,pending=false} 
+  UID=10201 state={procState=RCVR,seq=59690,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10201,proc_state=RCVR,seq=59690,cap=------,pending=false} 
+  UID=10202 state={procState=CEM ,seq=52064,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10202,proc_state=CEM ,seq=52064,cap=------,pending=false} 
+  UID=10203 state=null blocked_state={blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info={uid=10203,proc_state=CEM ,seq=50533,cap=------,pending=false} 
+  UID=10204 state={procState=RCVR,seq=108327,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10204,proc_state=RCVR,seq=108327,cap=------,pending=false} 
+  UID=10205 state=null blocked_state={blocked=NONE,allowed=METERED_USER_EXEMPTED,effective=NONE} 
+    callback_info=null 
+  UID=10206 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10207 state={procState=BFGS,seq=1168,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10207,proc_state=BFGS,seq=1168,cap=LCMNFU,pending=false} 
+  UID=10208 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10208,proc_state=CEM ,seq=26205,cap=------,pending=false} 
+  UID=10209 state={procState=RCVR,seq=48245,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10209,proc_state=RCVR,seq=48245,cap=------,pending=false} 
+  UID=10210 state={procState=IMPF,seq=157485,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10210,proc_state=IMPF,seq=157485,cap=------,pending=false} 
+  UID=10211 state={procState=BFGS,seq=989,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10211,proc_state=BFGS,seq=989,cap=LCMNFU,pending=false} 
+  UID=10212 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10213 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10213,proc_state=RCVR,seq=21137,cap=------,pending=false} 
+  UID=10214 state={procState=RCVR,seq=52320,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10214,proc_state=RCVR,seq=52320,cap=------,pending=false} 
+  UID=10215 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10216 state={procState=RCVR,seq=55858,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10216,proc_state=RCVR,seq=55858,cap=------,pending=false} 
+  UID=10217 state={procState=TRNB,seq=141224,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10217,proc_state=TRNB,seq=141224,cap=------,pending=false} 
+  UID=10218 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10219 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10220 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10221 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10222 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10223 state={procState=CEM ,seq=45230,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10223,proc_state=CEM ,seq=45230,cap=------,pending=false} 
+  UID=10224 state={procState=BFGS,seq=992,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10224,proc_state=BFGS,seq=992,cap=---NFU,pending=false} 
+  UID=10225 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10225,proc_state=RCVR,seq=71705,cap=------,pending=false} 
+  UID=10226 state={procState=LAST,seq=155859,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10226,proc_state=LAST,seq=155859,cap=------,pending=false} 
+  UID=10227 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10228 state={procState=SVC ,seq=156569,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10228,proc_state=SVC ,seq=156569,cap=------,pending=false} 
+  UID=10229 state={procState=BFGS,seq=970,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10229,proc_state=BFGS,seq=970,cap=LCMNFU,pending=false} 
+  UID=10230 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10230,proc_state=RCVR,seq=52252,cap=------,pending=false} 
+  UID=10231 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10232 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10233 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10234 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10235 state={procState=PER ,seq=1164,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10235,proc_state=PER ,seq=1164,cap=LCMNFU,pending=false} 
+  UID=10236 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10237 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10238 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10238,proc_state=CEM ,seq=26536,cap=------,pending=false} 
+  UID=10239 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10240 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10241 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10242 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10242,proc_state=RCVR,seq=1466,cap=------,pending=false} 
+  UID=10243 state={procState=PER ,seq=16,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10243,proc_state=PER ,seq=16,cap=LCMNFU,pending=false} 
+  UID=10244 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10245 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10246 state={procState=IMPF,seq=30,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10246,proc_state=IMPF,seq=30,cap=------,pending=false} 
+  UID=10247 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10248 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10249 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10249,proc_state=CEM ,seq=30328,cap=------,pending=false} 
+  UID=10250 state={procState=PER ,seq=1125,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10250,proc_state=PER ,seq=1125,cap=LCMNFU,pending=false} 
+  UID=10251 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10254 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10255 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10256 state={procState=CEM ,seq=139448,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10256,proc_state=CEM ,seq=139448,cap=------,pending=false} 
+  UID=10257 state={procState=RCVR,seq=58780,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10257,proc_state=RCVR,seq=58780,cap=------,pending=false} 
+  UID=10258 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10259 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10260 state={procState=BFGS,seq=982,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10260,proc_state=BFGS,seq=982,cap=LCMNFU,pending=false} 
+  UID=10261 state={procState=PER ,seq=973,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10261,proc_state=PER ,seq=973,cap=LCMNFU,pending=false} 
+  UID=10262 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10263 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10264 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10265 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10266 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10267 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10268 state={procState=FGS ,seq=32769,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10268,proc_state=FGS ,seq=32769,cap=---NFU,pending=false} 
+  UID=10269 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10269,proc_state=RCVR,seq=35967,cap=------,pending=false} 
+  UID=10270 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10271 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10272 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10272,proc_state=LAST,seq=145867,cap=------,pending=false} 
+  UID=10273 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10274 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10275 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10276 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10277 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10278 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10278,proc_state=LAST,seq=88780,cap=------,pending=false} 
+  UID=10279 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10280 state={procState=TRNB,seq=153349,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10280,proc_state=TRNB,seq=153349,cap=------,pending=false} 
+  UID=10281 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10282 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10282,proc_state=RCVR,seq=56451,cap=------,pending=false} 
+  UID=10283 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10284 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10285 state={procState=RCVR,seq=2810,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10285,proc_state=RCVR,seq=2810,cap=------,pending=false} 
+  UID=10286 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10287 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10288 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10289 state={procState=PER ,seq=1001,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10289,proc_state=PER ,seq=1001,cap=LCMNFU,pending=false} 
+  UID=10290 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10291 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10291,proc_state=SVC ,seq=66199,cap=------,pending=false} 
+  UID=10292 state={procState=PER ,seq=20,cap=LCMNFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10292,proc_state=PER ,seq=20,cap=LCMNFU,pending=false} 
+  UID=10293 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10294 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10295 state={procState=RCVR,seq=5031,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10295,proc_state=RCVR,seq=5031,cap=------,pending=false} 
+  UID=10296 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10297 state={procState=BTOP,seq=1181,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=10297,proc_state=BTOP,seq=1181,cap=---NFU,pending=false} 
+  UID=10298 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10299 state={procState=LAST,seq=157460,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10299,proc_state=LAST,seq=157460,cap=------,pending=false} 
+  UID=10300 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10301 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10302 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10303 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10304 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10305 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10306 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10307 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10308 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10309 state={procState=PER ,seq=1162,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10309,proc_state=PER ,seq=1162,cap=LCMNFU,pending=false} 
+  UID=10310 state={procState=PER ,seq=1166,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10310,proc_state=PER ,seq=1166,cap=LCMNFU,pending=false} 
+  UID=10311 state={procState=PER ,seq=1002,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10311,proc_state=PER ,seq=1002,cap=LCMNFU,pending=false} 
+  UID=10312 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10313 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10314 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10315 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10316 state={procState=PER ,seq=15,cap=LCMNFU} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10316,proc_state=PER ,seq=15,cap=LCMNFU,pending=false} 
+  UID=10317 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10319 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10320 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10321 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10321,proc_state=RCVR,seq=24382,cap=------,pending=false} 
+  UID=10322 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10323 state={procState=CEM ,seq=39279,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10323,proc_state=CEM ,seq=39279,cap=------,pending=false} 
+  UID=10324 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10324,proc_state=RCVR,seq=56222,cap=------,pending=false} 
+  UID=10325 state={procState=LAST,seq=157454,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10325,proc_state=LAST,seq=157454,cap=------,pending=false} 
+  UID=10326 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10327 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS,effective=NONE} 
+    callback_info=null 
+  UID=10328 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10329 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10330 state={procState=RCVR,seq=68852,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10330,proc_state=RCVR,seq=68852,cap=------,pending=false} 
+  UID=10335 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10336 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10337 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10337,proc_state=CEM ,seq=129687,cap=------,pending=false} 
+  UID=10338 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10339 state={procState=CEM ,seq=57694,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10339,proc_state=CEM ,seq=57694,cap=------,pending=false} 
+  UID=10340 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10341 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10341,proc_state=RCVR,seq=128014,cap=------,pending=false} 
+  UID=10342 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10342,proc_state=CEM ,seq=45709,cap=------,pending=false} 
+  UID=10343 state=null blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10343,proc_state=CEM ,seq=137617,cap=------,pending=false} 
+  UID=10344 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10344,proc_state=RCVR,seq=51461,cap=------,pending=false} 
+  UID=10345 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10345,proc_state=RCVR,seq=9686,cap=------,pending=false} 
+  UID=10346 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10346,proc_state=RCVR,seq=9779,cap=------,pending=false} 
+  UID=10347 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10347,proc_state=TRNB,seq=128715,cap=------,pending=false} 
+  UID=10348 state={procState=CEM ,seq=137951,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10348,proc_state=CEM ,seq=137951,cap=------,pending=false} 
+  UID=10349 state={procState=IMPF,seq=10151,cap=------} blocked_state={blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE} 
+    callback_info={uid=10349,proc_state=IMPF,seq=10151,cap=------,pending=false} 
+  UID=10350 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10352 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10353 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10353,proc_state=RCVR,seq=32816,cap=------,pending=false} 
+  UID=10354 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10355 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10355,proc_state=RCVR,seq=50590,cap=------,pending=false} 
+  UID=10357 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10357,proc_state=CEM ,seq=37197,cap=------,pending=false} 
+  UID=10358 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10359 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10360 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10360,proc_state=CEM ,seq=40710,cap=------,pending=false} 
+  UID=10362 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10362,proc_state=RCVR,seq=33229,cap=------,pending=false} 
+  UID=10370 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10376 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10378 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10400 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10422 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10432 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10433 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10433,proc_state=RCVR,seq=42345,cap=------,pending=false} 
+  UID=10434 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10434,proc_state=RCVR,seq=36617,cap=------,pending=false} 
+  UID=10435 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10435,proc_state=RCVR,seq=35262,cap=------,pending=false} 
+  UID=10459 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10459,proc_state=CEM ,seq=129468,cap=------,pending=false} 
+  UID=10462 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10463 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10513 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10525 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10574 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10574,proc_state=RCVR,seq=52896,cap=------,pending=false} 
+  UID=10657 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10658 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10689 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10721 state={procState=SVC ,seq=122222,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10721,proc_state=SVC ,seq=122222,cap=------,pending=false} 
+  UID=10770 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10783 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10856 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10867 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10868 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10869 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10871 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10873 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10874 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10874,proc_state=CEM ,seq=53524,cap=------,pending=false} 
+  UID=10875 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10880 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10909 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10926 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10928 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10928,proc_state=CEM ,seq=27949,cap=------,pending=false} 
+  UID=10932 state={procState=SVC ,seq=110287,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=10932,proc_state=SVC ,seq=110287,cap=------,pending=false} 
+  UID=10956 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=10977 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11021 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11021,proc_state=CEM ,seq=38368,cap=------,pending=false} 
+  UID=11022 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11194 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11235 state={procState=CEM ,seq=137946,cap=------} blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11235,proc_state=CEM ,seq=137946,cap=------,pending=false} 
+  UID=11251 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11251,proc_state=CEM ,seq=127505,cap=------,pending=false} 
+  UID=11261 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11261,proc_state=LAST,seq=100546,cap=------,pending=false} 
+  UID=11266 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11409 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11411 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11411,proc_state=CEM ,seq=8340,cap=------,pending=false} 
+  UID=11580 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11580,proc_state=SVC ,seq=131842,cap=------,pending=false} 
+  UID=11581 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11581,proc_state=LAST,seq=78232,cap=------,pending=false} 
+  UID=11582 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11582,proc_state=LAST,seq=73029,cap=------,pending=false} 
+  UID=11583 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11583,proc_state=SVC ,seq=95477,cap=------,pending=false} 
+  UID=11584 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11584,proc_state=TRNB,seq=92193,cap=------,pending=false} 
+  UID=11595 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11611 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11612 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11625 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11628 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11629 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11636 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11651 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11651,proc_state=RCVR,seq=42745,cap=------,pending=false} 
+  UID=11652 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11652,proc_state=RCVR,seq=137771,cap=------,pending=false} 
+  UID=11669 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11669,proc_state=RCVR,seq=43458,cap=------,pending=false} 
+  UID=11686 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11687 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11688 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11689 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11700 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11706 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11708 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info={uid=11708,proc_state=RCVR,seq=46753,cap=------,pending=false} 
+  UID=11709 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11710 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11711 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11712 state={procState=BFGS,seq=154735,cap=---NFU} blocked_state={blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE} 
+    callback_info={uid=11712,proc_state=BFGS,seq=154735,cap=---NFU,pending=false} 
+  UID=11713 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11724 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11725 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11726 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11727 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11728 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11731 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11732 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11744 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=11746 state=null blocked_state={blocked=NONE,allowed=NONE,effective=NONE} 
+    callback_info=null 
+  UID=90000 state=null blocked_state=null 
+    callback_info={uid=90000,proc_state=LAST,seq=72051,cap=------,pending=false} 
+  UID=90001 state=null blocked_state=null 
+    callback_info={uid=90001,proc_state=LAST,seq=20712,cap=------,pending=false} 
+  UID=90002 state=null blocked_state=null 
+    callback_info={uid=90002,proc_state=TRNB,seq=64382,cap=------,pending=false} 
+  UID=90003 state=null blocked_state=null 
+    callback_info={uid=90003,proc_state=TRNB,seq=57149,cap=------,pending=false} 
+  UID=90004 state=null blocked_state=null 
+    callback_info={uid=90004,proc_state=CEM ,seq=58572,cap=------,pending=false} 
+  UID=90005 state=null blocked_state=null 
+    callback_info={uid=90005,proc_state=TRNB,seq=59199,cap=------,pending=false} 
+  UID=90006 state=null blocked_state=null 
+    callback_info={uid=90006,proc_state=LAST,seq=65462,cap=------,pending=false} 
+  UID=90007 state=null blocked_state=null 
+    callback_info={uid=90007,proc_state=TRNB,seq=60106,cap=------,pending=false} 
+  UID=90008 state=null blocked_state=null 
+    callback_info={uid=90008,proc_state=TRNB,seq=60283,cap=------,pending=false} 
+  UID=90009 state=null blocked_state=null 
+    callback_info={uid=90009,proc_state=TRNB,seq=61082,cap=------,pending=false} 
+  UID=90010 state=null blocked_state=null 
+    callback_info={uid=90010,proc_state=TRNB,seq=61212,cap=------,pending=false} 
+  UID=90011 state=null blocked_state=null 
+    callback_info={uid=90011,proc_state=TRNB,seq=61242,cap=------,pending=false} 
+  UID=90012 state=null blocked_state=null 
+    callback_info={uid=90012,proc_state=TRNB,seq=65200,cap=------,pending=false} 
+  UID=90013 state=null blocked_state=null 
+    callback_info={uid=90013,proc_state=TRNB,seq=65225,cap=------,pending=false} 
+  UID=90014 state=null blocked_state=null 
+    callback_info={uid=90014,proc_state=CACC,seq=82606,cap=------,pending=false} 
+  UID=90015 state=null blocked_state=null 
+    callback_info={uid=90015,proc_state=CACC,seq=71180,cap=------,pending=false} 
+  UID=90016 state=null blocked_state=null 
+    callback_info={uid=90016,proc_state=CACC,seq=71582,cap=------,pending=false} 
+  UID=90017 state=null blocked_state=null 
+    callback_info={uid=90017,proc_state=TRNB,seq=76216,cap=------,pending=false} 
+  UID=90018 state=null blocked_state=null 
+    callback_info={uid=90018,proc_state=CACC,seq=71806,cap=------,pending=false} 
+  UID=90019 state=null blocked_state=null 
+    callback_info={uid=90019,proc_state=LAST,seq=99263,cap=------,pending=false} 
+  UID=90020 state=null blocked_state=null 
+    callback_info={uid=90020,proc_state=CEM ,seq=75970,cap=------,pending=false} 
+  UID=90021 state=null blocked_state=null 
+    callback_info={uid=90021,proc_state=TRNB,seq=76373,cap=------,pending=false} 
+  UID=90022 state=null blocked_state=null 
+    callback_info={uid=90022,proc_state=TRNB,seq=76541,cap=------,pending=false} 
+  UID=90023 state=null blocked_state=null 
+    callback_info={uid=90023,proc_state=TRNB,seq=76514,cap=------,pending=false} 
+  UID=90024 state=null blocked_state=null 
+    callback_info={uid=90024,proc_state=TRNB,seq=76527,cap=------,pending=false} 
+  UID=90025 state=null blocked_state=null 
+    callback_info={uid=90025,proc_state=TRNB,seq=76679,cap=------,pending=false} 
+  UID=90026 state=null blocked_state=null 
+    callback_info={uid=90026,proc_state=TRNB,seq=82442,cap=------,pending=false} 
+  UID=90027 state=null blocked_state=null 
+    callback_info={uid=90027,proc_state=TRNB,seq=76919,cap=------,pending=false} 
+  UID=90028 state=null blocked_state=null 
+    callback_info={uid=90028,proc_state=TRNB,seq=82211,cap=------,pending=false} 
+  UID=90029 state=null blocked_state=null 
+    callback_info={uid=90029,proc_state=CACC,seq=81741,cap=------,pending=false} 
+  UID=90030 state=null blocked_state=null 
+    callback_info={uid=90030,proc_state=TRNB,seq=81989,cap=------,pending=false} 
+  UID=90031 state=null blocked_state=null 
+    callback_info={uid=90031,proc_state=CACC,seq=81980,cap=------,pending=false} 
+  UID=90032 state=null blocked_state=null 
+    callback_info={uid=90032,proc_state=CACC,seq=82221,cap=------,pending=false} 
+  UID=90033 state=null blocked_state=null 
+    callback_info={uid=90033,proc_state=CACC,seq=82330,cap=------,pending=false} 
+  UID=90034 state=null blocked_state=null 
+    callback_info={uid=90034,proc_state=TRNB,seq=82456,cap=------,pending=false} 
+  UID=90035 state=null blocked_state=null 
+    callback_info={uid=90035,proc_state=CACC,seq=82568,cap=------,pending=false} 
+  UID=90036 state=null blocked_state=null 
+    callback_info={uid=90036,proc_state=CACC,seq=108050,cap=------,pending=false} 
+  UID=90037 state=null blocked_state=null 
+    callback_info={uid=90037,proc_state=CEM ,seq=82718,cap=------,pending=false} 
+  UID=90038 state=null blocked_state=null 
+    callback_info={uid=90038,proc_state=CEM ,seq=86065,cap=------,pending=false} 
+  UID=90039 state=null blocked_state=null 
+    callback_info={uid=90039,proc_state=CEM ,seq=86236,cap=------,pending=false} 
+  UID=90040 state=null blocked_state=null 
+    callback_info={uid=90040,proc_state=CEM ,seq=88539,cap=------,pending=false} 
+  UID=90041 state=null blocked_state=null 
+    callback_info={uid=90041,proc_state=CEM ,seq=88679,cap=------,pending=false} 
+  UID=90042 state=null blocked_state=null 
+    callback_info={uid=90042,proc_state=CEM ,seq=88819,cap=------,pending=false} 
+  UID=90043 state=null blocked_state=null 
+    callback_info={uid=90043,proc_state=TRNB,seq=88994,cap=------,pending=false} 
+  UID=90044 state=null blocked_state=null 
+    callback_info={uid=90044,proc_state=TRNB,seq=89150,cap=------,pending=false} 
+  UID=90045 state=null blocked_state=null 
+    callback_info={uid=90045,proc_state=TRNB,seq=104214,cap=------,pending=false} 
+  UID=90046 state={procState=TRNB,seq=155609,cap=------} blocked_state=null 
+    callback_info={uid=90046,proc_state=TRNB,seq=155609,cap=------,pending=false} 
+  UID=90047 state={procState=SVC ,seq=91804,cap=------} blocked_state=null 
+    callback_info={uid=90047,proc_state=SVC ,seq=91804,cap=------,pending=false} 
+  UID=90048 state=null blocked_state=null 
+    callback_info={uid=90048,proc_state=CACC,seq=98890,cap=------,pending=false} 
+  UID=90049 state=null blocked_state=null 
+    callback_info={uid=90049,proc_state=CACC,seq=99006,cap=------,pending=false} 
+  UID=90050 state=null blocked_state=null 
+    callback_info={uid=90050,proc_state=TRNB,seq=125545,cap=------,pending=false} 
+  UID=90051 state=null blocked_state=null 
+    callback_info={uid=90051,proc_state=TRNB,seq=103618,cap=------,pending=false} 
+  UID=90052 state=null blocked_state=null 
+    callback_info={uid=90052,proc_state=TRNB,seq=104472,cap=------,pending=false} 
+  UID=90053 state=null blocked_state=null 
+    callback_info={uid=90053,proc_state=TRNB,seq=104493,cap=------,pending=false} 
+  UID=90054 state=null blocked_state=null 
+    callback_info={uid=90054,proc_state=TRNB,seq=104623,cap=------,pending=false} 
+  UID=90055 state=null blocked_state=null 
+    callback_info={uid=90055,proc_state=TRNB,seq=108187,cap=------,pending=false} 
+  UID=90056 state=null blocked_state=null 
+    callback_info={uid=90056,proc_state=CACC,seq=108067,cap=------,pending=false} 
+  UID=90057 state=null blocked_state=null 
+    callback_info={uid=90057,proc_state=CACC,seq=108360,cap=------,pending=false} 
+  UID=90058 state=null blocked_state=null 
+    callback_info={uid=90058,proc_state=LAST,seq=108746,cap=------,pending=false} 
+  UID=90059 state=null blocked_state=null 
+    callback_info={uid=90059,proc_state=CACC,seq=112119,cap=------,pending=false} 
+  UID=90060 state=null blocked_state=null 
+    callback_info={uid=90060,proc_state=LAST,seq=112388,cap=------,pending=false} 
+  UID=90061 state=null blocked_state=null 
+    callback_info={uid=90061,proc_state=CACC,seq=114749,cap=------,pending=false} 
+  UID=90062 state=null blocked_state=null 
+    callback_info={uid=90062,proc_state=CACC,seq=117045,cap=------,pending=false} 
+  UID=90063 state=null blocked_state=null 
+    callback_info={uid=90063,proc_state=CACC,seq=117236,cap=------,pending=false} 
+  UID=90064 state=null blocked_state=null 
+    callback_info={uid=90064,proc_state=CACC,seq=123630,cap=------,pending=false} 
+  UID=90065 state=null blocked_state=null 
+    callback_info={uid=90065,proc_state=TRNB,seq=125759,cap=------,pending=false} 
+  UID=90066 state=null blocked_state=null 
+    callback_info={uid=90066,proc_state=CEM ,seq=125875,cap=------,pending=false} 
+  UID=90067 state=null blocked_state=null 
+    callback_info={uid=90067,proc_state=LAST,seq=126208,cap=------,pending=false} 
+  UID=90068 state=null blocked_state=null 
+    callback_info={uid=90068,proc_state=TRNB,seq=133871,cap=------,pending=false} 
+  UID=90069 state={procState=TRNB,seq=155599,cap=------} blocked_state=null 
+    callback_info={uid=90069,proc_state=TRNB,seq=155599,cap=------,pending=false} 
+  UID=90070 state=null blocked_state=null 
+    callback_info={uid=90070,proc_state=SVC ,seq=135241,cap=------,pending=false} 
+  UID=90071 state=null blocked_state=null 
+    callback_info={uid=90071,proc_state=TRNB,seq=143521,cap=------,pending=false} 
+  UID=90072 state=null blocked_state=null 
+    callback_info={uid=90072,proc_state=TRNB,seq=152946,cap=------,pending=false} 
+  UID=90073 state={procState=LAST,seq=153259,cap=------} blocked_state=null 
+    callback_info={uid=90073,proc_state=LAST,seq=153259,cap=------,pending=false} 
+  UID=90074 state=null blocked_state=null 
+    callback_info={uid=90074,proc_state=SVC ,seq=153960,cap=------,pending=false} 
+  UID=90075 state={procState=TRNB,seq=155587,cap=------} blocked_state=null 
+    callback_info={uid=90075,proc_state=TRNB,seq=155587,cap=------,pending=false} 
+  UID=90076 state={procState=LAST,seq=155822,cap=------} blocked_state=null 
+    callback_info={uid=90076,proc_state=LAST,seq=155822,cap=------,pending=false} 
+  UID=99000 state={procState=BTOP,seq=2811,cap=---NFU} blocked_state=null 
+    callback_info={uid=99000,proc_state=BTOP,seq=2811,cap=---NFU,pending=false} 
+  UID=99001 state=null blocked_state=null 
+    callback_info={uid=99001,proc_state=SVC ,seq=4403,cap=------,pending=false} 
+  UID=99002 state=null blocked_state=null 
+    callback_info={uid=99002,proc_state=SVC ,seq=17234,cap=------,pending=false} 
+  UID=99003 state=null blocked_state=null 
+    callback_info={uid=99003,proc_state=SVC ,seq=67571,cap=------,pending=false} 
+  UID=99004 state={procState=BTOP,seq=26487,cap=---NFU} blocked_state=null 
+    callback_info={uid=99004,proc_state=BTOP,seq=26487,cap=---NFU,pending=false} 
+  UID=99005 state=null blocked_state=null 
+    callback_info={uid=99005,proc_state=CEM ,seq=29660,cap=------,pending=false} 
+  UID=99006 state=null blocked_state=null 
+    callback_info={uid=99006,proc_state=SVC ,seq=41843,cap=------,pending=false} 
+  UID=99007 state=null blocked_state=null 
+    callback_info={uid=99007,proc_state=CEM ,seq=46091,cap=------,pending=false} 
+  UID=99008 state=null blocked_state=null 
+    callback_info={uid=99008,proc_state=SVC ,seq=55687,cap=------,pending=false} 
+  UID=99009 state=null blocked_state=null 
+    callback_info={uid=99009,proc_state=SVC ,seq=56510,cap=------,pending=false} 
+  UID=99010 state=null blocked_state=null 
+    callback_info={uid=99010,proc_state=LAST,seq=73017,cap=------,pending=false} 
+  UID=99011 state=null blocked_state=null 
+    callback_info={uid=99011,proc_state=LAST,seq=78218,cap=------,pending=false} 
+  UID=99012 state=null blocked_state=null 
+    callback_info={uid=99012,proc_state=LAST,seq=90580,cap=------,pending=false} 
+  UID=99013 state=null blocked_state=null 
+    callback_info={uid=99013,proc_state=SVC ,seq=92406,cap=------,pending=false} 
+  UID=99014 state=null blocked_state=null 
+    callback_info={uid=99014,proc_state=CACC,seq=97388,cap=------,pending=false} 
+  UID=99015 state=null blocked_state=null 
+    callback_info={uid=99015,proc_state=LAST,seq=100528,cap=------,pending=false} 
+  UID=99016 state=null blocked_state=null 
+    callback_info={uid=99016,proc_state=LAST,seq=105828,cap=------,pending=false} 
+  UID=99017 state=null blocked_state=null 
+    callback_info={uid=99017,proc_state=SVC ,seq=128192,cap=------,pending=false} 
+  UID=99018 state=null blocked_state=null 
+    callback_info={uid=99018,proc_state=SVC ,seq=129893,cap=------,pending=false} 
+  UID=99019 state=null blocked_state=null 
+    callback_info={uid=99019,proc_state=LAST,seq=145868,cap=------,pending=false} 
+  UID=99020 state=null blocked_state=null 
+    callback_info={uid=99020,proc_state=LAST,seq=149391,cap=------,pending=false} 
+  UID=99021 state={procState=TRNB,seq=148812,cap=------} blocked_state=null 
+    callback_info={uid=99021,proc_state=TRNB,seq=148812,cap=------,pending=false} 
+  UID=99022 state={procState=LAST,seq=157436,cap=------} blocked_state=null 
+    callback_info={uid=99022,proc_state=LAST,seq=157436,cap=------,pending=false} 
+Admin restricted uids for metered data:
+  u0: {}
+Network to interfaces:
+  100: {wlan0}
+
+Stats:
+  updateNetworkEnabledNL(): count=294, total=2,5ms, avg=0,008ms, max calls/s=18 max dur/s=0,3ms max time=0,3ms
+  isUidNetworkingBlocked(): count=25455, total=406,7ms, avg=0,016ms, max calls/s=687 max dur/s=33,0ms max time=23,3ms
+
+mEventLogs (most recent first):
+  2025-11-08T10:19:25:338 - temp-power-save whitelist for 1000 changed to: false; reason=UNKNOWN <null>
+  2025-11-08T10:19:15:336 - temp-power-save whitelist for 1000 changed to: true; reason=ALARM_MANAGER_WHILE_IDLE <d2463d0 com.android.server.audio.action.CHECK_MUSIC_ACTIVE/u0>
+  2025-11-08T10:18:25:073 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:18:25:073 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:18:25:073 - metered-allowlist for 20210 changed to false
+  2025-11-08T10:18:25:072 - metered-allowlist for 10210 changed to false
+  2025-11-08T10:18:25:063 - Firewall rule changed: 20299-standby-default
+  2025-11-08T10:18:25:063 - Firewall rule changed: 10299-standby-default
+  2025-11-08T10:18:25:063 - metered-allowlist for 20299 changed to false
+  2025-11-08T10:18:25:063 - metered-allowlist for 10299 changed to false
+  2025-11-08T10:18:25:063 - Firewall rule changed: 20325-standby-default
+  2025-11-08T10:18:25:063 - Firewall rule changed: 10325-standby-default
+  2025-11-08T10:18:25:063 - metered-allowlist for 20325 changed to false
+  2025-11-08T10:18:25:062 - metered-allowlist for 10325 changed to false
+  2025-11-08T10:18:23:289 - Firewall rule changed: 20207-standby-default
+  2025-11-08T10:18:23:289 - Firewall rule changed: 10207-standby-default
+  2025-11-08T10:18:23:288 - temp-power-save whitelist for 10207 changed to: true; reason=SYNC_MANAGER <sync by top app>
+  2025-11-08T10:18:22:780 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:18:22:780 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:18:22:780 - metered-allowlist for 20172 changed to false
+  2025-11-08T10:18:22:780 - metered-allowlist for 10172 changed to false
+  2025-11-08T10:18:22:770 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:18:22:770 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:18:22:770 - metered-allowlist for 20122 changed to false
+  2025-11-08T10:18:22:770 - metered-allowlist for 10122 changed to false
+  2025-11-08T10:18:22:074 - Firewall rule changed: 20325-standby-default
+  2025-11-08T10:18:22:074 - Firewall rule changed: 10325-standby-default
+  2025-11-08T10:18:22:074 - metered-allowlist for 20325 changed to true
+  2025-11-08T10:18:22:074 - metered-allowlist for 10325 changed to true
+  2025-11-08T10:18:16:753 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:18:16:753 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:18:16:753 - metered-allowlist for 20172 changed to true
+  2025-11-08T10:18:16:753 - metered-allowlist for 10172 changed to true
+  2025-11-08T10:18:16:745 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:18:16:745 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:18:16:745 - metered-allowlist for 20122 changed to true
+  2025-11-08T10:18:16:745 - metered-allowlist for 10122 changed to true
+  2025-11-08T10:18:16:739 - Firewall rule changed: 20228-standby-default
+  2025-11-08T10:18:16:739 - Firewall rule changed: 10228-standby-default
+  2025-11-08T10:18:16:739 - metered-allowlist for 20228 changed to false
+  2025-11-08T10:18:16:739 - metered-allowlist for 10228 changed to false
+  2025-11-08T10:18:16:656 - Firewall rule changed: 20228-standby-default
+  2025-11-08T10:18:16:656 - Firewall rule changed: 10228-standby-default
+  2025-11-08T10:18:16:656 - metered-allowlist for 20228 changed to true
+  2025-11-08T10:18:16:656 - metered-allowlist for 10228 changed to true
+  2025-11-08T10:18:15:059 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:18:15:059 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:18:15:059 - metered-allowlist for 20210 changed to true
+  2025-11-08T10:18:15:059 - metered-allowlist for 10210 changed to true
+  2025-11-08T10:18:14:261 - Firewall rule changed: 20299-standby-default
+  2025-11-08T10:18:14:261 - Firewall rule changed: 10299-standby-default
+  2025-11-08T10:18:14:261 - metered-allowlist for 20299 changed to true
+  2025-11-08T10:18:14:261 - metered-allowlist for 10299 changed to true
+  2025-11-08T10:18:13:701 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:18:13:701 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:18:13:701 - metered-allowlist for 20210 changed to false
+  2025-11-08T10:18:13:701 - metered-allowlist for 10210 changed to false
+  2025-11-08T10:18:13:698 - Firewall rule changed: 20226-standby-default
+  2025-11-08T10:18:13:698 - Firewall rule changed: 10226-standby-default
+  2025-11-08T10:18:13:698 - metered-allowlist for 20226 changed to false
+  2025-11-08T10:18:13:698 - metered-allowlist for 10226 changed to false
+  2025-11-08T10:18:12:777 - Firewall rule changed: 20068-standby-default
+  2025-11-08T10:18:12:777 - Firewall rule changed: 10068-standby-default
+  2025-11-08T10:18:12:777 - App idle whitelist state of uid 10068: false
+  2025-11-08T10:18:12:715 - Firewall rule changed: 20068-standby-default
+  2025-11-08T10:18:12:715 - Firewall rule changed: 10068-standby-default
+  2025-11-08T10:18:12:715 - App idle whitelist state of uid 10068: true
+  2025-11-08T10:17:47:155 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:17:47:155 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:17:47:155 - metered-allowlist for 20210 changed to true
+  2025-11-08T10:17:47:155 - metered-allowlist for 10210 changed to true
+  2025-11-08T10:17:47:082 - Firewall rule changed: 20226-standby-default
+  2025-11-08T10:17:47:082 - Firewall rule changed: 10226-standby-default
+  2025-11-08T10:17:47:082 - metered-allowlist for 20226 changed to true
+  2025-11-08T10:17:47:082 - metered-allowlist for 10226 changed to true
+  2025-11-08T10:17:40:042 - Firewall rule changed: 20299-standby-default
+  2025-11-08T10:17:40:042 - Firewall rule changed: 10299-standby-default
+  2025-11-08T10:17:40:042 - App idle state of uid 10299: false
+  2025-11-08T10:17:29:596 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:17:29:596 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:17:29:596 - metered-allowlist for 20210 changed to false
+  2025-11-08T10:17:29:596 - metered-allowlist for 10210 changed to false
+  2025-11-08T10:17:29:593 - Firewall rule changed: 20226-standby-default
+  2025-11-08T10:17:29:593 - Firewall rule changed: 10226-standby-default
+  2025-11-08T10:17:29:593 - metered-allowlist for 20226 changed to false
+  2025-11-08T10:17:29:593 - metered-allowlist for 10226 changed to false
+  2025-11-08T10:16:27:597 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:16:27:597 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:16:27:597 - metered-allowlist for 20210 changed to true
+  2025-11-08T10:16:27:597 - metered-allowlist for 10210 changed to true
+  2025-11-08T10:16:27:543 - Firewall rule changed: 20226-standby-default
+  2025-11-08T10:16:27:543 - Firewall rule changed: 10226-standby-default
+  2025-11-08T10:16:27:543 - metered-allowlist for 20226 changed to true
+  2025-11-08T10:16:27:543 - metered-allowlist for 10226 changed to true
+  2025-11-08T10:15:41:387 - Firewall rule changed: 20217-standby-default
+  2025-11-08T10:15:41:387 - Firewall rule changed: 10217-standby-default
+  2025-11-08T10:15:41:387 - temp-power-save whitelist for 10217 changed to: false; reason=UNKNOWN <null>
+  2025-11-08T10:15:11:384 - Firewall rule changed: 20217-standby-default
+  2025-11-08T10:15:11:384 - Firewall rule changed: 10217-standby-default
+  2025-11-08T10:15:11:384 - temp-power-save whitelist for 10217 changed to: true; reason=NOTIFICATION_SERVICE <setPendingIntentAllowlistDuration,reason:NotificationManagerService,pendingintent:1000:com.google.android.libraries.notifications.SYSTEM_TRAY_EVENT>
+  2025-11-08T10:14:50:498 - Firewall rule changed: 20185-standby-default
+  2025-11-08T10:14:50:498 - Firewall rule changed: 10185-standby-default
+  2025-11-08T10:14:50:498 - App idle whitelist state of uid 10185: false
+  2025-11-08T10:14:50:342 - Firewall rule changed: 20185-standby-default
+  2025-11-08T10:14:50:342 - Firewall rule changed: 10185-standby-default
+  2025-11-08T10:14:50:342 - App idle whitelist state of uid 10185: true
+  2025-11-08T10:14:44:760 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:14:44:760 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:14:44:760 - metered-allowlist for 20210 changed to false
+  2025-11-08T10:14:44:760 - metered-allowlist for 10210 changed to false
+  2025-11-08T10:14:41:468 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:14:41:468 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:14:41:468 - metered-allowlist for 20210 changed to true
+  2025-11-08T10:14:41:468 - metered-allowlist for 10210 changed to true
+  2025-11-08T10:14:40:485 - Firewall rule changed: 20299-standby-default
+  2025-11-08T10:14:40:485 - Firewall rule changed: 10299-standby-default
+  2025-11-08T10:14:40:485 - App idle state of uid 10299: true
+  2025-11-08T10:14:39:914 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:14:39:914 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:14:39:914 - metered-allowlist for 20210 changed to false
+  2025-11-08T10:14:39:914 - metered-allowlist for 10210 changed to false
+  2025-11-08T10:14:39:914 - Firewall rule changed: 20299-standby-default
+  2025-11-08T10:14:39:914 - Firewall rule changed: 10299-standby-default
+  2025-11-08T10:14:39:914 - metered-allowlist for 20299 changed to false
+  2025-11-08T10:14:39:913 - metered-allowlist for 10299 changed to false
+  2025-11-08T10:14:32:143 - temp-power-save whitelist for 1000 changed to: false; reason=UNKNOWN <null>
+  2025-11-08T10:14:22:140 - temp-power-save whitelist for 1000 changed to: true; reason=ALARM_MANAGER_WHILE_IDLE <2ca2d7a com.android.server.audio.action.CHECK_MUSIC_ACTIVE/u0>
+  2025-11-08T10:13:45:655 - Firewall rule changed: 20133-standby-default
+  2025-11-08T10:13:45:655 - Firewall rule changed: 10133-standby-default
+  2025-11-08T10:13:45:655 - temp-power-save whitelist for 10133 changed to: false; reason=UNKNOWN <null>
+  2025-11-08T10:13:38:314 - Firewall rule changed: 20207-standby-default
+  2025-11-08T10:13:38:314 - Firewall rule changed: 10207-standby-default
+  2025-11-08T10:13:38:314 - temp-power-save whitelist for 10207 changed to: false; reason=UNKNOWN <null>
+  2025-11-08T10:13:37:317 - Firewall rule changed: 20325-standby-default
+  2025-11-08T10:13:37:317 - Firewall rule changed: 10325-standby-default
+  2025-11-08T10:13:37:317 - metered-allowlist for 20325 changed to false
+  2025-11-08T10:13:37:317 - metered-allowlist for 10325 changed to false
+  2025-11-08T10:13:31:319 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:13:31:319 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:13:31:319 - temp-power-save whitelist for 10210 changed to: false; reason=UNKNOWN <null>
+  2025-11-08T10:13:29:501 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:13:29:501 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:13:29:501 - metered-allowlist for 20172 changed to false
+  2025-11-08T10:13:29:501 - metered-allowlist for 10172 changed to false
+  2025-11-08T10:13:29:496 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:13:29:496 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:13:29:496 - metered-allowlist for 20122 changed to false
+  2025-11-08T10:13:29:496 - metered-allowlist for 10122 changed to false
+  2025-11-08T10:13:28:931 - Firewall rule changed: 20325-standby-default
+  2025-11-08T10:13:28:931 - Firewall rule changed: 10325-standby-default
+  2025-11-08T10:13:28:931 - metered-allowlist for 20325 changed to true
+  2025-11-08T10:13:28:931 - metered-allowlist for 10325 changed to true
+  2025-11-08T10:13:27:240 - Firewall rule changed: 20230-standby-default
+  2025-11-08T10:13:27:240 - Firewall rule changed: 10230-standby-default
+  2025-11-08T10:13:27:240 - App idle state of uid 10230: false
+  2025-11-08T10:13:23:497 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:13:23:497 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:13:23:497 - metered-allowlist for 20172 changed to true
+  2025-11-08T10:13:23:497 - metered-allowlist for 10172 changed to true
+  2025-11-08T10:13:23:479 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:13:23:479 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:13:23:479 - metered-allowlist for 20122 changed to true
+  2025-11-08T10:13:23:479 - metered-allowlist for 10122 changed to true
+  2025-11-08T10:13:23:462 - Firewall rule changed: 20228-standby-default
+  2025-11-08T10:13:23:462 - Firewall rule changed: 10228-standby-default
+  2025-11-08T10:13:23:462 - metered-allowlist for 20228 changed to false
+  2025-11-08T10:13:23:462 - metered-allowlist for 10228 changed to false
+  2025-11-08T10:13:23:389 - Firewall rule changed: 20228-standby-default
+  2025-11-08T10:13:23:389 - Firewall rule changed: 10228-standby-default
+  2025-11-08T10:13:23:389 - metered-allowlist for 20228 changed to true
+  2025-11-08T10:13:23:389 - metered-allowlist for 10228 changed to true
+  2025-11-08T10:13:21:671 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:13:21:671 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:13:21:671 - metered-allowlist for 20172 changed to false
+  2025-11-08T10:13:21:670 - metered-allowlist for 10172 changed to false
+  2025-11-08T10:13:20:955 - Firewall rule changed: 20299-standby-default
+  2025-11-08T10:13:20:955 - Firewall rule changed: 10299-standby-default
+  2025-11-08T10:13:20:955 - App idle state of uid 10299: false
+  2025-11-08T10:13:20:953 - Firewall rule changed: 20299-standby-default
+  2025-11-08T10:13:20:953 - Firewall rule changed: 10299-standby-default
+  2025-11-08T10:13:20:953 - metered-allowlist for 20299 changed to true
+  2025-11-08T10:13:20:953 - metered-allowlist for 10299 changed to true
+  2025-11-08T10:13:19:290 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:13:19:290 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:13:19:290 - metered-allowlist for 20122 changed to false
+  2025-11-08T10:13:19:290 - metered-allowlist for 10122 changed to false
+  2025-11-08T10:13:19:290 - Firewall rule changed: 20154-standby-default
+  2025-11-08T10:13:19:290 - Firewall rule changed: 10154-standby-default
+  2025-11-08T10:13:19:290 - metered-allowlist for 20154 changed to false
+  2025-11-08T10:13:19:290 - metered-allowlist for 10154 changed to false
+  2025-11-08T10:13:19:290 - Firewall rule changed: 20164-standby-default
+  2025-11-08T10:13:19:290 - Firewall rule changed: 10164-standby-default
+  2025-11-08T10:13:19:290 - metered-allowlist for 20164 changed to false
+  2025-11-08T10:13:19:290 - metered-allowlist for 10164 changed to false
+  2025-11-08T10:13:19:289 - Firewall rule changed: 20178-standby-default
+  2025-11-08T10:13:19:289 - Firewall rule changed: 10178-standby-default
+  2025-11-08T10:13:19:289 - metered-allowlist for 20178 changed to false
+  2025-11-08T10:13:19:289 - metered-allowlist for 10178 changed to false
+  2025-11-08T10:13:18:845 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:13:18:845 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:13:18:845 - metered-allowlist for 20272 changed to false
+  2025-11-08T10:13:18:845 - metered-allowlist for 10272 changed to false
+  2025-11-08T10:13:17:702 - Firewall rule changed: 20228-standby-default
+  2025-11-08T10:13:17:702 - Firewall rule changed: 10228-standby-default
+  2025-11-08T10:13:17:702 - metered-allowlist for 20228 changed to false
+  2025-11-08T10:13:17:702 - metered-allowlist for 10228 changed to false
+  2025-11-08T10:13:17:353 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:13:17:353 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:13:17:353 - metered-allowlist for 20122 changed to true
+  2025-11-08T10:13:17:353 - metered-allowlist for 10122 changed to true
+  2025-11-08T10:13:17:216 - Firewall rule changed: 20228-standby-default
+  2025-11-08T10:13:17:216 - Firewall rule changed: 10228-standby-default
+  2025-11-08T10:13:17:216 - metered-allowlist for 20228 changed to true
+  2025-11-08T10:13:17:216 - metered-allowlist for 10228 changed to true
+  2025-11-08T10:13:16:767 - Firewall rule changed: 20164-standby-default
+  2025-11-08T10:13:16:767 - Firewall rule changed: 10164-standby-default
+  2025-11-08T10:13:16:767 - metered-allowlist for 20164 changed to true
+  2025-11-08T10:13:16:767 - metered-allowlist for 10164 changed to true
+  2025-11-08T10:13:16:765 - Firewall rule changed: 20178-standby-default
+  2025-11-08T10:13:16:765 - Firewall rule changed: 10178-standby-default
+  2025-11-08T10:13:16:765 - metered-allowlist for 20178 changed to true
+  2025-11-08T10:13:16:765 - metered-allowlist for 10178 changed to true
+  2025-11-08T10:13:16:709 - Firewall rule changed: 20154-standby-default
+  2025-11-08T10:13:16:709 - Firewall rule changed: 10154-standby-default
+  2025-11-08T10:13:16:709 - metered-allowlist for 20154 changed to true
+  2025-11-08T10:13:16:709 - metered-allowlist for 10154 changed to true
+  2025-11-08T10:13:16:682 - Firewall rule changed: 20154-standby-default
+  2025-11-08T10:13:16:682 - Firewall rule changed: 10154-standby-default
+  2025-11-08T10:13:16:682 - metered-allowlist for 20154 changed to false
+  2025-11-08T10:13:16:682 - metered-allowlist for 10154 changed to false
+  2025-11-08T10:13:16:682 - Firewall rule changed: 20164-standby-default
+  2025-11-08T10:13:16:682 - Firewall rule changed: 10164-standby-default
+  2025-11-08T10:13:16:682 - metered-allowlist for 20164 changed to false
+  2025-11-08T10:13:16:682 - metered-allowlist for 10164 changed to false
+  2025-11-08T10:13:16:681 - Firewall rule changed: 20178-standby-default
+  2025-11-08T10:13:16:681 - Firewall rule changed: 10178-standby-default
+  2025-11-08T10:13:16:681 - metered-allowlist for 20178 changed to false
+  2025-11-08T10:13:16:681 - metered-allowlist for 10178 changed to false
+  2025-11-08T10:13:16:528 - Firewall rule changed: 20133-standby-default
+  2025-11-08T10:13:16:528 - Firewall rule changed: 10133-standby-default
+  2025-11-08T10:13:16:528 - metered-allowlist for 20133 changed to false
+  2025-11-08T10:13:16:527 - metered-allowlist for 10133 changed to false
+  2025-11-08T10:13:16:485 - Firewall rule changed: 20164-standby-default
+  2025-11-08T10:13:16:485 - Firewall rule changed: 10164-standby-default
+  2025-11-08T10:13:16:485 - metered-allowlist for 20164 changed to true
+  2025-11-08T10:13:16:485 - metered-allowlist for 10164 changed to true
+  2025-11-08T10:13:16:483 - Firewall rule changed: 20178-standby-default
+  2025-11-08T10:13:16:483 - Firewall rule changed: 10178-standby-default
+  2025-11-08T10:13:16:483 - metered-allowlist for 20178 changed to true
+  2025-11-08T10:13:16:483 - metered-allowlist for 10178 changed to true
+  2025-11-08T10:13:15:777 - Firewall rule changed: 20143-standby-default
+  2025-11-08T10:13:15:777 - Firewall rule changed: 10143-standby-default
+  2025-11-08T10:13:15:777 - metered-allowlist for 20143 changed to true
+  2025-11-08T10:13:15:777 - metered-allowlist for 10143 changed to true
+  2025-11-08T10:13:15:730 - Firewall rule changed: 20133-standby-default
+  2025-11-08T10:13:15:730 - Firewall rule changed: 10133-standby-default
+  2025-11-08T10:13:15:730 - metered-allowlist for 20133 changed to true
+  2025-11-08T10:13:15:729 - metered-allowlist for 10133 changed to true
+  2025-11-08T10:13:15:657 - Firewall rule changed: 20154-standby-default
+  2025-11-08T10:13:15:657 - Firewall rule changed: 10154-standby-default
+  2025-11-08T10:13:15:657 - metered-allowlist for 20154 changed to true
+  2025-11-08T10:13:15:657 - metered-allowlist for 10154 changed to true
+  2025-11-08T10:13:15:652 - Firewall rule changed: 20133-standby-default
+  2025-11-08T10:13:15:652 - Firewall rule changed: 10133-standby-default
+  2025-11-08T10:13:15:652 - temp-power-save whitelist for 10133 changed to: true; reason=SERVICE_LAUNCH <fg-service-launch>
+  2025-11-08T10:13:15:593 - Firewall rule changed: 20007-standby-default
+  2025-11-08T10:13:15:593 - Firewall rule changed: 10007-standby-default
+  2025-11-08T10:13:15:593 - App idle state of uid 10007: true
+  2025-11-08T10:13:15:501 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:13:15:501 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:13:15:500 - metered-allowlist for 20172 changed to true
+  2025-11-08T10:13:15:500 - metered-allowlist for 10172 changed to true
+  2025-11-08T10:13:15:397 - Firewall rule changed: 20007-standby-default
+  2025-11-08T10:13:15:397 - Firewall rule changed: 10007-standby-default
+  2025-11-08T10:13:14:314 - Firewall rule changed: 20210-standby-default
+  2025-11-08T10:13:14:314 - Firewall rule changed: 10210-standby-default
+  2025-11-08T10:13:14:314 - temp-power-save whitelist for 10210 changed to: true; reason=PACKAGE_VERIFIER <package verifier>
+  2025-11-08T10:13:11:778 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:13:11:778 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:13:11:778 - metered-allowlist for 20272 changed to true
+  2025-11-08T10:13:11:778 - metered-allowlist for 10272 changed to true
+  2025-11-08T10:13:09:319 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:13:09:319 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:13:09:319 - metered-allowlist for 20272 changed to false
+  2025-11-08T10:13:09:319 - metered-allowlist for 10272 changed to false
+  2025-11-08T10:13:04:131 - Firewall rule changed: 20226-standby-default
+  2025-11-08T10:13:04:131 - Firewall rule changed: 10226-standby-default
+  2025-11-08T10:13:04:131 - metered-allowlist for 20226 changed to false
+  2025-11-08T10:13:04:131 - metered-allowlist for 10226 changed to false
+  2025-11-08T10:13:03:214 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:13:03:214 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:13:03:214 - metered-allowlist for 20272 changed to true
+  2025-11-08T10:13:03:214 - metered-allowlist for 10272 changed to true
+  2025-11-08T10:12:59:050 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:12:59:050 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:12:59:050 - metered-allowlist for 20272 changed to false
+  2025-11-08T10:12:59:050 - metered-allowlist for 10272 changed to false
+  2025-11-08T10:12:54:296 - Firewall rule changed: 20226-standby-default
+  2025-11-08T10:12:54:296 - Firewall rule changed: 10226-standby-default
+  2025-11-08T10:12:54:296 - metered-allowlist for 20226 changed to true
+  2025-11-08T10:12:54:296 - metered-allowlist for 10226 changed to true
+  2025-11-08T10:12:53:019 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:12:53:019 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:12:53:019 - metered-allowlist for 20272 changed to true
+  2025-11-08T10:12:53:019 - metered-allowlist for 10272 changed to true
+  2025-11-08T10:12:52:349 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:12:52:349 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:12:52:349 - metered-allowlist for 20272 changed to false
+  2025-11-08T10:12:52:349 - metered-allowlist for 10272 changed to false
+  2025-11-08T10:12:49:091 - Firewall rule changed: 20721-standby-default
+  2025-11-08T10:12:49:091 - Firewall rule changed: 10721-standby-default
+  2025-11-08T10:12:49:091 - App idle whitelist state of uid 10721: false
+  2025-11-08T10:12:48:818 - Firewall rule changed: 20721-standby-default
+  2025-11-08T10:12:48:818 - Firewall rule changed: 10721-standby-default
+  2025-11-08T10:12:48:818 - App idle whitelist state of uid 10721: true
+  2025-11-08T10:12:46:309 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:12:46:309 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:12:46:309 - metered-allowlist for 20272 changed to true
+  2025-11-08T10:12:46:309 - metered-allowlist for 10272 changed to true
+  2025-11-08T10:12:34:159 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:12:34:159 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:12:34:159 - metered-allowlist for 20172 changed to false
+  2025-11-08T10:12:34:159 - metered-allowlist for 10172 changed to false
+  2025-11-08T10:12:34:155 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:12:34:155 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:12:34:155 - metered-allowlist for 20122 changed to false
+  2025-11-08T10:12:34:155 - metered-allowlist for 10122 changed to false
+  2025-11-08T10:12:30:255 - Firewall rule changed: 20176-standby-default
+  2025-11-08T10:12:30:255 - Firewall rule changed: 10176-standby-default
+  2025-11-08T10:12:30:255 - metered-allowlist for 20176 changed to false
+  2025-11-08T10:12:30:255 - metered-allowlist for 10176 changed to false
+  2025-11-08T10:12:28:572 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:12:28:572 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:12:28:572 - metered-allowlist for 20272 changed to false
+  2025-11-08T10:12:28:572 - metered-allowlist for 10272 changed to false
+  2025-11-08T10:12:28:250 - Firewall rule changed: 20176-standby-default
+  2025-11-08T10:12:28:250 - Firewall rule changed: 10176-standby-default
+  2025-11-08T10:12:28:250 - metered-allowlist for 20176 changed to true
+  2025-11-08T10:12:28:250 - metered-allowlist for 10176 changed to true
+  2025-11-08T10:12:28:136 - Firewall rule changed: 20172-standby-default
+  2025-11-08T10:12:28:136 - Firewall rule changed: 10172-standby-default
+  2025-11-08T10:12:28:136 - metered-allowlist for 20172 changed to true
+  2025-11-08T10:12:28:136 - metered-allowlist for 10172 changed to true
+  2025-11-08T10:12:28:126 - Firewall rule changed: 20122-standby-default
+  2025-11-08T10:12:28:126 - Firewall rule changed: 10122-standby-default
+  2025-11-08T10:12:28:126 - metered-allowlist for 20122 changed to true
+  2025-11-08T10:12:28:126 - metered-allowlist for 10122 changed to true
+  2025-11-08T10:12:23:445 - Firewall rule changed: 21712-standby-default
+  2025-11-08T10:12:23:445 - Firewall rule changed: 11712-standby-default
+  2025-11-08T10:12:23:445 - App idle state of uid 11712: false
+  2025-11-08T10:12:23:441 - Firewall rule changed: 21712-standby-default
+  2025-11-08T10:12:23:441 - Firewall rule changed: 11712-standby-default
+  2025-11-08T10:12:23:441 - metered-allowlist for 21712 changed to true
+  2025-11-08T10:12:23:441 - metered-allowlist for 11712 changed to true
+  2025-11-08T10:12:22:269 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:12:22:269 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:12:22:269 - metered-allowlist for 20272 changed to true
+  2025-11-08T10:12:22:269 - metered-allowlist for 10272 changed to true
+  2025-11-08T10:08:38:313 - Firewall rule changed: 20207-standby-default
+  2025-11-08T10:08:38:313 - Firewall rule changed: 10207-standby-default
+  2025-11-08T10:08:38:313 - temp-power-save whitelist for 10207 changed to: true; reason=SYNC_MANAGER <sync by top app>
+  2025-11-08T10:07:57:367 - Firewall rule changed: 20207-standby-default
+  2025-11-08T10:07:57:367 - Firewall rule changed: 10207-standby-default
+  2025-11-08T10:07:57:367 - temp-power-save whitelist for 10207 changed to: false; reason=UNKNOWN <null>
+  2025-11-08T10:04:01:470 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:04:01:470 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:04:01:470 - metered-allowlist for 20272 changed to false
+  2025-11-08T10:04:01:470 - metered-allowlist for 10272 changed to false
+  2025-11-08T10:03:54:052 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:03:54:052 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:03:54:052 - App idle whitelist state of uid 10272: false
+  2025-11-08T10:03:54:045 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:03:54:045 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:03:54:045 - App idle whitelist state of uid 10272: true
+  2025-11-08T10:03:54:044 - Firewall rule changed: 20272-standby-default
+  2025-11-08T10:03:54:044 - Firewall rule changed: 10272-standby-default
+  2025-11-08T10:03:54:044 - metered-allowlist for 20272 changed to true
+  2025-11-08T10:03:54:044 - metered-allowlist for 10272 changed to true
+  2025-11-08T09:59:44:801 - Firewall rule changed: 20207-standby-default
+  2025-11-08T09:59:44:801 - Firewall rule changed: 10207-standby-default
+  2025-11-08T09:59:44:801 - temp-power-save whitelist for 10207 changed to: true; reason=SYNC_MANAGER <sync by top app>
+  2025-11-08T09:57:43:130 - Firewall rule changed: 21712-standby-default
+  2025-11-08T09:57:43:130 - Firewall rule changed: 11712-standby-default
+  2025-11-08T09:57:43:130 - App idle state of uid 11712: true
+  2025-11-08T09:57:30:506 - Firewall rule changed: 20272-standby-default
+  2025-11-08T09:57:30:506 - Firewall rule changed: 10272-standby-default
+  2025-11-08T09:57:30:506 - metered-allowlist for 20272 changed to false
+  2025-11-08T09:57:30:506 - metered-allowlist for 10272 changed to false
+  2025-11-08T09:57:30:091 - Firewall rule changed: 20164-standby-default
+  2025-11-08T09:57:30:091 - Firewall rule changed: 10164-standby-default
+  2025-11-08T09:57:30:091 - metered-allowlist for 20164 changed to false
+  2025-11-08T09:57:30:091 - metered-allowlist for 10164 changed to false
+  2025-11-08T09:57:30:090 - Firewall rule changed: 20173-standby-default
+  2025-11-08T09:57:30:090 - Firewall rule changed: 10173-standby-default
+  2025-11-08T09:57:30:090 - metered-allowlist for 20173 changed to false
+  2025-11-08T09:57:30:090 - metered-allowlist for 10173 changed to false
+  2025-11-08T09:57:30:089 - Firewall rule changed: 20178-standby-default
+  2025-11-08T09:57:30:089 - Firewall rule changed: 10178-standby-default
+  2025-11-08T09:57:30:089 - metered-allowlist for 20178 changed to false
+  2025-11-08T09:57:30:089 - metered-allowlist for 10178 changed to false
+
+mNetworkBlockedLogs (most recent first):
+  2025-11-08T10:19:35:385 - 10299-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:385 - 10299-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:378 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:378 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:378 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:378 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:378 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:19:35:378 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:377 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:376 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:19:35:376 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:376 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:375 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:375 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:374 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:374 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:372 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:19:35:372 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:371 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:371 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:369 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:368 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:368 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:368 - 10229-{blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:367 - 10229-{blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:367 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:367 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:19:35:367 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:366 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:19:35:366 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:364 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:364 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:363 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:363 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:362 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:362 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:362 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:362 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:361 - 10224-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:358 - 10224-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:358 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:356 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:356 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:35:356 - 1001-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:19:35:351 - 10190-{blocked=NONE,allowed=FOREGROUND|TOP|RESTRICTED_MODE_PERMISSIONS|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:35:350 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:19:35:350 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:19:32:949 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:19:32:949 - 10325-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:32:949 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:32:946 - 10178-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:19:32:946 - 10184-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:32:887 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:32:471 - 1001-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:19:32:441 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:19:10:643 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:10:386 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:10:386 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:19:00:696 - 10280-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:19:00:634 - 10280-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:56:476 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:55:756 - 10299-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:48:435 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:48:435 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:48:434 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:48:427 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:32:313 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:31:798 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:29:850 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:27:059 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:25:754 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:24:444 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:24:172 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:24:077 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:23:474 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:18:23:310 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:23:297 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:23:284 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:21:024 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:21:018 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:21:013 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:21:007 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:999 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:993 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:988 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:982 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:976 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:969 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:961 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:955 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:950 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:944 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:939 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:933 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:924 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:917 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:902 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:861 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:855 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:850 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:843 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:835 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:827 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:820 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:813 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:805 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:799 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:791 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:785 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:779 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:774 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:769 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:763 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:755 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:750 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:735 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:690 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:685 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:679 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:673 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:665 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:659 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:653 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:640 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:629 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:618 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:607 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:601 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:594 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:588 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:582 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:574 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:567 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:559 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:545 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:456 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:451 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:445 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:438 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:430 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:423 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:414 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:406 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:400 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:392 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:384 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:374 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:368 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:360 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:354 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:347 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:337 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:331 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:316 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:271 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:266 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:259 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:252 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:242 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:236 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:226 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:220 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:212 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:204 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:194 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:186 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:180 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:172 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:166 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:153 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:140 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:129 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:20:112 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:17:265 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:16:735 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:733 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:733 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:729 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:729 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:683 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:683 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:641 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:16:640 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:797 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:768 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:716 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:15:697 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:692 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:690 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:663 - 10178-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:18:15:656 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:655 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:486 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:480 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:408 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:315 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:271 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:221 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:212 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:170 - 10210-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:15:137 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:14:704 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:14:651 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:14:603 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:14:603 - 10299-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:14:462 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:14:368 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:18:14:311 - 10178-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:18:13:680 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:13:680 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:03:481 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:02:869 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:18:02:866 - 10178-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:50:095 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:48:748 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:48:459 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:48:459 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:48:458 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:48:426 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:47:196 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:47:196 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:47:195 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:47:194 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:47:122 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:47:121 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:47:087 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:47:087 - 10226-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:42:871 - 10325-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:42:871 - 10184-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:42:870 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:42:418 - 1001-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:42:368 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:36:075 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:36:075 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:36:074 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:36:073 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:36:073 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:35:260 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:35:259 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:35:254 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:35:254 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:35:253 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:35:253 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:863 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:863 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:862 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:862 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:859 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:532 - 1000-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:34:529 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:397 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:270 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:269 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:269 - 10323-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:268 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:267 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:267 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:266 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:265 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:265 - 10323-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:265 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:264 - 1001-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:34:262 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:260 - 10323-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:260 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:259 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:259 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:258 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:258 - 10184-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:258 - 10223-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:258 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:258 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:258 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:257 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:257 - 10323-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:257 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:257 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:257 - 10184-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:257 - 10184-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:256 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:256 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:256 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:256 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:256 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:254 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:254 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:254 - 10323-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:254 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:253 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:253 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:253 - 10140-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:252 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:252 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:252 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:252 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:251 - 10323-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:251 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:250 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:249 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:248 - 10124-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:248 - 10124-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:34:079 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:078 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:078 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:078 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:077 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:077 - 10325-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:076 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:076 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:076 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:076 - 10325-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:076 - 10325-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:074 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:074 - 10178-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:074 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:073 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:073 - 10178-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:073 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:073 - 10178-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:073 - 10153-{blocked=NONE,allowed=POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:34:067 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:065 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:065 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:064 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:34:061 - 1001-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:33:946 - 10932-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:861 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:856 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:853 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:848 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:847 - 10142-{blocked=NONE,allowed=FOREGROUND|TOP|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:846 - 10297-{blocked=NONE,allowed=FOREGROUND|TOP|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:800 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:799 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:798 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:798 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:797 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:797 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:797 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:795 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:795 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:795 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:794 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:794 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:794 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:794 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:793 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:791 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:791 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:789 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:789 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:789 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:789 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:788 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:788 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:787 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:786 - 10185-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:784 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:784 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:784 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:784 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:783 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:783 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:783 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:783 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:783 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:783 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:782 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:782 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:782 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:781 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:781 - 10226-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:781 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:780 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:780 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:779 - 10229-{blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:779 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:779 - 10229-{blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:779 - 10154-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:779 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:778 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:778 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:778 - 10210-{blocked=NONE,allowed=POWER_SAVE_EXCEPT_IDLE_ALLOWLIST,effective=NONE}
+  2025-11-08T10:17:33:778 - 10217-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:777 - 10339-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:777 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:776 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:771 - 10229-{blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:771 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:771 - 10229-{blocked=NONE,allowed=FOREGROUND|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:771 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:770 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:770 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:768 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:768 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:767 - 1001-{blocked=NONE,allowed=RESTRICTED_MODE_PERMISSIONS,effective=NONE}
+  2025-11-08T10:17:33:767 - 6102-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:767 - 10721-{blocked=NONE,allowed=NONE,effective=NONE}
+  2025-11-08T10:17:33:766 - 10224-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|METERED_FOREGROUND,effective=NONE}
+  2025-11-08T10:17:33:765 - 10207-{blocked=NONE,allowed=FOREGROUND|POWER_SAVE_ALLOWLIST|POWER_SAVE_EXCEPT_IDLE_ALLOWLIST|RESTRICTED_MODE_PERMISSIONS|METERED_USER_EXEMPTED|METERED_FOREGROUND,effective=NONE}
+
+mUidStateChangeLogs (most recent first):
+  2025-11-08T10:18:25:072 - 10210:IMPF:------:157485
+  2025-11-08T10:18:25:063 - 10299:LAST:------:157460
+  2025-11-08T10:18:25:062 - 10325:LAST:------:157454
+  2025-11-08T10:18:25:053 - 99022:LAST:------:157436
+  2025-11-08T10:18:24:064 - 10124:TOP :LCMNFU:157127
+  2025-11-08T10:18:24:039 - 10124:TOP :LCMNFU:157126
+  2025-11-08T10:18:22:780 - 10172:LAST:------:156885
+  2025-11-08T10:18:22:770 - 10122:LAST:------:156882
+  2025-11-08T10:18:22:074 - 10325:BTOP:---NFU:156875
+  2025-11-08T10:18:16:753 - 10172:BFGS:---NFU:156578
+  2025-11-08T10:18:16:745 - 10122:BTOP:---NFU:156571
+  2025-11-08T10:18:16:739 - 10228:SVC :------:156569
+  2025-11-08T10:18:16:655 - 10228:BTOP:---NFU:156551
+  2025-11-08T10:18:16:649 - 99022:BTOP:---NFU:156550
+  2025-11-08T10:18:15:210 - 10124:BFGS:---NFU:156260
+  2025-11-08T10:18:15:059 - 10210:BTOP:---NFU:156170
+  2025-11-08T10:18:14:270 - 10299:TOP :LCMNFU:156102
+  2025-11-08T10:18:14:261 - 10299:TOP :LCMNFU:156101
+  2025-11-08T10:18:14:222 - 10299:CEM :------:156030
+  2025-11-08T10:18:13:700 - 10210:IMPF:------:155866
+  2025-11-08T10:18:13:698 - 10226:LAST:------:155859
+  2025-11-08T10:18:13:692 - 90076:LAST:------:155822
+  2025-11-08T10:18:12:721 - 10124:TOP :LCMNFU:155617
+  2025-11-08T10:18:12:704 - 10124:TOP :LCMNFU:155616
+  2025-11-08T10:18:02:973 - 90046:TRNB:------:155609
+  2025-11-08T10:18:02:229 - 90076:BTOP:---NFU:155603
+  2025-11-08T10:18:00:949 - 90069:TRNB:------:155599
+  2025-11-08T10:18:00:945 - 90046:BTOP:---NFU:155596
+  2025-11-08T10:17:52:692 - 90075:TRNB:------:155587
+  2025-11-08T10:17:52:117 - 90075:BTOP:---NFU:155584
+  2025-11-08T10:17:48:124 - 10124:BFGS:---NFU:155368
+  2025-11-08T10:17:47:155 - 10210:BTOP:---NFU:155008
+  2025-11-08T10:17:47:155 - 90069:BTOP:---NFU:155106
+  2025-11-08T10:17:47:151 - 10226:TOP :LCMNFU:155004
+  2025-11-08T10:17:47:081 - 10226:TOP :LCMNFU:155003
+  2025-11-08T10:17:46:880 - 11712:BFGS:---NFU:154735
+  2025-11-08T10:17:45:756 - 10124:TOP :LCMNFU:154621
+  2025-11-08T10:17:45:739 - 10124:TOP :LCMNFU:154620
+  2025-11-08T10:17:44:614 - 11712:TOP :LCMNFU:154431
+  2025-11-08T10:17:41:625 - 11712:TOP :LCMNFU:154059
+  2025-11-08T10:17:39:497 - 90074:SVC :------:153960
+  2025-11-08T10:17:31:139 - 10124:BFGS:---NFU:153806
+  2025-11-08T10:17:30:310 - 11712:TOP :LCMNFU:153458
+  2025-11-08T10:17:30:269 - 11712:TOP :LCMNFU:153457
+  2025-11-08T10:17:29:658 - 10280:TRNB:------:153349
+  2025-11-08T10:17:29:596 - 10210:IMPF:------:153300
+  2025-11-08T10:17:29:593 - 10226:LAST:------:153293
+  2025-11-08T10:17:29:593 - 90069:LAST:------:153260
+  2025-11-08T10:17:29:592 - 90073:LAST:------:153259
+  2025-11-08T10:17:28:944 - 90073:BTOP:---NFU:153164
+  2025-11-08T10:17:28:943 - 90073:CEM :------:153077
+  2025-11-08T10:17:28:881 - 90046:CACC:------:153067
+  2025-11-08T10:17:28:869 - 90046:BTOP:---NFU:153063
+  2025-11-08T10:17:28:625 - 10124:TOP :LCMNFU:152960
+  2025-11-08T10:17:28:612 - 10124:TOP :LCMNFU:152951
+  2025-11-08T10:17:28:591 - 10124:TOP :LCMNFU:152950
+  2025-11-08T10:17:26:383 - 90072:TRNB:------:152946
+  2025-11-08T10:17:26:377 - 90069:BTOP:---NFU:152943
+  2025-11-08T10:17:06:628 - 90069:TRNB:------:152934
+  2025-11-08T10:17:06:495 - 90069:BTOP:---NFU:152842
+  2025-11-08T10:17:06:481 - 90046:CACC:------:152835
+  2025-11-08T10:17:06:445 - 90046:BTOP:---NFU:152830
+  2025-11-08T10:17:06:442 - 90069:TRNB:------:152829
+  2025-11-08T10:16:52:759 - 90072:BTOP:---NFU:152822
+  2025-11-08T10:16:28:411 - 10124:BFGS:---NFU:152699
+  2025-11-08T10:16:27:597 - 10210:BTOP:---NFU:152347
+  2025-11-08T10:16:27:596 - 90069:BTOP:---NFU:152345
+  2025-11-08T10:16:27:590 - 10226:TOP :LCMNFU:152344
+  2025-11-08T10:16:27:543 - 10226:TOP :LCMNFU:152343
+  2025-11-08T10:16:22:925 - 11712:BFGS:---NFU:152075
+  2025-11-08T10:16:22:045 - 10124:TOP :LCMNFU:151966
+  2025-11-08T10:16:22:026 - 10124:TOP :LCMNFU:151965
+  2025-11-08T10:14:50:283 - 10124:BFGS:---NFU:151530
+  2025-11-08T10:14:49:300 - 11712:TOP :LCMNFU:151007
+  2025-11-08T10:14:49:252 - 11712:TOP :LCMNFU:151006
+  2025-11-08T10:14:46:195 - 10210:IMPF:------:150908
+  2025-11-08T10:14:44:760 - 10210:IMPF:------:150393
+  2025-11-08T10:14:43:919 - 10124:TOP :LCMNFU:150248
+  2025-11-08T10:14:43:901 - 10124:TOP :LCMNFU:150247
+  2025-11-08T10:14:42:503 - 10124:BFGS:---NFU:150137
+  2025-11-08T10:14:41:515 - 10210:TOP :LCMNFU:149874
+  2025-11-08T10:14:41:468 - 10210:TOP :LCMNFU:149873
+  2025-11-08T10:14:39:914 - 10210:IMPF:------:149436
+  2025-11-08T10:14:39:913 - 10299:LAST:------:149412
+  2025-11-08T10:14:39:905 - 99020:LAST:------:149391
+  2025-11-08T10:14:39:012 - 10124:TOP :LCMNFU:149251
+  2025-11-08T10:14:38:942 - 10124:TOP :LCMNFU:149250
+  2025-11-08T10:13:56:862 - 99021:TRNB:------:148812
+  2025-11-08T10:13:56:304 - 10154:TRNB:------:148753
+  2025-11-08T10:13:37:317 - 10325:LAST:------:148473
+  2025-11-08T10:13:33:299 - 10107:LAST:------:148425
+  2025-11-08T10:13:29:500 - 10172:LAST:------:147967
+  2025-11-08T10:13:29:496 - 10122:LAST:------:147963
+  2025-11-08T10:13:28:930 - 10325:BTOP:---NFU:147867
+  2025-11-08T10:13:27:237 - 10107:BFGS:---NFU:147500
+  2025-11-08T10:13:23:497 - 10172:BFGS:---NFU:147169
+  2025-11-08T10:13:23:479 - 10122:BTOP:---NFU:147161
+  2025-11-08T10:13:23:462 - 10228:SVC :------:147150
+  2025-11-08T10:13:23:389 - 10228:BTOP:---NFU:147144
+  2025-11-08T10:13:23:362 - 99020:BTOP:---NFU:147119
+  2025-11-08T10:13:21:939 - 10124:BFGS:---NFU:146523
+  2025-11-08T10:13:21:670 - 10172:LAST:------:146389
+  2025-11-08T10:13:20:976 - 10299:TOP :LCMNFU:146277
+  2025-11-08T10:13:20:953 - 10299:TOP :LCMNFU:146276
+  2025-11-08T10:13:20:884 - 10299:CEM :------:146205
+  2025-11-08T10:13:19:290 - 10122:LAST:------:145939
+  2025-11-08T10:13:19:290 - 10154:LAST:------:145929
+  2025-11-08T10:13:19:289 - 10164:TRNB:------:145926
+  2025-11-08T10:13:19:289 - 10178:TRNB:------:145922
+  2025-11-08T10:13:19:288 - 99019:LAST:------:145868
+  2025-11-08T10:13:18:845 - 10272:LAST:------:145867
+  2025-11-08T10:13:18:425 - 10124:TOP :LCMNFU:145760
+  2025-11-08T10:13:18:373 - 10124:TOP :LCMNFU:145759
+  2025-11-08T10:13:17:762 - 10124:BFGS:---NFU:145609
+  2025-11-08T10:13:17:700 - 10228:SVC :------:145525
+  2025-11-08T10:13:17:353 - 10122:BTOP:---NFU:145444
+  2025-11-08T10:13:17:215 - 10228:BTOP:---NFU:145429
+  2025-11-08T10:13:17:026 - 99019:BTOP:---NFU:145428
+  2025-11-08T10:13:16:767 - 10164:BTOP:---NFU:145289
+  2025-11-08T10:13:16:764 - 10178:BTOP:---NFU:145287
+  2025-11-08T10:13:16:751 - 10154:TOP :LCMNFU:145285
+  2025-11-08T10:13:16:709 - 10154:TOP :LCMNFU:145284
+  2025-11-08T10:13:16:682 - 10154:SVC :------:145280
+  2025-11-08T10:13:16:681 - 10164:TRNB:------:145279
+  2025-11-08T10:13:16:681 - 10178:TRNB:------:145277
+  2025-11-08T10:13:16:526 - 10133:SVC :------:145249
+  2025-11-08T10:13:16:485 - 10164:BFGS:---NFU:145209
+  2025-11-08T10:13:16:483 - 10178:BFGS:---NFU:145208
+  2025-11-08T10:13:15:777 - 10143:FGS :---NFU:144925
+  2025-11-08T10:13:15:729 - 10133:FGS :---NFU:144923
+  2025-11-08T10:13:15:656 - 10154:FGS :---NFU:144920
+  2025-11-08T10:13:15:631 - 10133:CEM :------:144898
+  2025-11-08T10:13:15:631 - 10154:CEM :------:144892
+  2025-11-08T10:13:15:620 - 10129:RCVR:------:144831
+  2025-11-08T10:13:15:500 - 10172:BFGS:---NFU:144829
+  2025-11-08T10:13:12:665 - 10210:BTOP:---NFU:144336
+  2025-11-08T10:13:11:777 - 10272:BTOP:---NFU:144207
+  2025-11-08T10:13:11:777 - 10124:TOP :LCMNFU:144196
+  2025-11-08T10:13:11:733 - 10124:TOP :LCMNFU:144196
+  2025-11-08T10:13:11:716 - 10124:TOP :LCMNFU:144194
+  2025-11-08T10:13:09:319 - 10272:LAST:------:144193
+  2025-11-08T10:13:05:223 - 10124:BFGS:---NFU:144042
+  2025-11-08T10:13:04:199 - 10210:TOP :LCMNFU:143713
+  2025-11-08T10:13:04:172 - 10210:TOP :LCMNFU:143710
+  2025-11-08T10:13:04:131 - 10226:LAST:------:143661
+  2025-11-08T10:13:04:131 - 90069:LAST:------:143628
+  2025-11-08T10:13:03:214 - 10272:BTOP:---NFU:143624
+  2025-11-08T10:13:03:173 - 10272:CEM :------:143560
+  2025-11-08T10:13:03:086 - 10124:TOP :LCMNFU:143528
+  2025-11-08T10:13:03:068 - 10124:TOP :LCMNFU:143527
+  2025-11-08T10:13:00:727 - 90071:TRNB:------:143521
+  2025-11-08T10:13:00:038 - 90071:BTOP:---NFU:143392
+  2025-11-08T10:12:59:050 - 10272:LAST:------:143346
+  2025-11-08T10:12:55:340 - 10124:BFGS:---NFU:143214
+  2025-11-08T10:12:54:333 - 90069:BTOP:---NFU:142871
+  2025-11-08T10:12:54:331 - 10226:TOP :LCMNFU:142869
+  2025-11-08T10:12:54:295 - 10226:TOP :LCMNFU:142868
+  2025-11-08T10:12:54:182 - 10210:BTOP:---NFU:142656
+  2025-11-08T10:12:53:019 - 10272:BTOP:---NFU:142514
+  2025-11-08T10:12:52:978 - 10124:TOP :LCMNFU:142503
+  2025-11-08T10:12:52:960 - 10124:TOP :LCMNFU:142502
+  2025-11-08T10:12:52:349 - 10272:LAST:------:142501
+  2025-11-08T10:12:48:819 - 10124:BFGS:---NFU:142287
+  2025-11-08T10:12:47:841 - 10210:TOP :LCMNFU:142045
+  2025-11-08T10:12:47:790 - 10210:TOP :LCMNFU:142044
+  2025-11-08T10:12:47:375 - 11712:BFGS:---NFU:141797
+  2025-11-08T10:12:46:309 - 10272:BTOP:---NFU:141701
+  2025-11-08T10:12:46:264 - 10124:TOP :LCMNFU:141693
+  2025-11-08T10:12:46:250 - 10124:TOP :LCMNFU:141692
+  2025-11-08T10:12:34:159 - 10172:LAST:------:141226
+  2025-11-08T10:12:34:155 - 10122:LAST:------:141225
+  2025-11-08T10:12:34:087 - 10217:TRNB:------:141224
+  2025-11-08T10:12:30:255 - 10176:SVC :------:140910
+  2025-11-08T10:12:30:218 - 11712:TOP :LCMNFU:140909
+  2025-11-08T10:12:28:572 - 10272:LAST:------:140471
+  2025-11-08T10:12:28:250 - 10176:BTOP:---NFU:139542
+  2025-11-08T10:12:28:150 - 10256:CEM :------:139448
+  2025-11-08T10:12:28:136 - 10172:BFGS:---NFU:139447
+  2025-11-08T10:12:28:126 - 10122:BTOP:---NFU:139443
+  2025-11-08T10:12:28:112 - 11712:TOP :LCMNFU:139442
+  2025-11-08T10:12:26:725 - 10256:TOP :LCMNFU:139069
+  2025-11-08T10:12:26:712 - 10256:TOP :LCMNFU:139068
+  2025-11-08T10:12:26:635 - 11712:TOP :LCMNFU:138974
+  2025-11-08T10:12:24:449 - 10124:BFGS:---NFU:138835
+  2025-11-08T10:12:23:468 - 11712:TOP :LCMNFU:138549
+  2025-11-08T10:12:23:441 - 11712:TOP :LCMNFU:138548
+  2025-11-08T10:12:23:379 - 11712:CEM :------:138348
+  2025-11-08T10:12:23:290 - 10210:FGS :---NFU:138207
+  2025-11-08T10:12:22:269 - 10272:BTOP:---NFU:138035
+  2025-11-08T10:12:22:201 - 10272:CEM :------:137968
+  2025-11-08T10:12:22:201 - 10348:CEM :------:137951
+  2025-11-08T10:12:22:201 - 11235:CEM :------:137946
+  2025-11-08T10:12:22:104 - 10124:TOP :LCMNFU:137929
+  2025-11-08T10:12:22:087 - 10124:TOP :LCMNFU:137928
+  2025-11-08T10:10:37:215 - 11652:RCVR:------:137771
+  2025-11-08T10:08:38:314 - 10343:CEM :------:137617
+  2025-11-08T10:04:01:470 - 10272:LAST:------:137085
+  2025-11-08T10:03:54:043 - 10272:BFGS:---NFU:137080
+  2025-11-08T10:00:15:292 - 10217:RCVR:------:136625
+  2025-11-08T09:57:30:506 - 10272:LAST:------:136097
+  2025-11-08T09:57:30:091 - 10164:TRNB:------:136086
+  2025-11-08T09:57:30:090 - 10173:SVC :------:136085
+  2025-11-08T09:57:30:089 - 10178:TRNB:------:136084
+  2025-11-08T09:57:30:079 - 10164:BFGS:---NFU:136079
+  2025-11-08T09:57:30:079 - 10178:BFGS:---NFU:136077
+  2025-11-08T09:57:30:073 - 10173:FGS :---NFU:136074
+  2025-11-08T09:57:27:821 - 10124:BFGS:---NFU:135882
+  2025-11-08T09:57:27:151 - 10173:TRNB:------:135548
+  2025-11-08T09:57:27:132 - 10343:TRNB:------:135546
+  2025-11-08T09:57:26:985 - 10210:TOP :LCMNFU:135446
+  2025-11-08T09:57:26:949 - 10210:TOP :LCMNFU:135445
+  2025-11-08T09:57:24:497 - 10272:BTOP:---NFU:135433
+  2025-11-08T09:57:15:270 - 10272:LAST:------:135414
+  2025-11-08T09:57:09:163 - 10272:BTOP:---NFU:135399
+  2025-11-08T09:56:45:425 - 90070:SVC :------:135241
+  2025-11-08T09:56:43:083 - 11712:LAST:------:134979
+  2025-11-08T09:56:42:194 - 10124:TOP :LCMNFU:134787
+  2025-11-08T09:56:42:183 - 10124:TOP :LCMNFU:134786
+  2025-11-08T09:56:35:776 - 10124:BFGS:---NFU:134632
+  2025-11-08T09:56:34:702 - 11712:TOP :LCMNFU:134289
+  2025-11-08T09:56:34:662 - 11712:TOP :LCMNFU:134288
+  2025-11-08T09:56:33:064 - 10210:IMPF:------:134153
+  2025-11-08T09:56:33:063 - 10226:LAST:------:134147
+  2025-11-08T09:56:33:060 - 90069:LAST:------:134111
+  2025-11-08T09:56:32:107 - 10124:TOP :LCMNFU:134009
+  2025-11-08T09:56:32:101 - 10124:TOP :LCMNFU:134009
+  2025-11-08T09:56:32:088 - 10124:TOP :LCMNFU:134007
+  2025-11-08T09:56:21:282 - 90046:TRNB:------:133969
+  2025-11-08T09:56:21:182 - 90069:BTOP:---NFU:133963
+  2025-11-08T09:56:21:153 - 90069:CEM :------:133878
+  2025-11-08T09:56:21:121 - 90068:TRNB:------:133871
+  2025-11-08T09:56:21:078 - 90046:BTOP:---NFU:133866
+  2025-11-08T09:55:38:972 - 10124:BFGS:---NFU:133574
+  2025-11-08T09:55:37:989 - 90068:BTOP:---NFU:133179
+  2025-11-08T09:55:37:989 - 10226:TOP :LCMNFU:133177
+  2025-11-08T09:55:37:936 - 10226:TOP :LCMNFU:133176
+  2025-11-08T09:55:37:594 - 11712:BFGS:---NFU:132921
+  2025-11-08T09:55:36:377 - 10124:TOP :LCMNFU:132773
+  2025-11-08T09:55:36:352 - 10124:TOP :LCMNFU:132772
+  2025-11-08T09:55:28:087 - 10122:LAST:------:132468
+  2025-11-08T09:55:28:085 - 10172:LAST:------:132467
+  2025-11-08T09:55:23:789 - 11580:SVC :------:131842
+  2025-11-08T09:55:23:668 - 10185:SVC :------:131838
+  2025-11-08T09:55:23:264 - 10176:SVC :------:131712
+  2025-11-08T09:55:23:234 - 11712:TOP :LCMNFU:131711
+  2025-11-08T09:55:22:177 - 10176:BTOP:---NFU:130030
+  2025-11-08T09:55:22:062 - 10256:CEM :------:129928
+  2025-11-08T09:55:22:058 - 10172:BFGS:---NFU:129924
+  2025-11-08T09:55:22:054 - 10122:BTOP:---NFU:129926
+  2025-11-08T09:55:22:012 - 11712:TOP :LCMNFU:129920
+  2025-11-08T09:55:21:368 - 99018:SVC :------:129893
+  2025-11-08T09:55:21:083 - 10337:CEM :------:129687
+  2025-11-08T09:55:20:989 - 10210:BFGS:---NFU:129659
+  2025-11-08T09:55:20:504 - 10459:CEM :------:129468
+  2025-11-08T09:55:20:485 - 10256:TOP :LCMNFU:129454
+  2025-11-08T09:55:20:475 - 10256:TOP :LCMNFU:129453
+  2025-11-08T09:55:20:407 - 11712:TOP :LCMNFU:129358
+  2025-11-08T09:54:41:064 - 10124:BFGS:---NFU:129240
+  2025-11-08T09:54:40:059 - 11712:TOP :LCMNFU:128958
+  2025-11-08T09:54:40:037 - 11712:TOP :LCMNFU:128957
+  2025-11-08T09:52:08:824 - 10210:IMPF:------:128825
+  2025-11-08T09:51:53:016 - 10210:BFGS:---NFU:128729
+  2025-11-08T09:51:52:253 - 10347:TRNB:------:128715
+  2025-11-08T09:51:52:249 - 10348:RCVR:------:128714
+  2025-11-08T09:51:14:751 - 10210:IMPF:------:128594
+  2025-11-08T09:50:56:903 - 99017:SVC :------:128192
+  2025-11-08T09:50:56:830 - 10210:BFGS:---NFU:128177
+  2025-11-08T09:50:56:432 - 10341:RCVR:------:128014
+  2025-11-08T09:50:43:100 - 10210:IMPF:------:127998
+  2025-11-08T09:50:28:557 - 11712:LAST:------:127704
+  2025-11-08T09:50:28:073 - 10210:BTOP:---NFU:127613
+  2025-11-08T09:50:27:765 - 11251:CEM :------:127505
+  2025-11-08T09:50:27:671 - 10124:TOP :LCMNFU:127485
+  2025-11-08T09:50:27:655 - 10124:TOP :LCMNFU:127484
+  2025-11-08T09:48:30:951 - 90068:SVC :------:126924
+  2025-11-08T09:48:29:377 - 10124:BFGS:---NFU:126722
+  2025-11-08T09:48:28:368 - 10210:IMPF:------:126253
+  2025-11-08T09:48:28:368 - 10226:LAST:------:126247
+  2025-11-08T09:48:28:368 - 90046:LAST:------:126210
+  2025-11-08T09:48:28:368 - 90067:LAST:------:126208
+  2025-11-08T09:48:28:366 - 11712:TOP :LCMNFU:126205
+  2025-11-08T09:48:28:355 - 11712:TOP :LCMNFU:126205
+  2025-11-08T09:48:28:341 - 11712:TOP :LCMNFU:126203
+  2025-11-08T09:48:27:385 - 10124:TOP :LCMNFU:125988
+  2025-11-08T09:48:27:371 - 10124:TOP :LCMNFU:125987
+  2025-11-08T09:47:54:747 - 90067:BTOP:---NFU:125975
+  2025-11-08T09:47:49:762 - 90066:CEM :------:125875
+  2025-11-08T09:47:49:693 - 90066:BTOP:---NFU:125864
+  2025-11-08T09:47:49:611 - 11712:BFGS:---NFU:125862
+  2025-11-08T09:47:49:505 - 11712:SVC :------:125861
+  2025-11-08T09:47:48:638 - 90065:TRNB:------:125759
+  2025-11-08T09:47:48:551 - 90046:BTOP:---NFU:125748
+  2025-11-08T09:47:26:431 - 90046:TRNB:------:125647
+  2025-11-08T09:47:26:328 - 90065:BTOP:---NFU:125641
+  2025-11-08T09:47:26:267 - 90050:TRNB:------:125545
+  2025-11-08T09:47:26:250 - 90046:BTOP:---NFU:125540
+  2025-11-08T09:46:49:486 - 10124:BFGS:---NFU:125328
+  2025-11-08T09:46:48:487 - 10210:BTOP:---NFU:124945
+  2025-11-08T09:46:48:477 - 10226:TOP :LCMNFU:124939
+  2025-11-08T09:46:48:477 - 90050:BTOP:---NFU:124900
+  2025-11-08T09:46:48:445 - 10226:TOP :LCMNFU:124897
+  2025-11-08T09:46:48:426 - 11712:BFGS:---NFU:124813
+  2025-11-08T09:46:47:337 - 10124:TOP :LCMNFU:124709
+  2025-11-08T09:46:47:317 - 10124:TOP :LCMNFU:124708
+  2025-11-08T09:46:44:764 - 10124:BFGS:---NFU:124559
+  2025-11-08T09:46:43:778 - 10210:IMPF:------:123988
+  2025-11-08T09:46:43:777 - 10226:LAST:------:123982
+  2025-11-08T09:46:43:777 - 11712:TOP :LCMNFU:123946
+  2025-11-08T09:46:43:769 - 90050:LAST:------:123943
+  2025-11-08T09:46:43:711 - 11712:TOP :LCMNFU:123937
+  2025-11-08T09:46:42:740 - 10124:TOP :LCMNFU:123747
+  2025-11-08T09:46:42:725 - 10124:TOP :LCMNFU:123746
+  2025-11-08T09:46:13:731 - 90046:TRNB:------:123728
+  2025-11-08T09:46:13:712 - 90046:BTOP:---NFU:123631
+  2025-11-08T09:46:13:706 - 90064:CACC:------:123630
+  2025-11-08T09:46:06:698 - 90046:TRNB:------:123616
+  2025-11-08T09:46:06:693 - 90050:BTOP:---NFU:123613
+  2025-11-08T09:45:53:273 - 90064:BTOP:---NFU:123583
+  2025-11-08T09:45:53:001 - 10124:BFGS:---NFU:123473
+  2025-11-08T09:45:52:033 - 10210:BTOP:---NFU:123031
+  2025-11-08T09:45:52:033 - 90046:BTOP:---NFU:123125
+  2025-11-08T09:45:52:025 - 10226:TOP :LCMNFU:123028
+  2025-11-08T09:45:51:982 - 10226:TOP :LCMNFU:123028
+  2025-11-08T09:45:51:958 - 10226:TOP :LCMNFU:123026
+  2025-11-08T09:45:51:940 - 11712:BFGS:---NFU:122852
+  2025-11-08T09:45:50:816 - 10124:TOP :LCMNFU:122741
+  2025-11-08T09:45:50:797 - 10124:TOP :LCMNFU:122740
+  2025-11-08T09:45:27:929 - 10210:IMPF:------:122714
+  2025-11-08T09:45:15:462 - 10122:LAST:------:122539
+  2025-11-08T09:45:15:460 - 10172:LAST:------:122538
+  2025-11-08T09:45:11:771 - 10721:SVC :------:122222
+  2025-11-08T09:45:11:687 - 10210:BFGS:---NFU:122208
+  2025-11-08T09:45:10:649 - 10176:SVC :------:121895
+  2025-11-08T09:45:10:602 - 11712:TOP :LCMNFU:121894
+  2025-11-08T09:45:09:715 - 10176:BTOP:---NFU:120029
+  2025-11-08T09:45:09:687 - 10176:CEM :------:119893
+  2025-11-08T09:45:09:431 - 10172:BFGS:---NFU:119716
+  2025-11-08T09:45:09:430 - 10256:CEM :------:119715
+  2025-11-08T09:45:09:412 - 10122:BTOP:---NFU:119711
+  2025-11-08T09:45:09:394 - 11712:TOP :LCMNFU:119710
+  2025-11-08T09:45:07:810 - 10256:TOP :LCMNFU:119269
+  2025-11-08T09:45:07:802 - 10256:TOP :LCMNFU:119268
+  2025-11-08T09:45:07:762 - 11712:TOP :LCMNFU:119163
+  2025-11-08T09:41:37:714 - 10173:SVC :------:118731
+  2025-11-08T09:41:37:701 - 10173:FGS :---NFU:118722
+  2025-11-08T09:41:35:185 - 10124:BFGS:---NFU:118492
+  2025-11-08T09:41:34:169 - 11712:TOP :LCMNFU:118068
+  2025-11-08T09:41:34:132 - 11712:TOP :LCMNFU:118067
+  2025-11-08T09:40:10:160 - 10210:IMPF:------:117577
+  2025-11-08T09:40:10:158 - 10226:LAST:------:117570
+  2025-11-08T09:40:10:146 - 90046:LAST:------:117522
+  2025-11-08T09:40:09:291 - 10124:TOP :LCMNFU:117392
+  2025-11-08T09:40:09:267 - 10124:TOP :LCMNFU:117391
+  2025-11-08T09:39:21:227 - 90063:CACC:------:117236
+  2025-11-08T09:39:03:185 - 90063:BTOP:---NFU:117211
+  2025-11-08T09:38:57:820 - 10106:TRNB:------:117187
+  2025-11-08T09:38:33:131 - 90062:CACC:------:117045
+  2025-11-08T09:38:15:106 - 90062:BTOP:---NFU:116859
+  2025-11-08T09:38:15:076 - 10124:BFGS:---NFU:116732
+  2025-11-08T09:38:15:076 - 90062:CEM :------:116648
+  2025-11-08T09:38:14:311 - 10173:SVC :------:116634
+  2025-11-08T09:38:14:298 - 10173:FGS :---NFU:116626
+  2025-11-08T09:38:14:081 - 10210:BTOP:---NFU:116169
+  2025-11-08T09:38:14:080 - 90046:BTOP:---NFU:116167
+  2025-11-08T09:38:14:080 - 10226:TOP :LCMNFU:116165
+  2025-11-08T09:38:14:030 - 10226:TOP :LCMNFU:116164
+  2025-11-08T09:38:14:015 - 11712:BFGS:---NFU:115963
+  2025-11-08T09:38:13:037 - 10124:TOP :LCMNFU:115833
+  2025-11-08T09:38:13:018 - 10124:TOP :LCMNFU:115832
+  2025-11-08T09:38:11:770 - 10124:BFGS:---NFU:115556
+  2025-11-08T09:38:10:744 - 11712:TOP :LCMNFU:115215
+  2025-11-08T09:38:10:710 - 11712:TOP :LCMNFU:115214
+  2025-11-08T09:38:10:594 - 10210:IMPF:------:115064
+  2025-11-08T09:38:10:591 - 10226:LAST:------:115057
+  2025-11-08T09:38:10:591 - 90046:LAST:------:115008
+  2025-11-08T09:38:09:672 - 10124:TOP :LCMNFU:114867
+  2025-11-08T09:38:09:650 - 10124:TOP :LCMNFU:114866
+  2025-11-08T09:37:53:457 - 90061:CACC:------:114749
+  2025-11-08T09:37:27:023 - 90061:BTOP:---NFU:114488
+  2025-11-08T09:37:26:863 - 10124:BFGS:---NFU:114360
+  2025-11-08T09:37:26:002 - 10173:SVC :------:114261
+  2025-11-08T09:37:25:983 - 10173:FGS :---NFU:114144
+  2025-11-08T09:37:25:863 - 10210:BTOP:---NFU:113899
+  2025-11-08T09:37:25:863 - 90046:BTOP:---NFU:113897
+  2025-11-08T09:37:25:857 - 10226:TOP :LCMNFU:113895
+  2025-11-08T09:37:25:819 - 10226:TOP :LCMNFU:113894
+  2025-11-08T09:37:25:785 - 11712:BFGS:---NFU:113582
+  2025-11-08T09:37:24:872 - 10124:TOP :LCMNFU:113448
+  2025-11-08T09:37:24:855 - 10124:TOP :LCMNFU:113447
+  2025-11-08T09:37:22:056 - 10124:BFGS:---NFU:113031
+  2025-11-08T09:37:21:055 - 11712:TOP :LCMNFU:112496
+  2025-11-08T09:37:21:010 - 11712:TOP :LCMNFU:112495
+  2025-11-08T09:37:20:987 - 10210:IMPF:------:112452
+  2025-11-08T09:37:20:987 - 10226:LAST:------:112445
+  2025-11-08T09:37:20:987 - 90046:LAST:------:112396
+  2025-11-08T09:37:20:978 - 90060:LAST:------:112388
+  2025-11-08T09:37:20:016 - 10124:TOP :LCMNFU:112263
+  2025-11-08T09:37:19:999 - 10124:TOP :LCMNFU:112262
+  2025-11-08T09:37:15:381 - 90060:BTOP:---NFU:112257
+  2025-11-08T09:37:10:332 - 90059:CACC:------:112119
+
+MultipathPolicyTracker:

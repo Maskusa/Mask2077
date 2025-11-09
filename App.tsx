@@ -23,6 +23,7 @@ import Button from './components/Button';
 import TextArea from './components/TextArea';
 import LogOverlay from './components/LogOverlay';
 import WebExperience from './components/WebExperience';
+import ServerSettings from './components/ServerSettings';
 import type { SelectOption, VoiceProfile } from './types';
 import { NativeTTS } from './native/nativeTTS';
 import { NativeUtilities } from './native/nativeUtilities';
@@ -37,7 +38,17 @@ import { get, ref } from 'firebase/database';
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { WEB_PORTAL_URL } from './constants/web';
 
-type Screen = 'home' | 'tts' | 'site' | 'ads' | 'purchases' | 'fonts' | 'file' | 'reminders';
+type Screen =
+  | 'home'
+  | 'tts'
+  | 'site'
+  | 'browser'
+  | 'ads'
+  | 'purchases'
+  | 'fonts'
+  | 'file'
+  | 'reminders'
+  | 'server';
 
 interface FontOption {
   family: string;
@@ -63,6 +74,7 @@ const SHARE_APP_URL = 'https://play.google.com/store/apps/details?id=com.subtit.
 const STORE_REVIEW_URL = `${SHARE_APP_URL}&showAllReviews=true`;
 const YOUTUBE_MOBILE_URL = 'https://m.youtube.com/';
 const YOUTUBE_EMBED_BASE_URL = 'https://www.youtube.com/embed/';
+const DEFAULT_BROWSER_URL = 'https://2ip.ru/';
 const FONT_FALLBACK_STACK = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 const FONT_PREVIEW_PARAGRAPH =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
@@ -266,6 +278,25 @@ const buildYoutubeEmbedUrl = (rawValue: string): string | null => {
   return null;
 };
 
+const normalizeBrowserUrl = (rawValue: string): string | null => {
+  if (!rawValue) {
+    return null;
+  }
+  let candidate = rawValue.trim();
+  if (!candidate) {
+    return null;
+  }
+  if (!/^https?:\/\//i.test(candidate)) {
+    candidate = `https://${candidate}`;
+  }
+  try {
+    const parsed = new URL(candidate);
+    return parsed.toString();
+  } catch (error) {
+    return null;
+  }
+};
+
 const App: React.FC = () => {
   const {
     supported,
@@ -298,9 +329,12 @@ const App: React.FC = () => {
   const [fontPreviewValue, setFontPreviewValue] = useState<string>(FONT_PREVIEW_PARAGRAPH);
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [webSiteUrl, setWebSiteUrl] = useState<string>(WEB_PORTAL_URL);
-  const [webSiteContext, setWebSiteContext] = useState<'generic' | 'youtube'>('generic');
+  const [webSiteContext, setWebSiteContext] =
+    useState<'generic' | 'youtube' | 'browser'>('generic');
   const [youtubeUrlInput, setYoutubeUrlInput] = useState<string>('');
   const [youtubeUrlError, setYoutubeUrlError] = useState<string | null>(null);
+  const [browserUrlInput, setBrowserUrlInput] = useState<string>(DEFAULT_BROWSER_URL);
+  const [browserUrlError, setBrowserUrlError] = useState<string | null>(null);
   const [bannerVisible, setBannerVisible] = useState(false);
   const [interstitialReady, setInterstitialReady] = useState(false);
   const [interstitialLoading, setInterstitialLoading] = useState(false);
@@ -380,9 +414,12 @@ const App: React.FC = () => {
   }, [addLog, localNotificationsSupported]);
 
   useEffect(() => {
-    if (screen === 'site') {
-      const presentation = webSiteContext === 'youtube' ? 'default' : 'minimal';
-      addLog(`[Web] screen=site context=${webSiteContext} presentation=${presentation}`);
+    if (screen === 'site' || screen === 'browser') {
+      const presentation =
+        webSiteContext === 'youtube' || webSiteContext === 'browser' ? 'default' : 'minimal';
+      addLog(
+        `[Web] screen=${screen} context=${webSiteContext} presentation=${presentation}`
+      );
     }
   }, [screen, webSiteContext, addLog]);
 
@@ -1054,6 +1091,8 @@ const App: React.FC = () => {
     setWebSiteContext('generic');
     setYoutubeUrlInput('');
     setYoutubeUrlError(null);
+    setBrowserUrlInput(DEFAULT_BROWSER_URL);
+    setBrowserUrlError(null);
   }, [addLog]);
 
   const buildWebPortalUrl = useCallback(() => {
@@ -1135,6 +1174,17 @@ const App: React.FC = () => {
     setScreen('site');
   }, [trackHomeButton, addLog]);
 
+  const handleOpenBrowserFromHome = useCallback(() => {
+            {'Брау#7#5$0'}
+    addLog('screen_browser');
+    setWebSiteContext('browser');
+    const normalized = normalizeBrowserUrl(browserUrlInput) ?? DEFAULT_BROWSER_URL;
+    setBrowserUrlInput(normalized);
+    setBrowserUrlError(null);
+    setWebSiteUrl(normalized);
+    setScreen('browser');
+  }, [trackHomeButton, addLog, browserUrlInput]);
+
   const handleOpenWebsiteFromHome = useCallback(() => {
     trackHomeButton('website');
     addLog('screen_website_lobby');
@@ -1211,6 +1261,22 @@ const App: React.FC = () => {
     addLog(`[YouTube] Open video: ${normalizedUrl}`);
   }, [youtubeUrlInput, addLog]);
 
+  const handleBrowserUrlInputChange = useCallback((value: string) => {
+    setBrowserUrlInput(value);
+    setBrowserUrlError(null);
+  }, []);
+
+  const handleBrowserUrlSubmit = useCallback(() => {
+    const normalized = normalizeBrowserUrl(browserUrlInput);
+    if (!normalized) {
+      setBrowserUrlError('\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0430\u0434\u0440\u0435\u0441.');
+      return;
+    }
+    setBrowserUrlError(null);
+    setWebSiteUrl(normalized);
+    addLog(`[Browser] Open url: ${normalized}`);
+  }, [browserUrlInput, addLog]);
+
   const handleOpenAdsFromHome = useCallback(() => {
     trackHomeButton('ads');
     addLog('screen_ads');
@@ -1221,6 +1287,12 @@ const App: React.FC = () => {
     trackHomeButton('purchases');
     addLog('screen_iapp');
     setScreen('purchases');
+  }, [trackHomeButton, addLog]);
+
+  const handleOpenServerFromHome = useCallback(() => {
+    trackHomeButton('server');
+    addLog('screen_server');
+    setScreen('server');
   }, [trackHomeButton, addLog]);
 
   const handleOpenFileFromHome = useCallback(() => {
@@ -2078,10 +2150,18 @@ const App: React.FC = () => {
           <Button variant="primary" onClick={handleOpenYoutubeFromHome}>
             YouTube
           </Button>
+          <Button variant="primary" onClick={handleOpenBrowserFromHome}>
+            {'Браузер'}
+          </Button>
           {isNativePlatform && (
-            <Button variant="primary" onClick={handleOpenWebsiteFromHome}>
-              Веб сайт
-            </Button>
+            <>
+              <Button variant="primary" onClick={handleOpenWebsiteFromHome}>
+                Веб сайт
+              </Button>
+              <Button variant="primary" onClick={handleOpenServerFromHome}>
+                {'\u0421\u0435\u0440\u0432\u0435\u0440'}
+              </Button>
+            </>
           )}
           <Button variant="primary" onClick={handleOpenAdsFromHome}>
             Реклама
@@ -2104,6 +2184,10 @@ const App: React.FC = () => {
         </div>
       </section>
     </div>
+  );
+
+  const renderServer = () => (
+    <ServerSettings onBack={resetToHome} onShowLogs={handleShowLogs} addLog={addLog} />
   );
 
   const renderFileViewer = () => (
@@ -2246,12 +2330,23 @@ const App: React.FC = () => {
             value: youtubeUrlInput,
             onChange: handleYoutubeInputChange,
             onSubmit: handleYoutubeLinkSubmit,
-            placeholder: 'Вставьте ссылку на видео YouTube',
-            helperText: 'Например, https://youtu.be/{id} или https://www.youtube.com/watch?v={id}',
+            placeholder: '�������� ������ �� ����� YouTube',
+            helperText: '��������, https://youtu.be/{id} ��� https://www.youtube.com/watch?v={id}',
             error: youtubeUrlError ?? undefined,
           }
-        : undefined;
-    const sitePresentation = webSiteContext === 'youtube' ? 'default' : 'minimal';
+        : webSiteContext === 'browser'
+          ? {
+              value: browserUrlInput,
+              onChange: handleBrowserUrlInputChange,
+              onSubmit: handleBrowserUrlSubmit,
+              placeholder: 'Введите адрес сайта',
+              helperText:
+                'Например, https://2ip.ru/ или https://example.com',
+              error: browserUrlError ?? undefined,
+            }
+          : undefined;
+    const sitePresentation =
+      webSiteContext === 'youtube' || webSiteContext === 'browser' ? 'default' : 'minimal';
 
     return (
       <WebExperience
@@ -2371,8 +2466,11 @@ const App: React.FC = () => {
     if (screen === 'tts') {
       return renderTts();
     }
-    if (screen === 'site') {
+    if (screen === 'site' || screen === 'browser') {
       return renderSite();
+    }
+    if (screen === 'server') {
+      return renderServer();
     }
     if (screen === 'ads') {
       return renderAds();

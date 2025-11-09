@@ -1,0 +1,26 @@
+priority 13000 from all fwmark 0xc00f9/0xcffff lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 0-999 lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 1002-10101 lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 10103-10198 lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 10200-11234 lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 11236-20101 lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 20103-20198 lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 20200-21234 lookup 1140
+priority 13000 from all fwmark 0x0/0x20000 iif lo uidrange 21236-99999 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 0-0 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 0-999 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 1002-10101 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 10103-10198 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 10200-11234 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 11236-20101 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 20103-20198 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 20200-21234 lookup 1140
+priority 16000 from all fwmark 0x100f9/0x1ffff iif lo uidrange 21236-99999 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 0-999 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 1002-10101 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 10103-10198 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 10200-11234 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 11236-20101 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 20103-20198 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 20200-21234 lookup 1140
+priority 17000 from all iif lo oif tun0 uidrange 21236-99999 lookup 1140

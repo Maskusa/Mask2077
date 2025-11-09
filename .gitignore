@@ -27,6 +27,7 @@ dist-ssr
 .env
 .env.*
 !.env.example
+#README_server.md
 Voicer.keystore
 __key
 temp_ids.txt

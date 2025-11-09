@@ -1,0 +1,40 @@
+﻿    }
+    return null;
+  })();
+  if (!summaryText) {
+    return null;
+  }
+  const match = summaryText.match(/listening port:\s*(\d+)/i);
+  if (!match) {
+    return null;
+  }
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatLatency = (value: number | null): string => {
+  if (value === null || value < 0) {
+    return 'Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В¦/Р В Р’В Р вЂ™Р’В Р В РЎС›Р Р†Р вЂљР’В';
+  }
+  return `${value} ms`;
+};
+
+const formatTimestamp = (value: number | null): string => {
+  if (!value) {
+    return 'Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В¦/Р В Р’В Р вЂ™Р’В Р В РЎС›Р Р†Р вЂљР’В';
+  }
+  return new Date(value).toLocaleString();
+};
+
+const formatBytes = (value: number | null): string => {
+  if (value === null || value < 0) {
+    return 'Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В¦/Р В Р’В Р вЂ™Р’В Р В РЎС›Р Р†Р вЂљР’В';
+  }
+  const units = ['Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В', 'Р В Р’В Р вЂ™Р’В Р В Р Р‹Р Р†РІР‚С›РЎС›Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В', 'Р В Р’В Р вЂ™Р’В Р В Р Р‹Р РЋРІвЂћСћР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В', 'Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р РЋРЎв„ўР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В', 'Р В Р’В Р вЂ™Р’В Р В Р Р‹Р РЋРІР‚С”Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В'];
+  let size = value;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  const digits = size >= 100 || unitIndex === 0 ? 0 : size >= 10 ? 1 : 2;

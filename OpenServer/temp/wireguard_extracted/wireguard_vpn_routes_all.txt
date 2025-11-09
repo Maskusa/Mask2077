@@ -1,0 +1,47 @@
+﻿default via 192.168.0.1 dev wlan0 table 1024 proto static 
+192.168.0.0/24 dev wlan0 table 1024 proto static scope link 
+224.0.0.0/24 dev rmnet_data0 table 1000000014 proto static scope link 
+224.0.0.0/24 dev r_rmnet_data0 table 1000000020 proto static scope link 
+192.168.0.0/24 dev wlan0 table 1000000024 proto static scope link 
+224.0.0.0/24 dev wlan0 table 1000000024 proto static scope link 
+default dev tun0 table 1049 proto static scope link 
+192.168.6.250 dev tun0 table 1049 proto static scope link 
+192.168.6.250 dev tun0 table 1000000049 proto static scope link 
+default dev dummy0 table 1002 proto static scope link 
+255.0.1.0 dev r_rmnet_data0 table 1020 proto static scope link 
+192.168.0.0/24 dev wlan0 proto kernel scope link src 192.168.0.104 
+broadcast 127.0.0.0 dev lo table local proto kernel scope link src 127.0.0.1 
+local 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1 
+local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1 
+broadcast 127.255.255.255 dev lo table local proto kernel scope link src 127.0.0.1 
+broadcast 192.168.0.0 dev wlan0 table local proto kernel scope link src 192.168.0.104 
+local 192.168.0.104 dev wlan0 table local proto kernel scope host src 192.168.0.104 
+broadcast 192.168.0.255 dev wlan0 table local proto kernel scope link src 192.168.0.104 
+local 192.168.6.250 dev tun0 table local proto kernel scope host src 192.168.6.250 
+fe80::/64 dev wlan0 table 1024 proto kernel metric 256 pref medium
+fe80::/64 dev wlan0 table 1024 proto static metric 1024 pref medium
+fd95:d1e:12:: dev r_rmnet_data0 table 1000000020 proto static metric 1024 pref medium
+fe80::/64 dev wlan0 table 1000000024 proto static metric 1024 pref medium
+fe80::/64 dev tun0 table 1049 proto kernel metric 256 pref medium
+default dev tun0 table 1049 proto static metric 1024 pref medium
+fe80::/64 dev dummy0 table 1002 proto kernel metric 256 pref medium
+default dev dummy0 table 1002 proto static metric 1024 pref medium
+fe80::/64 dev rmnet_data0 table 1014 proto kernel metric 256 pref medium
+fd95:d1e:12:: dev r_rmnet_data0 table 1020 proto static metric 1024 pref medium
+fe80::/64 dev r_rmnet_data0 table 1020 proto kernel metric 256 pref medium
+local ::1 dev lo table local proto kernel metric 0 pref medium
+anycast fe80:: dev dummy0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev rmnet_data0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev r_rmnet_data0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev wlan0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev tun0 table local proto kernel metric 0 pref medium
+local fe80::5c6f:8fff:fec2:5392 dev wlan0 table local proto kernel metric 0 pref medium
+local fe80::689a:ebff:fe75:a1c dev rmnet_data0 table local proto kernel metric 0 pref medium
+local fe80::743a:f0ff:fe46:c39d dev dummy0 table local proto kernel metric 0 pref medium
+local fe80::929d:496:a35b:7ea0 dev tun0 table local proto kernel metric 0 pref medium
+local fe80::e4d9:eeff:fe02:e200 dev r_rmnet_data0 table local proto kernel metric 0 pref medium
+multicast ff00::/8 dev dummy0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev rmnet_data0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev wlan0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev r_rmnet_data0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev tun0 table local proto kernel metric 256 pref medium

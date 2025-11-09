@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "serve",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", "${workspaceFolder}\\serve.ps1",
+        "-Hostname", "127.0.0.1",
+        "-Port", "4173"
+      ],
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": {
+        "owner": "custom",
+        "fileLocation": "absolute",
+        "pattern": [
+          {
+            "regexp": ".*",
+            "file": 1,
+            "location": 2,
+            "message": 0
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Запуск локального сервера",
+          "endsPattern": "(Слушаю|Доступно:|Запускаю встроенный сервер PHP)"
+        }
+      }
+    }
+  ]
+}

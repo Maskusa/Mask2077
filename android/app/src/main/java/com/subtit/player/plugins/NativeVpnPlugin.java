@@ -1,0 +1,759 @@
+package com.subtit.player.plugins;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.os.Build;
+import android.os.SystemClock;
+import android.provider.Settings;
+import android.util.Base64;
+import android.util.Log;
+
+import androidx.annotation.Nullable;
+import androidx.activity.result.ActivityResult;
+
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.subtit.player.vpn.ProxyVpnManager;
+import com.wireguard.android.backend.GoBackend;
+import com.wireguard.android.backend.Tunnel;
+import com.wireguard.android.backend.Statistics;
+import com.wireguard.config.Config;
+
+import java.io.ByteArrayInputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+
+import okhttp3.Dns;
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+import org.json.JSONException;
+
+@CapacitorPlugin(name = "NativeVpn")
+public class NativeVpnPlugin extends Plugin {
+
+    private static final String TAG = "NativeVpnPlugin";
+    private static final String PERMISSION_TAG = "vpnPermission";
+    private final ExecutorService diagnosticsExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "vpn-diagnostics");
+        t.setDaemon(true);
+        return t;
+    });
+    private final Object apiClientLock = new Object();
+    @Nullable
+    private OkHttpClient apiHttpClient;
+    private volatile boolean debugModeEnabled = false;
+    private volatile boolean running = false;
+    private volatile boolean requestedStart = false;
+    private final Object wireguardLock = new Object();
+    @Nullable
+    private GoBackend wireguardBackend;
+    @Nullable
+    private PluginTunnel wireguardTunnel;
+    private volatile long vpnStartedRealtime = 0L;
+    private volatile long vpnStartedEpochMs = 0L;
+    private static final String DEFAULT_TUNNEL_NAME = "mask-wireguard";
+    @Nullable
+    private ConnectivityManager connectivityManager;
+    @Nullable
+    private volatile Network baselineNetwork;
+
+    @Override
+    public void load() {
+        super.load();
+        connectivityManager = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        refreshBaselineNetwork();
+    }
+
+    private ConnectivityManager ensureConnectivityManager() {
+        if (connectivityManager == null) {
+            connectivityManager = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        }
+        return connectivityManager;
+    }
+
+    private void refreshBaselineNetwork() {
+        ConnectivityManager cm = ensureConnectivityManager();
+        if (cm == null) {
+            baselineNetwork = null;
+            return;
+        }
+        Network[] networks = cm.getAllNetworks();
+        Network candidate = null;
+        if (networks != null) {
+            for (Network network : networks) {
+                NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+                if (caps == null) {
+                    continue;
+                }
+                if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+                    continue;
+                }
+                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                    continue;
+                }
+                candidate = network;
+                break;
+            }
+        }
+        if (candidate == null) {
+            candidate = cm.getActiveNetwork();
+        }
+        Network previous = baselineNetwork;
+        baselineNetwork = candidate;
+        if (previous != candidate) {
+            resetApiClient();
+        }
+    }
+
+    private void resetApiClient() {
+        synchronized (apiClientLock) {
+            apiHttpClient = null;
+        }
+    }
+
+    private OkHttpClient getApiHttpClient() {
+        synchronized (apiClientLock) {
+            Network networkForBypass = null;
+            if (running) {
+                networkForBypass = baselineNetwork;
+                if (networkForBypass == null) {
+                    refreshBaselineNetwork();
+                    networkForBypass = baselineNetwork;
+                }
+            }
+            if (apiHttpClient == null) {
+                OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                        .callTimeout(20, TimeUnit.SECONDS)
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(10, TimeUnit.SECONDS)
+                        .writeTimeout(10, TimeUnit.SECONDS)
+                        .retryOnConnectionFailure(true)
+                        .proxy(Proxy.NO_PROXY);
+                if (networkForBypass != null) {
+                    Network finalNetwork = networkForBypass;
+                    builder.socketFactory(finalNetwork.getSocketFactory());
+                    builder.dns(hostname -> {
+                        try {
+                            InetAddress[] addresses = finalNetwork.getAllByName(hostname);
+                            return Arrays.asList(addresses);
+                        } catch (UnknownHostException e) {
+                            return Dns.SYSTEM.lookup(hostname);
+                        }
+                    });
+                }
+                apiHttpClient = builder.build();
+            }
+            return apiHttpClient;
+        }
+    }
+
+    @PluginMethod
+    public void checkPermission(PluginCall call) {
+        Context context = getContext();
+        boolean granted = ProxyVpnManager.isPermissionGranted(context);
+        Log.i(TAG, "[checkPermission] granted=" + granted);
+        JSObject ret = new JSObject();
+        ret.put("granted", granted);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void requestPermission(PluginCall call) {
+        Activity activity = getActivity();
+        Intent intent = ProxyVpnManager.buildPermissionIntent(activity);
+        if (intent == null) {
+            Log.i(TAG, "[requestPermission] already granted (intent=null)");
+            JSObject ret = new JSObject();
+            ret.put("granted", true);
+            call.resolve(ret);
+            return;
+        }
+        Log.i(TAG, "[requestPermission] launching permission activity");
+        saveCall(call);
+        startActivityForResult(call, intent, PERMISSION_TAG);
+    }
+
+    @PluginMethod
+    public void getDeviceFingerprint(PluginCall call) {
+        try {
+            Context context = getContext();
+            if (context == null) {
+                call.reject("context_unavailable");
+                return;
+            }
+            String androidId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+            if (androidId == null || androidId.trim().isEmpty()) {
+                androidId = "unknown";
+            }
+            String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER : "unknown";
+            String model = Build.MODEL != null ? Build.MODEL : "unknown";
+            String hardware = Build.HARDWARE != null ? Build.HARDWARE : "unknown";
+            String brand = Build.BRAND != null ? Build.BRAND : "unknown";
+            String payload = androidId + "|" + manufacturer + "|" + model + "|" + hardware + "|" + brand + "|" + Build.VERSION.SDK_INT;
+            String fingerprint = sha256(payload);
+            JSObject ret = new JSObject();
+            ret.put("fingerprint", fingerprint);
+            ret.put("source", "android_hardware");
+            call.resolve(ret);
+        } catch (Exception ex) {
+            Log.e(TAG, "[getDeviceFingerprint] failed", ex);
+            call.reject("fingerprint_error: " + ex.getMessage());
+        }
+    }
+
+    @ActivityCallback
+    private void vpnPermission(PluginCall call, @Nullable ActivityResult result) {
+        boolean granted = result != null && result.getResultCode() == Activity.RESULT_OK;
+        Log.i(TAG, "[vpnPermission] resultCode="
+                + (result != null ? result.getResultCode() : "null")
+                + " granted=" + granted);
+        JSObject ret = new JSObject();
+        ret.put("granted", granted);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void start(PluginCall call) {
+        String configBase64 = call.getString("wireguardConfigBase64");
+        if (configBase64 == null || configBase64.isEmpty()) {
+            call.reject("wireguardConfigBase64 is required");
+            return;
+        }
+        Context context = getContext();
+        if (!ProxyVpnManager.isPermissionGranted(context)) {
+            call.reject("vpn permission not granted");
+            return;
+        }
+        try {
+            refreshBaselineNetwork();
+            Config config = parseWireGuardConfig(configBase64);
+            GoBackend backend;
+            PluginTunnel tunnel;
+            synchronized (wireguardLock) {
+                if (wireguardBackend == null) {
+                    wireguardBackend = new GoBackend(context.getApplicationContext());
+                }
+                if (wireguardTunnel == null) {
+                    wireguardTunnel = new PluginTunnel(DEFAULT_TUNNEL_NAME);
+                }
+                backend = wireguardBackend;
+                tunnel = wireguardTunnel;
+            }
+            requestedStart = true;
+            backend.setState(tunnel, Tunnel.State.UP, config);
+            running = backend.getState(tunnel) == Tunnel.State.UP;
+            resetApiClient();
+            call.resolve(buildState());
+        } catch (Exception e) {
+            requestedStart = false;
+            Log.e(TAG, "Failed to start WireGuard tunnel", e);
+            call.reject("Failed to start WireGuard VPN: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void setDebugMode(PluginCall call) {
+        boolean enabled = call.getBoolean("enabled", false);
+        debugModeEnabled = enabled;
+        Log.i(TAG, "[setDebugMode] enabled=" + enabled);
+        JSObject response = new JSObject();
+        response.put("enabled", enabled);
+        call.resolve(response);
+    }
+
+    @PluginMethod
+    public void stop(PluginCall call) {
+        Log.i(TAG, "[stop] requested");
+        try {
+            GoBackend backend;
+            PluginTunnel tunnel;
+            synchronized (wireguardLock) {
+                backend = wireguardBackend;
+                tunnel = wireguardTunnel;
+            }
+            if (backend != null && tunnel != null) {
+                backend.setState(tunnel, Tunnel.State.DOWN, null);
+            }
+            running = false;
+            requestedStart = false;
+            resetApiClient();
+            refreshBaselineNetwork();
+            call.resolve(buildState());
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to stop WireGuard tunnel", e);
+            call.reject("Failed to stop WireGuard VPN: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void getState(PluginCall call) {
+        Log.d(TAG, "[getState] returning latest snapshot");
+        call.resolve(buildState());
+    }
+
+    @PluginMethod
+    public void apiRequest(PluginCall call) {
+        final String url = call.getString("url");
+        if (url == null || url.trim().isEmpty()) {
+            call.reject("url is required");
+            return;
+        }
+        final String methodRaw = call.getString("method", "GET");
+        final String method = methodRaw != null ? methodRaw.trim().toUpperCase(Locale.US) : "GET";
+        final JSObject headers = call.getObject("headers", new JSObject());
+        final String body = call.getString("body");
+        diagnosticsExecutor.execute(() -> executeApiRequest(call, url, method, headers, body));
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        super.handleOnDestroy();
+        diagnosticsExecutor.shutdownNow();
+    }
+
+    private void executeApiRequest(PluginCall call, String url, String method, JSObject headers, @Nullable String body) {
+        try {
+            Request.Builder requestBuilder = new Request.Builder().url(url);
+            Headers.Builder headersBuilder = new Headers.Builder();
+            if (headers != null) {
+                Iterator<String> iterator = headers.keys();
+                while (iterator.hasNext()) {
+                    String key = iterator.next();
+                    if (key == null) {
+                        continue;
+                    }
+                    try {
+                        Object value = headers.get(key);
+                        if (value != null) {
+                            headersBuilder.add(key, String.valueOf(value));
+                        }
+                    } catch (JSONException jsonException) {
+                        Log.w(TAG, "[apiRequest] invalid header value for " + key, jsonException);
+                    }
+                }
+            }
+            requestBuilder.headers(headersBuilder.build());
+            RequestBody requestBody = null;
+            if (methodAllowsBody(method)) {
+                MediaType mediaType = MediaType.parse(headersBuilder.get("Content-Type") != null
+                        ? headersBuilder.get("Content-Type")
+                        : "application/json; charset=utf-8");
+                if (body != null) {
+                    requestBody = RequestBody.create(body, mediaType);
+                } else {
+                    requestBody = RequestBody.create(new byte[0], mediaType);
+                }
+            }
+            requestBuilder.method(method, requestBody);
+            if (debugModeEnabled) {
+                Log.d(TAG, "[apiRequest][debug] " + method + " " + url + " body="
+                        + (body != null ? body : "<empty>"));
+            }
+            try (Response response = getApiHttpClient().newCall(requestBuilder.build()).execute()) {
+                String responseBody = response.body() != null ? response.body().string() : "";
+                 if (debugModeEnabled) {
+                     Log.d(TAG, "[apiRequest][debug] status=" + response.code()
+                             + " url=" + response.request().url()
+                             + " bodyLength=" + responseBody.length());
+                 }
+                JSObject result = new JSObject();
+                result.put("status", response.code());
+                result.put("body", responseBody);
+                result.put("url", response.request().url().toString());
+                JSObject responseHeaders = new JSObject();
+                for (String name : response.headers().names()) {
+                    responseHeaders.put(name, response.header(name));
+                }
+                result.put("headers", responseHeaders);
+                call.resolve(result);
+            }
+        } catch (Exception networkError) {
+            Log.w(TAG, "[apiRequest] failed for " + url, networkError);
+            call.reject(networkError.getMessage(), networkError);
+        }
+    }
+
+    private boolean methodAllowsBody(String method) {
+        return !"GET".equals(method) && !"HEAD".equals(method);
+    }
+
+    @PluginMethod
+    public void diagnose(PluginCall call) {
+        String requestedHost = call.getString("host");
+        if (requestedHost == null || requestedHost.trim().isEmpty()) {
+            call.reject("host is required");
+            return;
+        }
+        int port = Math.max(1, call.getInt("port", 1080));
+        int timeoutMs = Math.max(1000, call.getInt("timeoutMs", 7000));
+        String url = call.getString("url", "https://api.ipify.org?format=json");
+
+        JSArray testsArray = call.getArray("tests");
+        List<String> tests = new ArrayList<>();
+        if (testsArray != null) {
+            try {
+                for (Object value : testsArray.toList()) {
+                    if (value != null) {
+                        tests.add(String.valueOf(value));
+                    }
+                }
+            } catch (org.json.JSONException jsonException) {
+                Log.w(TAG, "[diagnose] invalid tests array", jsonException);
+                call.reject("Invalid tests array: " + jsonException.getMessage());
+                return;
+            }
+        }
+        if (tests.isEmpty()) {
+            tests = Arrays.asList("ping", "dns", "tcp", "https");
+        }
+
+        final String resolvedHost = requestedHost.trim();
+        final int resolvedPort = port;
+        final int resolvedTimeout = timeoutMs;
+        final String resolvedUrl = url;
+        final List<String> resolvedTests = new ArrayList<>(tests);
+
+        Log.i(TAG, "[diagnose] host=" + resolvedHost + " port=" + resolvedPort + " tests=" + resolvedTests);
+        diagnosticsExecutor.execute(() -> {
+            long startedAt = System.currentTimeMillis();
+            JSArray resultsArray = new JSArray();
+            for (String test : resolvedTests) {
+                DiagnosticEntry entry = runDiagnostic(test, resolvedHost, resolvedPort, resolvedTimeout, resolvedUrl);
+                resultsArray.put(entry.toJson());
+            }
+            long finishedAt = System.currentTimeMillis();
+            JSObject ret = new JSObject();
+            ret.put("startedAt", startedAt);
+            ret.put("finishedAt", finishedAt);
+            ret.put("results", resultsArray);
+            call.resolve(ret);
+        });
+    }
+
+    private JSObject buildState() {
+        JSObject state = new JSObject();
+        GoBackend backendRef;
+        PluginTunnel tunnelRef;
+        synchronized (wireguardLock) {
+            backendRef = wireguardBackend;
+            tunnelRef = wireguardTunnel;
+        }
+        boolean currentRunning = running;
+        Statistics stats = null;
+        if (backendRef != null && tunnelRef != null) {
+            currentRunning = backendRef.getState(tunnelRef) == Tunnel.State.UP;
+            if (currentRunning) {
+                stats = backendRef.getStatistics(tunnelRef);
+            }
+        }
+        state.put("running", currentRunning);
+        state.put("exitCode", 0);
+        state.put("requestedStart", requestedStart);
+        if (stats != null) {
+            JSObject statsJson = new JSObject();
+            statsJson.put("rxBytes", stats.totalRx());
+            statsJson.put("txBytes", stats.totalTx());
+            statsJson.put("rxPackets", 0);
+            statsJson.put("txPackets", 0);
+            statsJson.put("startedAt", vpnStartedEpochMs);
+            long uptime = currentRunning ? Math.max(0, SystemClock.elapsedRealtime() - vpnStartedRealtime) : 0;
+            statsJson.put("uptimeMs", uptime);
+            statsJson.put("exitCode", 0);
+            statsJson.put("nativeRunning", currentRunning);
+            statsJson.put("restartAttempts", 0);
+            statsJson.put("lastRestartAt", vpnStartedEpochMs);
+            statsJson.put("lastRestartReason", null);
+            state.put("stats", statsJson);
+        }
+        return state;
+    }
+
+    private Config parseWireGuardConfig(String configBase64) throws Exception {
+        byte[] decoded = Base64.decode(configBase64, Base64.DEFAULT);
+        if (decoded == null || decoded.length == 0) {
+            throw new IllegalArgumentException("wireguard config payload is empty");
+        }
+        return Config.parse(new ByteArrayInputStream(decoded));
+    }
+
+    private final class PluginTunnel implements Tunnel {
+        private final String name;
+        private volatile Tunnel.State state = Tunnel.State.DOWN;
+
+        PluginTunnel(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public void onStateChange(Tunnel.State newState) {
+            state = newState;
+            running = newState == Tunnel.State.UP;
+            if (running) {
+                vpnStartedRealtime = SystemClock.elapsedRealtime();
+                vpnStartedEpochMs = System.currentTimeMillis();
+                refreshBaselineNetwork();
+            } else {
+                refreshBaselineNetwork();
+            }
+            resetApiClient();
+            Log.i(TAG, "[wireguard] state=" + newState);
+        }
+
+        public Tunnel.State getState() {
+            return state;
+        }
+    }
+
+
+    private DiagnosticEntry runDiagnostic(String rawType,
+                                          String host,
+                                          int port,
+                                          int timeoutMs,
+                                          String url) {
+        if (rawType == null) {
+            return DiagnosticEntry.failure("unknown", 0, "type=null");
+        }
+        String type = rawType.toLowerCase(Locale.US);
+        switch (type) {
+            case "ping":
+                return runPing(host, timeoutMs);
+            case "dns":
+                return runDns(host);
+            case "tcp":
+                return runTcp(host, port, timeoutMs);
+            case "http":
+            case "https":
+                return runHttp(type, url, host, timeoutMs);
+            default:
+                Log.w(TAG, "[diagnose] unknown test type=" + rawType);
+                return DiagnosticEntry.failure(type, 0, "unknown_test");
+        }
+    }
+
+    private DiagnosticEntry runPing(String host, int timeoutMs) {
+        long started = SystemClock.elapsedRealtime();
+        int waitSeconds = Math.max(1, timeoutMs / 1000);
+        ProcessBuilder builder = new ProcessBuilder("/system/bin/ping", "-c", "1", "-W", String.valueOf(waitSeconds), host);
+        builder.redirectErrorStream(true);
+        try {
+            Process process = builder.start();
+            String output = readStream(process.getInputStream());
+            int exit = process.waitFor();
+            long latency = SystemClock.elapsedRealtime() - started;
+            boolean success = exit == 0;
+            String message = success ? extractPingLatency(output) : "exit=" + exit;
+            DiagnosticEntry entry = new DiagnosticEntry("ping", success, latency, null,
+                    success ? message : (message + " output=" + truncate(output, 200)));
+            Log.i(TAG, "[diagnose] ping success=" + success + " latency=" + latency + "ms message=" + message);
+            return entry;
+        } catch (Exception e) {
+            long latency = SystemClock.elapsedRealtime() - started;
+            Log.w(TAG, "[diagnose] ping failed host=" + host, e);
+            return DiagnosticEntry.failure("ping", latency, e.getMessage());
+        }
+    }
+
+    private DiagnosticEntry runDns(String host) {
+        long started = SystemClock.elapsedRealtime();
+        try {
+            InetAddress[] addresses = InetAddress.getAllByName(host);
+            long latency = SystemClock.elapsedRealtime() - started;
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < addresses.length; i++) {
+                if (i > 0) {
+                    builder.append(',');
+                }
+                builder.append(addresses[i].getHostAddress());
+            }
+            DiagnosticEntry entry = new DiagnosticEntry("dns", true, latency, null,
+                    "resolved=" + builder);
+            Log.i(TAG, "[diagnose] dns success latency=" + latency + "ms " + builder);
+            return entry;
+        } catch (Exception e) {
+            long latency = SystemClock.elapsedRealtime() - started;
+            Log.w(TAG, "[diagnose] dns failed host=" + host, e);
+            return DiagnosticEntry.failure("dns", latency, e.getMessage());
+        }
+    }
+
+    private DiagnosticEntry runTcp(String host, int port, int timeoutMs) {
+        long started = SystemClock.elapsedRealtime();
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(host, port), timeoutMs);
+            long latency = SystemClock.elapsedRealtime() - started;
+            DiagnosticEntry entry = new DiagnosticEntry("tcp", true, latency, null,
+                    "connected " + host + ":" + port);
+            Log.i(TAG, "[diagnose] tcp success latency=" + latency + "ms host=" + host + " port=" + port);
+            return entry;
+        } catch (Exception e) {
+            long latency = SystemClock.elapsedRealtime() - started;
+            Log.w(TAG, "[diagnose] tcp failed host=" + host + " port=" + port, e);
+            return DiagnosticEntry.failure("tcp", latency, e.getMessage());
+        }
+    }
+
+    private DiagnosticEntry runHttp(String type, String url, String host, int timeoutMs) {
+        long started = SystemClock.elapsedRealtime();
+        String effectiveUrl = url;
+        if (effectiveUrl == null || effectiveUrl.trim().isEmpty()) {
+            effectiveUrl = ("https".equals(type) ? "https://" : "http://") + host;
+        } else if (!effectiveUrl.startsWith("http://") && !effectiveUrl.startsWith("https://")) {
+            effectiveUrl = ("https".equals(type) ? "https://" : "http://") + effectiveUrl;
+        }
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(effectiveUrl).openConnection();
+            connection.setConnectTimeout(timeoutMs);
+            connection.setReadTimeout(timeoutMs);
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestMethod("GET");
+            int status = connection.getResponseCode();
+            long latency = SystemClock.elapsedRealtime() - started;
+            boolean success = status >= 200 && status < 400;
+            String message = "status=" + status + " url=" + effectiveUrl;
+            connection.disconnect();
+            DiagnosticEntry entry = new DiagnosticEntry(type, success, latency, status, message);
+            Log.i(TAG, "[diagnose] " + type + " success=" + success + " latency=" + latency + "ms status=" + status);
+            return entry;
+        } catch (Exception e) {
+            long latency = SystemClock.elapsedRealtime() - started;
+            Log.w(TAG, "[diagnose] " + type + " failed url=" + effectiveUrl, e);
+            return DiagnosticEntry.failure(type, latency, e.getMessage());
+        }
+    }
+
+    private static String readStream(InputStream stream) throws IOException {
+        if (stream == null) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append('\n');
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String extractPingLatency(String output) {
+        if (output == null || output.isEmpty()) {
+            return "no_output";
+        }
+        String[] lines = output.split("\\n");
+        for (String line : lines) {
+            int idx = line.indexOf("time=");
+            if (idx >= 0) {
+                return line.substring(idx).trim();
+            }
+        }
+        return truncate(output, 120);
+    }
+
+    private static String truncate(String value, int max) {
+        if (value == null) {
+            return "";
+        }
+        String sanitized = value.replace('\n', ' ').replace('\r', ' ').trim();
+        if (sanitized.length() <= max) {
+            return sanitized;
+        }
+        return sanitized.substring(0, max) + "...";
+    }
+
+    private String sha256(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                String part = Integer.toHexString(b & 0xFF);
+                if (part.length() == 1) {
+                    hex.append('0');
+                }
+                hex.append(part);
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
+    }
+
+    private static final class DiagnosticEntry {
+        private final String type;
+        private final boolean success;
+        private final long latencyMs;
+        @Nullable
+        private final Integer status;
+        @Nullable
+        private final String message;
+
+        private DiagnosticEntry(String type, boolean success, long latencyMs,
+                                @Nullable Integer status,
+                                @Nullable String message) {
+            this.type = type;
+            this.success = success;
+            this.latencyMs = latencyMs;
+            this.status = status;
+            this.message = message;
+        }
+
+        static DiagnosticEntry failure(String type, long latencyMs, @Nullable String message) {
+            return new DiagnosticEntry(type, false, latencyMs, null, message);
+        }
+
+        JSObject toJson() {
+            JSObject object = new JSObject();
+            object.put("type", type);
+            object.put("success", success);
+            object.put("latencyMs", latencyMs);
+            if (status != null) {
+                object.put("status", status);
+            }
+            object.put("message", message);
+            object.put("timestamp", System.currentTimeMillis());
+            return object;
+        }
+    }
+
+    
+}

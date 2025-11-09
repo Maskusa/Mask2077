@@ -1,4 +1,4 @@
-﻿import { showToast } from './common.js';
+import { showToast } from './common.js';
 import { loadBookData } from './book-data.js';
 import {
   loadChapterUnlocks,
@@ -102,9 +102,12 @@ function normalizeFontWeight(value) {
   return clampValue(rounded, FONT_WEIGHT_MIN, FONT_WEIGHT_MAX);
 }
 
-function scheduleReaderRender({ forceReflow = false } = {}) {
+function scheduleReaderRender({ forceReflow = false, speechReason = 'render' } = {}) {
   if (forceReflow) {
     pendingRenderOptions.forceReflow = true;
+  }
+  if (speechReason) {
+    pendingRenderOptions.speechReason = speechReason;
   }
   if (renderScheduled) {
     return;
@@ -113,8 +116,8 @@ function scheduleReaderRender({ forceReflow = false } = {}) {
   const runner = window.requestAnimationFrame ?? ((cb) => setTimeout(cb, 16));
   runner(() => {
     renderScheduled = false;
-    const options = pendingRenderOptions;
-    pendingRenderOptions = { forceReflow: false };
+    const options = { ...pendingRenderOptions };
+    pendingRenderOptions = { forceReflow: false, speechReason: 'render' };
     renderReader(options);
   });
 }
@@ -122,7 +125,7 @@ function scheduleReaderRender({ forceReflow = false } = {}) {
 let BOOKS = {};
 let chapterOrder = [];
 let renderScheduled = false;
-let pendingRenderOptions = { forceReflow: false };
+let pendingRenderOptions = { forceReflow: false, speechReason: 'render' };
 let bannerCollapsed = false;
 let bannerChapterId = null;
 let unlockedChapters = new Set();
@@ -230,6 +233,59 @@ function setControlsVisibility(hidden) {
   });
 }
 
+function renderFontList() {
+  if (!fontList) return;
+  fontList.innerHTML = '';
+  FONT_OPTIONS.forEach((option) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'font-option';
+    button.dataset.fontId = option.id;
+    button.style.fontFamily = option.css;
+    button.textContent = option.label;
+    if (state.style.font.id === option.id) {
+      button.classList.add('is-active');
+    }
+    button.setAttribute('role', 'option');
+    button.setAttribute('aria-selected', String(state.style.font.id === option.id));
+    button.addEventListener('click', () => {
+      state.style.font = option;
+      console.info('[Reader] font selected: %s', option.label);
+      applyStyle();
+      renderFontList();
+      closeFontOverlay();
+    });
+    fontList.appendChild(button);
+  });
+  updateFontTriggerState();
+}
+
+function updateFontTriggerState() {
+  if (currentFontLabel) {
+    currentFontLabel.textContent = state.style.font.label;
+  }
+  if (fontTrigger) {
+    const expanded = fontOverlay ? !fontOverlay.hidden : false;
+    fontTrigger.setAttribute('aria-expanded', String(expanded));
+  }
+}
+
+function updateTurnSpeedControls() {
+  const rawSpeed = Number(state.turnSpeed);
+  const normalized = Number.isFinite(rawSpeed) ? clampValue(rawSpeed, MIN_TURN_SPEED, MAX_TURN_SPEED) : DEFAULT_TURN_SPEED;
+  state.turnSpeed = Number(normalized.toFixed(2));
+  if (turnSpeedInput) {
+    turnSpeedInput.value = state.turnSpeed.toFixed(1);
+  }
+  if (turnSpeedLabel) {
+    const displayValue =
+      Math.abs(state.turnSpeed - Math.round(state.turnSpeed)) < 0.05
+        ? Math.round(state.turnSpeed).toString()
+        : state.turnSpeed.toFixed(1);
+    turnSpeedLabel.textContent = `${displayValue}x`;
+  }
+}
+
 
 function updateReaderAppLayout() {
   if (!readerApp) {
@@ -331,22 +387,6 @@ function createContentElement(part, { attachId = false } = {}) {
   return element;
 }
 
-function chunkToSpeechText(chunk) {
-  if (!Array.isArray(chunk) || !chunk.length) {
-    return '';
-  }
-  return chunk.reduce((acc, part, index) => {
-    if (!part || typeof part.text !== 'string') {
-      return acc;
-    }
-    if (index > 0) {
-      acc += part.continuation ? ' ' : '\n\n';
-    }
-    acc += part.text;
-    return acc;
-  }, '');
-}
-
 setControlsVisibility(true);
 
 readerPageShell?.addEventListener('click', (event) => {
@@ -359,6 +399,8 @@ readerPageShell?.addEventListener('click', (event) => {
   }
   setControlsVisibility(!controlsHidden);
 });
+readerFlow?.addEventListener('click', handleReaderFlowClick);
+
 const persistedProgress = loadPersistedProgress();
 const persistedPreferences = loadPersistedPreferences();
 const persistedStyle = persistedPreferences?.style ?? {};
@@ -412,15 +454,946 @@ const state = {
   paginationKey: null,
 };
 
-console.info(
-  '[Reader] Начальные параметры: chapter=%s, section=%s, point=%s',
-  state.chapterId ?? '∅',
-  state.sectionId ?? '∅',
-  state.pointId ?? '∅'
-);
 
 const speechSupported = 'speechSynthesis' in window;
-let currentUtterance = null;
+const SPEECH_LOG_PREFIX = '[Reader][Speech]';
+const SPEECH_STATUS = {
+  IDLE: 'idle',
+  PREPARING: 'preparing',
+  PLAYING: 'playing',
+  STOPPING: 'stopping',
+};
+const SPEECH_BLOCK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote';
+const SPEECH_MIN_INTERSECT_RATIO = 0.2;
+const SPEECH_CARET_OFFSCREEN = 'translate(-9999px, -9999px)';
+const SPEECH_ABBREVIATIONS = new Set([
+  '\u0433',
+  '\u0443\u043b',
+  '\u043f\u0440',
+  '\u043f\u0435\u0440',
+  '\u0441\u0442\u0440',
+  '\u043a\u0432',
+  '\u0440\u0438\u0441',
+  '\u0441\u043c',
+  '\u0441\u0440',
+  '\u0441\u0442',
+  '\u0442.\u0434',
+  '\u0442.\u043f',
+  '\u0442.\u043a',
+  '\u0442.\u0435',
+  '\u0442.\u043e',
+  '\u0434\u0440',
+  '\u0438\u043c',
+  '\u2116',
+  '\u0433\u0440',
+  '\u043c\u043b\u043d',
+  '\u043c\u043b\u0440\u0434',
+  '\u0440\u0443\u0431',
+  '\u043a\u043e\u043f',
+]);
+
+const speechState = {
+  epoch: 0,
+  queue: [],
+  index: -1,
+  caret: null,
+  activeSegmentId: null,
+};
+
+let speechHighlightNodes = [];
+let speechHighlightLayer = null;
+let speechCaretElement = null;
+let renderEpoch = 0;
+
+function speechLog(level, message, info = {}) {
+  const entry = {
+    epoch: speechState.epoch,
+    status: speechController?.status ?? SPEECH_STATUS.IDLE,
+    page: state.pageIndex + 1,
+    queueLen: speechState.queue.length,
+    segIndex: speechState.index,
+    segId: speechState.queue[speechState.index]?.id ?? null,
+    ...info,
+  };
+  const method = typeof console[level] === 'function' ? level : 'log';
+  try {
+    const serialized = JSON.stringify(entry, null, 2);
+    console[method](`${SPEECH_LOG_PREFIX} ${message}\n${serialized}`);
+  } catch (error) {
+    console[method](`${SPEECH_LOG_PREFIX} ${message}`, entry);
+  }
+}
+
+function afterDoubleAnimationFrame(callback) {
+  const raf = window.requestAnimationFrame ?? ((cb) => setTimeout(cb, 16));
+  raf(() => raf(callback));
+}
+
+function ensureSpeechHighlightLayer() {
+  if (speechHighlightLayer && speechHighlightLayer.isConnected) {
+    return speechHighlightLayer;
+  }
+  if (!readerPageShell) {
+    return null;
+  }
+  speechHighlightLayer = document.createElement('div');
+  speechHighlightLayer.className = 'reader__speech-highlight-layer';
+  speechHighlightLayer.style.position = 'absolute';
+  speechHighlightLayer.style.inset = '0';
+  speechHighlightLayer.style.pointerEvents = 'none';
+  speechHighlightLayer.style.zIndex = '12';
+  speechHighlightLayer.style.overflow = 'visible';
+  readerPageShell.appendChild(speechHighlightLayer);
+  return speechHighlightLayer;
+}
+
+function clearSpeechHighlights() {
+  speechHighlightNodes.forEach((node) => {
+    if (node?.parentNode) {
+      node.parentNode.removeChild(node);
+    }
+  });
+  speechHighlightNodes = [];
+  speechState.activeSegmentId = null;
+  const layer = ensureSpeechHighlightLayer();
+  if (layer) {
+    layer.textContent = '';
+  }
+}
+
+function applySpeechHighlight(segment) {
+  if (!segment?.range) {
+    return;
+  }
+  const layer = ensureSpeechHighlightLayer();
+  if (!layer) {
+    return;
+  }
+  clearSpeechHighlights();
+  const rects = Array.from(segment.range.getClientRects());
+  const containerRect = readerPageShell?.getBoundingClientRect();
+  rects.forEach((rect) => {
+    if (!rect || rect.width <= 0 || rect.height <= 0 || !containerRect) {
+      return;
+    }
+    const highlight = document.createElement('div');
+    highlight.className = 'reader__speech-highlight';
+    highlight.style.position = 'absolute';
+    highlight.style.pointerEvents = 'none';
+    highlight.style.left = `${rect.left - containerRect.left}px`;
+    highlight.style.top = `${rect.top - containerRect.top}px`;
+    highlight.style.width = `${rect.width}px`;
+    highlight.style.height = `${rect.height}px`;
+    layer.appendChild(highlight);
+    speechHighlightNodes.push(highlight);
+  });
+  if (segment.id) {
+    speechState.activeSegmentId = segment.id;
+  }
+}
+
+function ensureSpeechCaretElement() {
+  if (speechCaretElement && speechCaretElement.isConnected) {
+    return speechCaretElement;
+  }
+  const caret = document.createElement('div');
+  caret.className = 'reader__speech-caret';
+  caret.style.transform = SPEECH_CARET_OFFSCREEN;
+  caret.setAttribute('aria-hidden', 'true');
+  readerPageShell?.appendChild(caret);
+  speechCaretElement = caret;
+  return speechCaretElement;
+}
+
+function hideSpeechCaret() {
+  const caret = ensureSpeechCaretElement();
+  if (caret) {
+    caret.style.transform = SPEECH_CARET_OFFSCREEN;
+    caret.style.height = '0px';
+  }
+}
+
+function positionSpeechCaret(range) {
+  const caret = ensureSpeechCaretElement();
+  if (!caret || !range) {
+    return;
+  }
+  const rect = range.getBoundingClientRect();
+  const containerRect = readerPageShell?.getBoundingClientRect();
+  if (!rect || !containerRect) {
+    hideSpeechCaret();
+    return;
+  }
+  const fallbackHeight = Number.parseFloat(getComputedStyle(readerFlow).lineHeight) || 24;
+  const height = rect.height > 0 ? rect.height : fallbackHeight;
+  caret.style.height = `${height}px`;
+  caret.style.transform = `translate(${rect.left - containerRect.left}px, ${rect.top - containerRect.top}px)`;
+}
+
+function createNodePath(node) {
+  const path = [];
+  let current = node;
+  while (current && current !== readerFlow && current.parentNode) {
+    const parent = current.parentNode;
+    const index = Array.prototype.indexOf.call(parent.childNodes, current);
+    path.unshift(index);
+    current = parent;
+  }
+  return path;
+}
+
+function resolveNodePath(path) {
+  if (!Array.isArray(path) || !readerFlow) {
+    return null;
+  }
+  let current = readerFlow;
+  for (const index of path) {
+    if (!current || !current.childNodes || !Number.isInteger(index)) {
+      return null;
+    }
+    current = current.childNodes[index];
+  }
+  return current || null;
+}
+
+function resolveCaretRange() {
+  const caret = speechState.caret;
+  if (!caret) {
+    return null;
+  }
+  const node = resolveNodePath(caret.nodePath);
+  if (!node) {
+    return null;
+  }
+  const range = document.createRange();
+  const offset = node.nodeType === Node.TEXT_NODE
+    ? clampValue(caret.offset ?? 0, 0, node.textContent?.length ?? 0)
+    : clampValue(caret.offset ?? 0, 0, node.childNodes?.length ?? 0);
+  range.setStart(node, offset);
+  range.collapse(true);
+  return range;
+}
+
+function normalizeCollapsedRange(range) {
+  if (!range?.collapsed) {
+    return range;
+  }
+  let container = range.startContainer;
+  let offset = range.startOffset;
+  if (container.nodeType === Node.TEXT_NODE) {
+    const length = container.textContent?.length ?? 0;
+    const normalizedOffset = clampValue(offset, 0, length);
+    if (normalizedOffset !== offset) {
+      range.setStart(container, normalizedOffset);
+      range.collapse(true);
+    }
+    return range;
+  }
+  const childNodes = container.childNodes;
+  if (childNodes && childNodes.length) {
+    const clampedOffset = clampValue(offset, 0, childNodes.length);
+    let candidate = childNodes[clampedOffset] ?? childNodes[childNodes.length - 1];
+    while (candidate && candidate.firstChild) {
+      candidate = candidate.firstChild;
+    }
+    if (candidate?.nodeType === Node.TEXT_NODE) {
+      range.setStart(candidate, 0);
+      range.collapse(true);
+      return range;
+    }
+    candidate = childNodes[Math.max(0, clampedOffset - 1)] ?? null;
+    while (candidate && candidate.lastChild) {
+      candidate = candidate.lastChild;
+    }
+    if (candidate?.nodeType === Node.TEXT_NODE) {
+      const length = candidate.textContent?.length ?? 0;
+      range.setStart(candidate, length);
+      range.collapse(true);
+      return range;
+    }
+  }
+  const parent = container.parentNode;
+  if (parent) {
+    const index = Array.prototype.indexOf.call(parent.childNodes, container);
+    range.setStart(parent, Math.max(0, index));
+    range.collapse(true);
+    return normalizeCollapsedRange(range);
+  }
+  return range;
+}
+
+function resolvePointRange(clientX, clientY) {
+  if (typeof document.caretPositionFromPoint === 'function') {
+    const position = document.caretPositionFromPoint(clientX, clientY);
+    if (position?.offsetNode) {
+      try {
+        const range = document.createRange();
+        range.setStart(position.offsetNode, position.offset ?? 0);
+        range.collapse(true);
+        return normalizeCollapsedRange(range);
+      } catch (error) {
+        speechLog('warn', 'caretPositionFromPoint failed', { error: String(error) });
+      }
+    }
+  }
+  if (typeof document.caretRangeFromPoint === 'function') {
+    try {
+      const range = document.caretRangeFromPoint(clientX, clientY);
+      if (range) {
+        range.collapse(true);
+        return normalizeCollapsedRange(range);
+      }
+    } catch (error) {
+      speechLog('warn', 'caretRangeFromPoint failed', { error: String(error) });
+    }
+  }
+  return null;
+}
+
+function restoreSpeechCaret({ silent = false } = {}) {
+  const range = resolveCaretRange();
+  if (!range) {
+    if (!silent && speechState.caret) {
+      speechLog('warn', 'caret restore failed', { reason: 'node-missing' });
+    }
+    speechState.caret = null;
+    hideSpeechCaret();
+    return;
+  }
+  positionSpeechCaret(range);
+}
+
+function handleReaderFlowClick(event) {
+  if (!readerFlow || event.defaultPrevented) {
+    return;
+  }
+  if (!readerFlow.contains(event.target)) {
+    return;
+  }
+  const selection = window.getSelection?.();
+  if (selection && selection.type === 'Range' && selection.toString().trim()) {
+    return;
+  }
+  const range = resolvePointRange(event.clientX, event.clientY);
+  setControlsVisibility(!controlsHidden);
+  if (!range) {
+    speechLog('warn', 'caret placement skipped', { reason: 'no-range' });
+    speechState.caret = null;
+    hideSpeechCaret();
+    return;
+  }
+  const container = range.startContainer;
+  if (!container || !readerFlow.contains(container)) {
+    speechLog('warn', 'caret placement skipped', { reason: 'outside-flow' });
+    return;
+  }
+  const nodePath = createNodePath(container);
+  const rawOffset = range.startOffset ?? 0;
+  const limit = container.nodeType === Node.TEXT_NODE
+    ? container.textContent?.length ?? 0
+    : container.childNodes?.length ?? 0;
+  const offset = clampValue(rawOffset, 0, limit);
+  speechState.caret = {
+    nodePath,
+    offset,
+  };
+  positionSpeechCaret(range);
+  speechLog('info', 'caret updated', { offset, depth: nodePath.length });
+  event.stopPropagation();
+}
+
+function computeIntersectionRatio(rect, viewportRect) {
+  if (!rect || !viewportRect) {
+    return 0;
+  }
+  const intersectionX = Math.max(0, Math.min(rect.right, viewportRect.right) - Math.max(rect.left, viewportRect.left));
+  const intersectionY = Math.max(0, Math.min(rect.bottom, viewportRect.bottom) - Math.max(rect.top, viewportRect.top));
+  const intersectionArea = intersectionX * intersectionY;
+  const rectArea = rect.width * rect.height;
+  if (!rectArea) {
+    return 0;
+  }
+  return intersectionArea / rectArea;
+}
+
+function findNextNonSpace(text, startIndex) {
+  for (let idx = startIndex; idx < text.length; idx += 1) {
+    if (!/\s/.test(text[idx])) {
+      return idx;
+    }
+  }
+  return null;
+}
+
+function findPreviousNonSpace(text, startIndex) {
+  for (let idx = startIndex; idx >= 0; idx -= 1) {
+    if (!/\s/.test(text[idx])) {
+      return idx;
+    }
+  }
+  return null;
+}
+
+function extractPreviousToken(text, endIndex) {
+  let idx = endIndex;
+  while (idx >= 0 && /\s/.test(text[idx])) {
+    idx -= 1;
+  }
+  let token = '';
+  while (idx >= 0 && /[A-Za-zА-яЁё.\-]/.test(text[idx])) {
+    token = text[idx] + token;
+    idx -= 1;
+  }
+  return token.toLowerCase();
+}
+
+function fallbackSegmenter(text) {
+  const segments = [];
+  let start = 0;
+  const pushSegment = (boundary) => {
+    let segStart = start;
+    let segEnd = boundary;
+    while (segStart < segEnd && /\s/.test(text[segStart])) {
+      segStart += 1;
+    }
+    while (segEnd > segStart && /\s/.test(text[segEnd - 1])) {
+      segEnd -= 1;
+    }
+    if (segEnd <= segStart) {
+      start = boundary;
+      return;
+    }
+    const segmentText = text.slice(segStart, segEnd);
+    if (segmentText.replace(/\s+/g, ' ').trim()) {
+      segments.push({
+        start: segStart,
+        end: segEnd,
+        text: segmentText.replace(/\s+/g, ' ').trim(),
+      });
+    }
+    start = boundary;
+  };
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const nextChar = text[index + 1] ?? '';
+    if (char === '\r' || char === '\n') {
+      if (char === '\n' && nextChar === '\n') {
+        pushSegment(index);
+      }
+      continue;
+    }
+    if (char === '\u2026') {
+      pushSegment(index + 1);
+      continue;
+    }
+    if (char === '.') {
+      let dotSpan = 1;
+      while (text[index + dotSpan] === '.') {
+        dotSpan += 1;
+      }
+      if (dotSpan >= 3) {
+        pushSegment(index + dotSpan);
+        index += dotSpan - 1;
+        continue;
+      }
+      const prevToken = extractPreviousToken(text, index - 1);
+      if (prevToken && SPEECH_ABBREVIATIONS.has(prevToken.replace(/\.+$/, ''))) {
+        continue;
+      }
+    }
+    if (char === '.' || char === '!' || char === '?') {
+      const nextNonSpace = findNextNonSpace(text, index + 1);
+      if (nextNonSpace !== null && /[A-Za-z\u0410-\u044f\u0401\u0451]/.test(text[nextNonSpace]) && !['"', '«', '(', '['].includes(text[nextNonSpace])) {
+        continue;
+      }
+      pushSegment(index + 1);
+      continue;
+    }
+    if (char === '\u2014') {
+      const prevNonSpace = findPreviousNonSpace(text, index - 1);
+      if (prevNonSpace === null || text[prevNonSpace] === '\n') {
+        if (index > start) {
+          pushSegment(index);
+        }
+        start = index;
+      }
+    }
+  }
+  pushSegment(text.length);
+  return segments;
+}
+
+
+function splitTextIntoSegments(text) {
+  if (!text) {
+    return [];
+  }
+  if (window.Intl?.Segmenter) {
+    try {
+      const segmenter = new Intl.Segmenter('ru', { granularity: 'sentence' });
+      const segments = [];
+      for (const { segment, index } of segmenter.segment(text)) {
+        if (!segment || !segment.replace(/\s+/g, ' ').trim()) {
+          continue;
+        }
+        segments.push({
+          start: index,
+          end: index + segment.length,
+          text: segment.replace(/\s+/g, ' ').trim(),
+        });
+      }
+      if (segments.length) {
+        return segments;
+      }
+    } catch (error) {
+      speechLog('warn', 'Intl.Segmenter fallback', { error: String(error) });
+    }
+  }
+  return fallbackSegmenter(text);
+}
+
+function indexTextNodes(root) {
+  const entries = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let position = 0;
+  let fullText = '';
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const value = node.nodeValue ?? '';
+    const length = value.length;
+    entries.push({
+      node,
+      start: position,
+      end: position + length,
+    });
+    position += length;
+    fullText += value;
+  }
+  return { entries, text: fullText, length: position };
+}
+
+function resolveTextPosition(index, absoluteOffset) {
+  if (!index?.entries?.length) {
+    return null;
+  }
+  const offset = clampValue(absoluteOffset, 0, index.length);
+  for (const entry of index.entries) {
+    if (offset <= entry.end) {
+      const localOffset = Math.max(0, offset - entry.start);
+      return {
+        node: entry.node,
+        offset: clampValue(localOffset, 0, entry.node?.textContent?.length ?? 0),
+      };
+    }
+  }
+  const lastEntry = index.entries[index.entries.length - 1];
+  if (!lastEntry?.node) {
+    return null;
+  }
+  return {
+    node: lastEntry.node,
+    offset: lastEntry.node.textContent?.length ?? 0,
+  };
+}
+
+function getVisiblePageSpeechContent() {
+  const segments = [];
+  if (!readerFlow || !readerPageShell) {
+    speechLog('warn', 'speech content unavailable', { reason: 'flow-shell-missing' });
+    return segments;
+  }
+  const viewportRect = readerPageShell.getBoundingClientRect();
+  if (!viewportRect || viewportRect.width <= 0 || viewportRect.height <= 0) {
+    speechLog('warn', 'speech viewport invalid', {
+      reason: 'zero-rect',
+      rect: viewportRect ? { width: viewportRect.width, height: viewportRect.height } : null,
+    });
+    return segments;
+  }
+
+  const blocks = Array.from(readerFlow.querySelectorAll(SPEECH_BLOCK_SELECTOR));
+  if (!blocks.length) {
+    speechLog('warn', 'no eligible blocks for speech', { reason: 'selector-empty' });
+    return segments;
+  }
+
+  let segmentCounter = 0;
+  let visibleBlocks = 0;
+
+  blocks.forEach((block, blockIndex) => {
+    if (!(block instanceof HTMLElement)) {
+      return;
+    }
+    const rects = Array.from(block.getClientRects());
+    if (!rects.length) {
+      return;
+    }
+    const bestRatio = rects.reduce((max, rect) => Math.max(max, computeIntersectionRatio(rect, viewportRect)), 0);
+    if (bestRatio < SPEECH_MIN_INTERSECT_RATIO) {
+      if (bestRatio > 0) {
+        speechLog('warn', 'block rejected by intersection', {
+          nodeName: block.nodeName,
+          ratio: Number(bestRatio.toFixed(3)),
+          threshold: SPEECH_MIN_INTERSECT_RATIO,
+        });
+      }
+      return;
+    }
+    const textIndex = indexTextNodes(block);
+    if (!textIndex.length || !textIndex.text || !textIndex.text.trim()) {
+      return;
+    }
+    visibleBlocks += 1;
+    const pieces = splitTextIntoSegments(textIndex.text);
+    if (!pieces.length) {
+      speechLog('warn', 'block yielded no segments', { nodeName: block.nodeName });
+      return;
+    }
+    const paragraphKey = buildParagraphKeyFromDataset(block.dataset);
+    pieces.forEach((piece, localIndex) => {
+      let segStart = piece.start;
+      let segEnd = piece.end;
+      while (segStart < segEnd && /\s/.test(textIndex.text[segStart])) {
+        segStart += 1;
+      }
+      while (segEnd > segStart && /\s/.test(textIndex.text[segEnd - 1])) {
+        segEnd -= 1;
+      }
+      if (segEnd <= segStart) {
+        return;
+      }
+      const startPosition = resolveTextPosition(textIndex, segStart);
+      const endPosition = resolveTextPosition(textIndex, segEnd);
+      if (!startPosition || !endPosition) {
+        return;
+      }
+      const range = document.createRange();
+      range.setStart(startPosition.node, startPosition.offset);
+      range.setEnd(endPosition.node, endPosition.offset);
+      const rangeRects = Array.from(range.getClientRects());
+      if (!rangeRects.length) {
+        return;
+      }
+      const bestSegRatio = rangeRects.reduce((max, rect) => Math.max(max, computeIntersectionRatio(rect, viewportRect)), 0);
+      if (bestSegRatio < SPEECH_MIN_INTERSECT_RATIO) {
+        speechLog('warn', 'segment skipped by intersection', {
+          paragraphKey,
+          localIndex,
+          ratio: Number(bestSegRatio.toFixed(3)),
+        });
+        return;
+      }
+      const primaryRect = rangeRects[0];
+      segments.push({
+        id: `${paragraphKey ?? 'seg'}:${segmentCounter}`,
+        node: block,
+        range,
+        text: piece.text,
+        rect: {
+          top: primaryRect.top,
+          left: primaryRect.left,
+          width: primaryRect.width,
+          height: primaryRect.height,
+        },
+        pageIndex: state.pageIndex,
+        blockIndex,
+        localIndex,
+      });
+      segmentCounter += 1;
+    });
+  });
+
+  if (!segments.length) {
+    speechLog('warn', 'speech queue empty', {
+      reason: 'no-segments',
+      visibleBlocks,
+    });
+  }
+  return segments;
+}
+
+class SpeechController {
+  constructor() {
+    this.status = SPEECH_STATUS.IDLE;
+    this.currentUtterance = null;
+    this.manualSuppressed = false;
+    this.lastRenderEpoch = 0;
+    this.voices = [];
+    if (speechSupported) {
+      this.voices = window.speechSynthesis.getVoices?.() ?? [];
+      window.speechSynthesis.addEventListener('voiceschanged', () => {
+        this.voices = window.speechSynthesis.getVoices?.() ?? [];
+        speechLog('info', 'voices updated', { voices: this.voices.length });
+      });
+    }
+  }
+
+  clearManualSuppression() {
+    this.manualSuppressed = false;
+  }
+
+  bumpEpoch(reason) {
+    const previous = speechState.epoch;
+    speechState.epoch += 1;
+    speechLog('info', 'epoch bump', { reason, previous, next: speechState.epoch });
+    return speechState.epoch;
+  }
+
+  stopSpeaking({ reason = 'manual', suppressAutoRestart = false } = {}) {
+    if (!speechSupported) {
+      return;
+    }
+    this.status = SPEECH_STATUS.STOPPING;
+    if (suppressAutoRestart) {
+      this.manualSuppressed = true;
+    }
+    const epoch = this.bumpEpoch(`stop:${reason}`);
+    clearSpeechHighlights();
+    const activeUtterance = this.currentUtterance;
+    if (activeUtterance) {
+      activeUtterance.onend = null;
+      activeUtterance.onerror = null;
+      this.currentUtterance = null;
+    }
+    window.speechSynthesis.cancel();
+    speechState.queue = [];
+    speechState.index = -1;
+    speechState.activeSegmentId = null;
+    this.status = SPEECH_STATUS.IDLE;
+    speechLog('info', 'speech cancelled', { reason, epoch });
+  }
+
+  handleRenderStart(reason) {
+    renderEpoch += 1;
+    this.lastRenderEpoch = renderEpoch;
+    speechLog('info', 'render epoch start', { renderEpoch, reason });
+    if (speechSupported && this.status !== SPEECH_STATUS.IDLE) {
+      this.stopSpeaking({ reason: `${reason}-render`, suppressAutoRestart: false });
+    } else {
+      this.bumpEpoch(`render:${reason}`);
+    }
+  }
+
+  handleRenderComplete({ reason = 'render', autoStart = true } = {}) {
+    speechLog('info', 'render epoch complete', { renderEpoch: this.lastRenderEpoch, reason, autoStart });
+    if (!autoStart) {
+      return;
+    }
+    this.scheduleAutoRead({ reason });
+  }
+
+  scheduleAutoRead({ reason = 'render', force = false } = {}) {
+    if (!speechSupported) {
+      return;
+    }
+    if (!state.autoVoice && !force) {
+      speechLog('info', 'auto read skipped (autoVoice disabled)', { reason });
+      return;
+    }
+    if (this.manualSuppressed && !force) {
+      speechLog('info', 'auto read suppressed manually', { reason });
+      return;
+    }
+    const capturedRenderEpoch = this.lastRenderEpoch;
+    const capturedSpeechEpoch = speechState.epoch;
+    this.status = SPEECH_STATUS.PREPARING;
+    afterDoubleAnimationFrame(() => {
+      if (capturedRenderEpoch !== this.lastRenderEpoch) {
+        speechLog('warn', 'stale render epoch during queue build', {
+          capturedRenderEpoch,
+          currentRenderEpoch: this.lastRenderEpoch,
+          reason,
+        });
+        this.status = SPEECH_STATUS.IDLE;
+        return;
+      }
+      if (capturedSpeechEpoch !== speechState.epoch) {
+        speechLog('warn', 'stale speech epoch before queue build', {
+          capturedSpeechEpoch,
+          currentEpoch: speechState.epoch,
+          reason,
+        });
+        this.status = SPEECH_STATUS.IDLE;
+        return;
+      }
+      const queue = getVisiblePageSpeechContent();
+      if (!queue.length) {
+        clearSpeechHighlights();
+        this.status = SPEECH_STATUS.IDLE;
+        speechState.queue = [];
+        speechState.index = -1;
+        speechLog('warn', 'queue build produced empty result', { reason });
+        return;
+      }
+      speechState.queue = queue;
+      const startIndex = this.resolveStartIndex(queue);
+      speechState.index = startIndex;
+      speechState.activeSegmentId = null;
+      this.status = SPEECH_STATUS.PREPARING;
+      speechLog('info', 'queue prepared', {
+        reason,
+        queueLen: queue.length,
+        startIndex,
+        caret: speechState.caret
+          ? { nodePath: speechState.caret.nodePath, offset: speechState.caret.offset }
+          : null,
+      });
+      this.playCurrentSegment();
+    });
+  }
+
+  resolveStartIndex(queue) {
+    if (!Array.isArray(queue) || !queue.length) {
+      return -1;
+    }
+    const caretRange = resolveCaretRange();
+    if (!caretRange) {
+      return 0;
+    }
+    for (let index = 0; index < queue.length; index += 1) {
+      const segment = queue[index];
+      if (!segment?.range) {
+        continue;
+      }
+      const range = segment.range;
+      try {
+        if (
+          range.compareBoundaryPoints(Range.START_TO_START, caretRange) <= 0 &&
+          range.compareBoundaryPoints(Range.END_TO_END, caretRange) >= 0
+        ) {
+          return index;
+        }
+        if (range.compareBoundaryPoints(Range.START_TO_END, caretRange) >= 0) {
+          return index;
+        }
+      } catch (error) {
+        speechLog('warn', 'failed to evaluate caret position', { error: String(error) });
+      }
+    }
+    return 0;
+  }
+
+  playCurrentSegment() {
+    if (!speechSupported) {
+      return;
+    }
+    const queue = speechState.queue;
+    const index = clampValue(speechState.index, 0, queue.length - 1);
+    const segment = queue[index];
+    if (!segment) {
+      this.finishQueue('missing-segment');
+      return;
+    }
+    if (!segment.range) {
+      speechLog('warn', 'segment missing range', { index, segmentId: segment.id });
+      speechState.index = index + 1;
+      if (speechState.index < queue.length) {
+        this.playCurrentSegment();
+      } else {
+        this.finishQueue('range-missing');
+      }
+      return;
+    }
+    clearSpeechHighlights();
+    applySpeechHighlight(segment);
+    this.currentUtterance = new SpeechSynthesisUtterance(segment.text);
+    this.currentUtterance.lang = 'ru-RU';
+    const capturedEpoch = speechState.epoch;
+    const startedAt = performance.now?.() ?? Date.now();
+    this.currentUtterance.onstart = () => {
+      this.status = SPEECH_STATUS.PLAYING;
+      speechLog('info', 'segment started', {
+        epoch: capturedEpoch,
+        segIndex: index,
+        segId: segment.id,
+        excerpt: segment.text.slice(0, 140),
+        rect: segment.rect,
+        voice: this.currentUtterance?.voice?.name ?? null,
+      });
+    };
+    this.currentUtterance.onend = (event) => {
+      this.handleUtteranceComplete('end', event, segment, capturedEpoch, startedAt);
+    };
+    this.currentUtterance.onerror = (event) => {
+      this.handleUtteranceComplete('error', event, segment, capturedEpoch, startedAt);
+    };
+    try {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(this.currentUtterance);
+    } catch (error) {
+      speechLog('warn', 'speech synthesis failed to start', { error: String(error) });
+      this.finishQueue('speak-error');
+    }
+  }
+
+  handleUtteranceComplete(type, event, segment, capturedEpoch, startedAt) {
+    const duration = (performance.now?.() ?? Date.now()) - startedAt;
+    if (capturedEpoch !== speechState.epoch) {
+      speechLog('warn', 'utterance completion ignored (stale epoch)', {
+        type,
+        segId: segment?.id,
+        capturedEpoch,
+        currentEpoch: speechState.epoch,
+      });
+      return;
+    }
+    clearSpeechHighlights();
+    speechState.activeSegmentId = null;
+    this.currentUtterance = null;
+    if (type === 'end') {
+      speechState.index += 1;
+      speechLog('info', 'segment finished', {
+        segId: segment?.id,
+        duration: Math.round(duration),
+        nextIndex: speechState.index,
+      });
+      if (speechState.index < speechState.queue.length) {
+        this.status = SPEECH_STATUS.PREPARING;
+        this.playCurrentSegment();
+      } else {
+        this.finishQueue('complete');
+      }
+    } else {
+      speechLog('warn', 'segment error', {
+        segId: segment?.id,
+        duration: Math.round(duration),
+        error: event?.error ?? event?.message ?? 'unknown',
+      });
+      this.finishQueue('error');
+    }
+  }
+
+  finishQueue(reason) {
+    this.status = SPEECH_STATUS.IDLE;
+    speechLog('info', 'queue finished', {
+      reason,
+      totalSegments: speechState.queue.length,
+    });
+    clearSpeechHighlights();
+    speechState.queue = [];
+    speechState.index = -1;
+    speechState.activeSegmentId = null;
+    const pagination = state.pagination;
+    const totalPages = Number.isFinite(pagination?.totalPages) ? pagination.totalPages : 0;
+    const hasNextPage = totalPages && state.pageIndex < totalPages - 1;
+    if (reason === 'complete' && hasNextPage && state.autoVoice && !this.manualSuppressed) {
+      speechLog('info', 'auto page advance requested', {
+        page: state.pageIndex + 1,
+        totalPages,
+      });
+      const advance = () => changePage(1);
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(advance));
+      } else {
+        setTimeout(advance, 0);
+      }
+    }
+  }
+}
+
+const speechController = speechSupported ? new SpeechController() : null;
+
 let planeBaseOffset = 0;
 let cancelPlaneTransition = null;
 let bufferRevealTimer = null;
@@ -470,20 +1443,20 @@ function ensureSelection() {
     const fallbackChapter = getFirstUnlockedChapterId();
     state.chapterId = fallbackChapter ?? chapterOrder[0];
     resetPage = true;
-    console.info('[Reader] �ᯮ��㥬 ����� �� 㬮�砭��: %s', state.chapterId);
+    console.info('[Reader] глава нормализована: %s', state.chapterId);
   }
   if (state.chapterId && isChapterLocked(unlockedChapters, state.chapterId)) {
     const unlockedCandidate = getFirstUnlockedChapterId();
     if (unlockedCandidate && unlockedCandidate !== state.chapterId) {
       state.chapterId = unlockedCandidate;
       resetPage = true;
-      console.info("[Reader] normalized chapter to unlocked: %s", state.chapterId);
+      console.info('[Reader] normalized chapter to unlocked: %s', state.chapterId);
     }
   }
   const chapter = BOOKS[state.chapterId];
   const sectionKeys = chapter ? Object.keys(chapter.sections) : [];
   if (!sectionKeys.length) {
-    console.warn('[Reader] � ����� ��� ࠧ�����: %s', state.chapterId);
+    console.warn('[Reader] у главы нет секций: %s', state.chapterId);
     state.sectionId = null;
     state.pointId = null;
     state.pageIndex = 0;
@@ -493,12 +1466,12 @@ function ensureSelection() {
   if (!state.sectionId || !chapter.sections[state.sectionId]) {
     state.sectionId = sectionKeys[0];
     resetPage = true;
-    console.info('[Reader] �ᯮ��㥬 ࠧ��� �� 㬮�砭��: %s', state.sectionId);
+    console.info('[Reader] секция нормализована: %s', state.sectionId);
   }
   const section = chapter.sections[state.sectionId];
   const pointKeys = section ? Object.keys(section.points) : [];
   if (!pointKeys.length) {
-    console.warn('[Reader] � ࠧ���� ��� �㭪⮢: %s', state.sectionId);
+    console.warn('[Reader] у секции нет точек: %s', state.sectionId);
     state.pointId = null;
     state.pageIndex = 0;
     state.autoAlignPage = true;
@@ -507,7 +1480,7 @@ function ensureSelection() {
   if (!state.pointId || !section.points[state.pointId]) {
     state.pointId = pointKeys[0];
     resetPage = true;
-    console.info('[Reader] �ᯮ��㥬 �㭪� �� 㬮�砭��: %s', state.pointId);
+    console.info('[Reader] точка нормализована: %s', state.pointId);
   }
   const point = section.points[state.pointId];
   if (!Array.isArray(point?.text) || !point.text.length) {
@@ -525,59 +1498,6 @@ function ensureSelection() {
   if (resetPage) {
     state.pageIndex = 0;
     state.autoAlignPage = true;
-  }
-}
-
-function renderFontList() {
-  if (!fontList) return;
-  fontList.innerHTML = '';
-  FONT_OPTIONS.forEach((option) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'font-option';
-    button.dataset.fontId = option.id;
-    button.style.fontFamily = option.css;
-    button.textContent = option.label;
-    if (state.style.font.id === option.id) {
-      button.classList.add('is-active');
-    }
-    button.setAttribute('role', 'option');
-    button.setAttribute('aria-selected', String(state.style.font.id === option.id));
-    button.addEventListener('click', () => {
-      state.style.font = option;
-      console.info('[Reader] ��࠭ ����: %s', option.label);
-      applyStyle();
-      renderFontList();
-      closeFontOverlay();
-    });
-    fontList.appendChild(button);
-  });
-  updateFontTriggerState();
-}
-
-
-function updateFontTriggerState() {
-  if (currentFontLabel) {
-    currentFontLabel.textContent = state.style.font.label;
-  }
-  if (fontTrigger) {
-    const expanded = fontOverlay ? !fontOverlay.hidden : false;
-    fontTrigger.setAttribute('aria-expanded', String(expanded));
-  }
-}
-
-function updateTurnSpeedControls() {
-  const rawSpeed = Number(state.turnSpeed);
-  const normalized = Number.isFinite(rawSpeed) ? clampValue(rawSpeed, MIN_TURN_SPEED, MAX_TURN_SPEED) : DEFAULT_TURN_SPEED;
-  state.turnSpeed = Number(normalized.toFixed(2));
-  if (turnSpeedInput) {
-    turnSpeedInput.value = state.turnSpeed.toFixed(1);
-  }
-  if (turnSpeedLabel) {
-    const display = Math.abs(state.turnSpeed - Math.round(state.turnSpeed)) < 0.05
-      ? Math.round(state.turnSpeed).toString()
-      : state.turnSpeed.toFixed(1);
-    turnSpeedLabel.textContent = `${display}×`;
   }
 }
 
@@ -651,27 +1571,6 @@ function closeFontOverlay() {
   fontOverlay.hidden = true;
   updateFontTriggerState();
   console.info('[Reader] ������ ����: �������� ������ ������');
-}
-
-function stopSpeaking() {
-  if (!speechSupported) return;
-  window.speechSynthesis.cancel();
-  if (currentUtterance) {
-    currentUtterance.onend = null;
-  }
-  currentUtterance = null;
-}
-
-function speak(text) {
-  if (!speechSupported) {
-    showToast('Озвучка не поддерживается браузером');
-    return;
-  }
-  stopSpeaking();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ru-RU';
-  currentUtterance = utterance;
-  window.speechSynthesis.speak(utterance);
 }
 
 function updateAutoVoiceButton() {
@@ -799,7 +1698,7 @@ function openNextChapter() {
   const nextChapter = getNextChapterInfo();
   if (!nextChapter) {
     console.info('[Reader] next chapter is not available');
-    showToast('Это последняя глава');
+    showToast('??? ????????? ?????');
     return;
   }
   console.info('[Reader] opening next chapter: %s', nextChapter.id);
@@ -808,6 +1707,8 @@ function openNextChapter() {
     persistChapterUnlocks(unlockedChapters);
     console.info("[Reader] chapter unlocked via banner: %s", nextChapter.id);
   }
+  speechController?.stopSpeaking({ reason: 'next-chapter' });
+  speechController?.clearManualSuppression?.();
   state.chapterId = nextChapter.id;
   state.sectionId = null;
   state.pointId = null;
@@ -815,9 +1716,8 @@ function openNextChapter() {
   state.autoAlignPage = true;
   bannerCollapsed = false;
   hideChapterBannerElements();
-  clearPaginationState();
-  renderReader({ forceReflow: true });
-  showToast(`Открыта ${nextChapter.title}`);
+  renderReader({ forceReflow: true, speechReason: 'next-chapter' });
+  showToast(`????? ${nextChapter.title}`);
 }
 
 function changePage(direction) {
@@ -880,28 +1780,27 @@ function changePage(direction) {
     }
     return;
   }
+  speechController?.stopSpeaking({ reason: 'page-change' });
+  speechController?.clearManualSuppression?.();
   state.pageIndex = nextIndex;
   state.autoAlignPage = false;
-  renderReader();
+  renderReader({ speechReason: 'page-change' });
 }
 
 
 function toggleAutoVoice() {
   if (!speechSupported) {
-    showToast('Голосовой модуль не доступен');
+    showToast('????????? ?????? ?? ????????');
     return;
   }
   state.autoVoice = !state.autoVoice;
-  if (!state.autoVoice) {
-    stopSpeaking();
-  }
   updateAutoVoiceButton();
-  if (state.autoVoice) {
-    const speechText = getVisiblePageText();
-    if (speechText) {
-      speak(speechText);
-    }
+  if (!state.autoVoice) {
+    speechController?.stopSpeaking({ reason: 'auto-toggle-off', suppressAutoRestart: true });
+    return;
   }
+  speechController?.clearManualSuppression?.();
+  speechController?.scheduleAutoRead({ reason: 'auto-toggle-on', force: true });
 }
 
 function openStylePopup() {
@@ -1155,9 +2054,11 @@ if (readerPageSlider) {
       return;
     }
     console.info('[Reader] page change via slider: target=%d total=%d', targetIndex + 1, totalPages);
+    speechController?.stopSpeaking({ reason: 'slider-change' });
+    speechController?.clearManualSuppression?.();
     state.pageIndex = targetIndex;
     state.autoAlignPage = false;
-    renderReader();
+    renderReader({ speechReason: 'slider-change' });
   };
 
   readerPageSlider.addEventListener('input', handleSliderChange);
@@ -1996,32 +2897,6 @@ function resolvePageAnchor(pagination, pageIndex) {
   return pagination.pageAnchors[pageIndex] ?? null;
 }
 
-function getVisiblePageText() {
-  if (!readerFlow || !readerPageShell) {
-    return '';
-  }
-  const viewportRect = readerPageShell.getBoundingClientRect();
-  const nodes = Array.from(readerFlow.querySelectorAll('h1, h2, h3, h4, p'));
-  const pieces = [];
-  nodes.forEach((node) => {
-    if (!(node instanceof HTMLElement)) {
-      return;
-    }
-    const rect = node.getBoundingClientRect();
-    if (rect.right <= viewportRect.left || rect.left >= viewportRect.right) {
-      return;
-    }
-    if (rect.bottom <= viewportRect.top || rect.top >= viewportRect.bottom) {
-      return;
-    }
-    const text = node.textContent?.trim();
-    if (text) {
-      pieces.push(text);
-    }
-  });
-  return pieces.join('\n\n');
-}
-
 function updateLayoutInfo(pagination, metrics) {
   if (!layoutInfo) {
     return;
@@ -2218,10 +3093,26 @@ function buildChapterFlowParts(chapterId) {
   return parts;
 }
 
-function renderReader({ forceReflow = false } = {}) {
+function renderReader({ forceReflow = false, speechReason = 'render' } = {}) {
   ensureSelection();
   const { chapterId, sectionId, pointId } = state;
   console.info('[Reader] render start: chapter=%s section=%s point=%s page=%d', chapterId ?? 'n/a', sectionId ?? 'n/a', pointId ?? 'n/a', state.pageIndex + 1);
+
+  const completeSpeech = (() => {
+    let completed = false;
+    return (autoStart) => {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      speechController?.handleRenderComplete?.({
+        reason: speechReason,
+        autoStart,
+      });
+    };
+  })();
+
+  speechController?.handleRenderStart?.(speechReason);
 
   const chapter = BOOKS[chapterId];
   if (!chapter) {
@@ -2234,6 +3125,7 @@ function renderReader({ forceReflow = false } = {}) {
     state.flowChapterId = null;
     updatePager(0);
     hideChapterBannerElements();
+    completeSpeech(false);
     return;
   }
 
@@ -2246,6 +3138,7 @@ function renderReader({ forceReflow = false } = {}) {
     renderFallbackContent(fallbackChunk);
     updatePager(0);
     hideChapterBannerElements();
+    completeSpeech(false);
     return;
   }
 
@@ -2254,6 +3147,7 @@ function renderReader({ forceReflow = false } = {}) {
     console.warn('[Reader] layout metrics unavailable, skipping render');
     updatePager(0);
     hideChapterBannerElements();
+    completeSpeech(false);
     return;
   }
 
@@ -2278,6 +3172,7 @@ function renderReader({ forceReflow = false } = {}) {
       renderFallbackContent(fallbackChunk);
       updatePager(0);
       hideChapterBannerElements();
+      completeSpeech(false);
       return;
     }
     state.pagination = pagination;
@@ -2295,6 +3190,7 @@ function renderReader({ forceReflow = false } = {}) {
     renderFallbackContent(fallbackChunk);
     updatePager(0);
     hideChapterBannerElements();
+    completeSpeech(false);
     return;
   }
 
@@ -2323,16 +3219,11 @@ function renderReader({ forceReflow = false } = {}) {
 
   updatePager(totalPages);
   updateChapterBanner();
-
-  if (state.autoVoice) {
-    const speechText = getVisiblePageText();
-    if (speechText) {
-      speak(speechText);
-    }
-  }
+  restoreSpeechCaret({ silent: true });
 
   persistProgress();
 
+  completeSpeech(state.autoVoice);
   console.info('[Reader] render complete: page=%d/%d', state.pageIndex + 1, totalPages);
 }
 
@@ -2381,7 +3272,7 @@ function initializeReader() {
       readerRoot.dataset.defaultPoint = data.defaultPointId ?? '';
 
       ensureSelection();
-      renderReader();
+      renderReader({ speechReason: 'initial-load' });
       console.info('[Reader] Инициализация завершена: глав=%d, текущая=%s', chapterOrder.length, state.chapterId);
     })
     .catch((error) => {

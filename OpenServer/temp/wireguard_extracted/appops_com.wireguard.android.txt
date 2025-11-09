@@ -1,0 +1,8 @@
+﻿Uid mode: CAMERA: foreground
+SYSTEM_ALERT_WINDOW: default; rejectTime=+5h53m36s752ms ago
+CAMERA: allow; time=+7m9s591ms ago; duration=+2s92ms
+ACTIVATE_VPN: allow; time=+2m4s255ms ago; rejectTime=+4d5h26m3s143ms ago
+RUN_ANY_IN_BACKGROUND: allow; time=+59m19s481ms ago
+ESTABLISH_VPN_SERVICE: allow; time=+1m46s51ms ago (running)
+MIUIOP(10008): allow; time=+31m49s459ms ago
+MIUIOP(10044): allow; time=+7m9s772ms ago

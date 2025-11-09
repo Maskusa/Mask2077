@@ -10,6 +10,7 @@ import com.subtit.player.plugins.NativeTTSPlugin;
 import com.subtit.player.plugins.NativeWebOverlayPlugin;
 import com.subtit.player.plugins.NativeUtilitiesPlugin;
 import com.subtit.player.plugins.NativePurchasesPlugin;
+import com.subtit.player.plugins.NativeVpnPlugin;
 import com.getcapacitor.community.admob.AdMob;
 import com.getcapacitor.BridgeActivity;
 
@@ -20,6 +21,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeWebOverlayPlugin.class);
         registerPlugin(NativeUtilitiesPlugin.class);
         registerPlugin(NativePurchasesPlugin.class);
+        registerPlugin(NativeVpnPlugin.class);
         registerPlugin(AdMob.class);
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);

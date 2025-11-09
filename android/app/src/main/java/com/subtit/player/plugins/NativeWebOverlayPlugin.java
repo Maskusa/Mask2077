@@ -12,9 +12,12 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.net.Uri;
+import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -40,11 +43,19 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 @CapacitorPlugin(name = "NativeWebOverlay")
 public class NativeWebOverlayPlugin extends Plugin {
+    private static final String TAG = "NativeWebOverlay";
     private FrameLayout overlayContainer;
     private LinearLayout overlayContent;
     private LinearLayout controlBar;
@@ -349,6 +360,7 @@ public class NativeWebOverlayPlugin extends Plugin {
                 injectTrackingScript();
                 revealWebContent();
             }
+
         });
     }
 
