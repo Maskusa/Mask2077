@@ -768,6 +768,16 @@ class H(BaseHTTPRequestHandler):
                 self._json(200, {'ok': True, 'info': info})
                 self._log_request(path, 'ok', 'system_info')
                 return
+            if path == '/diag/wg-show':
+                output = run_cmd(['wg', 'show', WG_INTERFACE])
+                self._json(200, {'ok': True, 'output': output})
+                self._log_request(path, 'ok', 'wg_show')
+                return
+            if path == '/diag/ip-rule':
+                output = run_cmd(['ip', 'rule', 'show'])
+                self._json(200, {'ok': True, 'output': output})
+                self._log_request(path, 'ok', 'ip_rule_show')
+                return
             if path == '/logs/journal':
                 journal = run_cmd(['journalctl', '-u', 'wg-quick@wg0', '-n', '200', '--no-pager'])
                 self._text(200, journal)

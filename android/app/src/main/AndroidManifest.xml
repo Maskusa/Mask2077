@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -52,16 +52,7 @@
         </provider>
 
         <service
-            android:name=".vpn.ProxyVpnService"
-            android:permission="android.permission.BIND_VPN_SERVICE"
-            android:exported="false"
-            android:foregroundServiceType="dataSync">
-            <intent-filter>
-                <action android:name="android.net.VpnService" />
-            </intent-filter>
-        </service>
-        <service
-            android:name="com.wireguard.android.backend.GoBackend$VpnService"
+            android:name="com.wireguard.android.backend.EnhancedGoBackend$VpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="false"
             android:foregroundServiceType="dataSync" />

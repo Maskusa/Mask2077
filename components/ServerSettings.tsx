@@ -106,15 +106,17 @@ const DEFAULT_WIREGUARD_DNS = '1.1.1.1, 8.8.8.8';
 const DEFAULT_WIREGUARD_MTU = '1280';
 const DEFAULT_WIREGUARD_KEEPALIVE = '25';
 const DEFAULT_WIREGUARD_ALLOWED_IPS = '0.0.0.0/0, ::/0';
+const DEFAULT_API_TCP_PORT = 8787;
 const API_VERBOSE_PREVIEW_LIMIT = 4000;
 const MAX_VPN_LOG_ENTRIES = 500;
 const FULL_TEST_TYPES = [
   { id: 'ping', label: 'PING 1.1.1.1' },
   { id: 'dns', label: 'DNS 1.1.1.1' },
-  { id: 'tcp', label: 'TCP 80' },
+  { id: 'tcp', label: `TCP ${DEFAULT_API_TCP_PORT}` },
   { id: 'udp', label: 'UDP 53' },
   { id: 'http', label: 'HTTP 1.1.1.1' },
   { id: 'https', label: 'HTTPS api.ipify.org' },
+  { id: 'api_tls', label: `API TLS (порт ${DEFAULT_API_TCP_PORT})` },
 ] as const;
 type FullTestType = (typeof FULL_TEST_TYPES)[number]['id'];
 
@@ -160,6 +162,140 @@ const getDiagStatusMeta = (status: DiagResult['status']) => {
         pill: 'bg-slate-700/70 text-slate-200',
       };
   }
+};
+
+const CONNECTION_CHECKLIST_STEPS = [
+  {
+    id: 'serverHealth',
+    label: 'Проверка сервера',
+    description: 'API /oneclick + /wg/status',
+  },
+  {
+    id: 'endpointReachable',
+    label: 'Пинг сервера',
+    description: 'Ping/TCP до Endpoint',
+  },
+  {
+    id: 'profileReady',
+    label: 'WireGuard профиль',
+    description: 'Конфиг нормализован',
+  },
+  {
+    id: 'routingReady',
+    label: 'Маршрутизация',
+    description: 'proxy/status + wg/status на связи',
+  },
+  {
+    id: 'handshake',
+    label: 'Рукопожатие',
+    description: 'wg show обновляет latest handshake',
+  },
+  {
+    id: 'tunnelUp',
+    label: 'Туннель',
+    description: 'NativeVpn сообщает running',
+  },
+  {
+    id: 'ipUpdated',
+    label: 'Новый IP',
+    description: 'ipify / api.myip.com',
+  },
+] as const;
+
+type ConnectionChecklistStepId = (typeof CONNECTION_CHECKLIST_STEPS)[number]['id'];
+type ChecklistStatus = 'idle' | 'pending' | 'in_progress' | 'success' | 'error';
+
+interface ChecklistEntry {
+  status: ChecklistStatus;
+  detail: string | null;
+  updatedAt: number | null;
+}
+
+type ConnectionChecklistState = Record<ConnectionChecklistStepId, ChecklistEntry>;
+
+const HANDSHAKE_FRESH_THRESHOLD_SEC = 120;
+
+const buildInitialChecklistState = (
+  status: ChecklistStatus = 'idle'
+): ConnectionChecklistState =>
+  CONNECTION_CHECKLIST_STEPS.reduce((acc, step) => {
+    acc[step.id] = { status, detail: null, updatedAt: null };
+    return acc;
+  }, {} as ConnectionChecklistState);
+
+const getChecklistStatusMeta = (status: ChecklistStatus) => {
+  switch (status) {
+    case 'success':
+      return {
+        label: 'Готово',
+        pill: 'bg-emerald-500/20 text-emerald-100',
+        container: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-100',
+      };
+    case 'error':
+      return {
+        label: 'Ошибка',
+        pill: 'bg-rose-500/20 text-rose-100',
+        container: 'border-rose-500/30 bg-rose-500/5 text-rose-100',
+      };
+    case 'in_progress':
+      return {
+        label: 'Выполняется',
+        pill: 'bg-sky-500/20 text-sky-100',
+        container: 'border-sky-500/30 bg-sky-500/5 text-sky-100',
+      };
+    case 'pending':
+      return {
+        label: 'Ожидает',
+        pill: 'bg-amber-500/20 text-amber-900',
+        container: 'border-amber-500/30 bg-amber-500/10 text-amber-100',
+      };
+    default:
+      return {
+        label: 'Не запускалось',
+        pill: 'bg-slate-700/60 text-slate-200',
+        container: 'border-slate-700/70 bg-slate-900/70 text-slate-300',
+      };
+  }
+};
+
+const extractHandshakeAgeSeconds = (source: unknown): number | null => {
+  const summary =
+    typeof source === 'string'
+      ? source
+      : source && typeof source === 'object' && 'summary' in (source as Record<string, unknown>)
+      ? String((source as { summary?: unknown }).summary ?? '')
+      : '';
+  if (!summary) {
+    return null;
+  }
+  const match = summary.match(/latest handshake:\s*([^\n]+)/i);
+  if (!match) {
+    return null;
+  }
+  const raw = match[1].trim().toLowerCase();
+  if (!raw || raw.includes('none') || raw.includes('never')) {
+    return null;
+  }
+  if (raw === 'now') {
+    return 0;
+  }
+  const unitRegex = /(\d+)\s+(second|minute|hour|day)s?/g;
+  let totalSeconds = 0;
+  let matched = false;
+  let unitMatch: RegExpExecArray | null;
+  while ((unitMatch = unitRegex.exec(raw)) !== null) {
+    matched = true;
+    const value = Number.parseInt(unitMatch[1], 10);
+    const unit = unitMatch[2];
+    const multiplier =
+      unit === 'second' ? 1 : unit === 'minute' ? 60 : unit === 'hour' ? 3600 : 86400;
+    totalSeconds += value * multiplier;
+  }
+  if (!matched) {
+    const numeric = Number.parseInt(raw.replace(/\D+/g, ''), 10);
+    return Number.isNaN(numeric) ? null : numeric;
+  }
+  return totalSeconds;
 };
 
 interface ExternalIpSource {
@@ -611,6 +747,8 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   );
   const [diagProgressValue, setDiagProgressValue] = useState(0);
   const [lastDiagAt, setLastDiagAt] = useState<number | null>(null);
+  const [connectionChecklist, setConnectionChecklist] =
+    useState<ConnectionChecklistState>(() => buildInitialChecklistState());
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const deviceIdRef = useRef<string | null>(loadStoredDeviceId());
@@ -636,6 +774,47 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       });
     },
     []
+  );
+
+  const resetConnectionChecklist = useCallback(
+    (status: ChecklistStatus = 'idle') => {
+      setConnectionChecklist(buildInitialChecklistState(status));
+    },
+    []
+  );
+
+  const updateChecklistStep = useCallback(
+    (stepId: ConnectionChecklistStepId, status: ChecklistStatus, detail?: string | null) => {
+      let changed = false;
+      const normalizedDetail = detail ?? null;
+      setConnectionChecklist((previous) => {
+        const current = previous[stepId];
+        const isSame =
+          current &&
+          current.status === status &&
+          (current.detail ?? null) === normalizedDetail;
+        if (isSame) {
+          return previous;
+        }
+        changed = true;
+        return {
+          ...previous,
+          [stepId]: {
+            status,
+            detail: normalizedDetail,
+            updatedAt: Date.now(),
+          },
+        };
+      });
+      if (changed) {
+        appendVpnLog(
+          'CHECKLIST',
+          `${stepId}:${status}`,
+          normalizedDetail ? { detail: normalizedDetail } : undefined
+        );
+      }
+    },
+    [appendVpnLog]
   );
 
   const resetDiagResults = useCallback(
@@ -786,6 +965,8 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     async (): Promise<WireGuardPreflightResult> => {
       const deviceId = await resolveDeviceId();
       appendVpnLog('VPN_PREFLIGHT', 'requesting profile', { deviceId }, true);
+      updateChecklistStep('serverHealth', 'in_progress', 'Запрос профиля WireGuard');
+      updateChecklistStep('profileReady', 'pending', 'Ждём профиль от API');
       const [profileResponse, wgStatusResponse] = await Promise.all([
         callServerApi('/oneclick', {
           method: 'POST',
@@ -811,11 +992,13 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           profilePayload,
           true
         );
+        updateChecklistStep('serverHealth', 'error', 'API не вернул профиль');
         throw new Error('WireGuard profile is missing in API response');
       }
       const normalizedConfig = normalizeWireGuardConfig(rawConfig);
       const endpointInfo = extractEndpointInfo(normalizedConfig);
       if (!endpointInfo) {
+        updateChecklistStep('profileReady', 'error', 'Endpoint отсутствует в профиле');
         throw new Error('Endpoint is missing in the WireGuard profile');
       }
       const serverListenPort = extractListenPortFromSummary(wgStatusResponse.data);
@@ -832,23 +1015,34 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         },
         true
       );
+      updateChecklistStep(
+        'serverHealth',
+        'success',
+        reused ? 'Профиль получен из кэша' : 'Профиль выдан заново'
+      );
+      updateChecklistStep(
+        'profileReady',
+        'success',
+        `${endpointInfo.host}:${endpointInfo.port}`
+      );
       if (
         serverListenPort &&
         endpointInfo.port &&
         serverListenPort !== endpointInfo.port
       ) {
-          appendVpnLog(
-            'VPN_PREFLIGHT_ERROR',
-            'server ListenPort differs from client Endpoint',
-            {
-              server: serverListenPort,
-              profile: endpointInfo.port,
-            },
-            true
-          );
-          throw new Error(
-            `Server ListenPort (${serverListenPort}) differs from profile Endpoint (${endpointInfo.port}). Update the client profile before enabling VPN.`
-          );
+        appendVpnLog(
+          'VPN_PREFLIGHT_ERROR',
+          'server ListenPort differs from client Endpoint',
+          {
+            server: serverListenPort,
+            profile: endpointInfo.port,
+          },
+          true
+        );
+        updateChecklistStep('profileReady', 'error', 'ListenPort не совпадает');
+        throw new Error(
+          `Server ListenPort (${serverListenPort}) differs from profile Endpoint (${endpointInfo.port}). Update the client profile before enabling VPN.`
+        );
       }
       return {
         configText: normalizedConfig,
@@ -862,11 +1056,65 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         },
       };
     },
-    [appendVpnLog, callServerApi, resolveDeviceId]
+    [appendVpnLog, callServerApi, resolveDeviceId, updateChecklistStep]
+  );
+
+  const verifyEndpointReachability = useCallback(
+    async (endpoint: WireGuardEndpointInfo) => {
+      updateChecklistStep(
+        'endpointReachable',
+        'in_progress',
+        `Проверяем ping/tcp ${endpoint.host}:${endpoint.port}`
+      );
+      if (!vpnPluginAvailable || typeof NativeVpn.diagnose !== 'function') {
+        updateChecklistStep(
+          'endpointReachable',
+          'success',
+          'Диагностика недоступна, пропускаем'
+        );
+        return;
+      }
+      try {
+        const diagnostic = await NativeVpn.diagnose({
+          host: endpoint.host,
+          port: endpoint.port,
+          tests: ['ping', 'tcp'],
+          timeoutMs: 6000,
+        });
+        const summary = diagnostic.results
+          .filter(
+            (entry) =>
+              typeof entry.type === 'string' &&
+              (entry.type.toLowerCase() === 'ping' || entry.type.toLowerCase() === 'tcp')
+          )
+          .map(
+            (entry) =>
+              `${entry.type?.toUpperCase() ?? 'TEST'}:${entry.success ? 'ok' : 'fail'}${
+                entry.latencyMs ? ` (${entry.latencyMs}ms)` : ''
+              }`
+          )
+          .join(' | ');
+        const failed = diagnostic.results.some(
+          (entry) =>
+            (entry.type === 'ping' || entry.type === 'tcp') &&
+            entry.success === false
+        );
+        updateChecklistStep(
+          'endpointReachable',
+          failed ? 'error' : 'success',
+          summary || (failed ? 'Проблемы с ping/tcp' : 'Диагностика успешна')
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        updateChecklistStep('endpointReachable', 'error', message);
+      }
+    },
+    [updateChecklistStep, vpnPluginAvailable]
   );
 
   const refreshExternalIp = useCallback(async () => {
     const reasons: string[] = [];
+    updateChecklistStep('ipUpdated', 'in_progress', 'Запрос внешнего IP');
     for (const source of EXTERNAL_IP_SOURCES) {
       try {
         const response = await CapacitorHttp.request({
@@ -889,6 +1137,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           setIpSourceLabel(source.label);
           setIpError(null);
           appendVpnLog('IP', 'external IP updated', { ip, source: source.label });
+          updateChecklistStep('ipUpdated', 'success', `${ip} (${source.label})`);
           return ip;
         }
         reasons.push(`${source.label}: invalid response`);
@@ -901,8 +1150,9 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     setIpError(combined);
     setIpSourceLabel(null);
     appendVpnLog('IP_ERROR', 'failed to detect IP', { error: combined });
+    updateChecklistStep('ipUpdated', 'error', combined || 'Не удалось получить IP');
     return null;
-  }, [appendVpnLog, initialIp]);
+  }, [appendVpnLog, initialIp, updateChecklistStep]);
 
   const refreshStatus = useCallback(
     async (options: { reason: RefreshReason; silent?: boolean } = { reason: 'manual' }) => {
@@ -933,6 +1183,23 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         setStatusReport(
           buildEnvironmentReport(runtime, form, result, runtime.enabled)
         );
+        updateChecklistStep(
+          'routingReady',
+          'success',
+          `Статус обновлён ${formatTimestamp(result.updatedAt)}`
+        );
+        const handshakeAge = extractHandshakeAgeSeconds(wgResponse.data);
+        if (handshakeAge == null) {
+          updateChecklistStep('handshake', 'pending', 'Нет данных от wg show');
+        } else if (handshakeAge <= HANDSHAKE_FRESH_THRESHOLD_SEC) {
+          updateChecklistStep('handshake', 'success', `последнее ${handshakeAge} сек назад`);
+        } else {
+          updateChecklistStep(
+            'handshake',
+            'error',
+            `рукопожатие ${handshakeAge} сек назад`
+          );
+        }
         appendVpnLog('STATUS', 'refresh_success', {
           reason: options.reason,
           durationMs: Date.now() - startedAt,
@@ -944,13 +1211,15 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           reason: options.reason,
           error: message,
         });
+        updateChecklistStep('routingReady', 'error', message);
+        updateChecklistStep('handshake', 'error', 'Нет данных от сервера');
       } finally {
         if (!options.silent) {
           setRefreshing(false);
         }
       }
     },
-    [appendVpnLog, callServerApi, form, runtime]
+    [appendVpnLog, callServerApi, form, runtime, updateChecklistStep]
   );
 
   useEffect(() => {
@@ -975,6 +1244,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     };
   }, [refreshStatus]);
 
+  
   const handleEnableProxy = useCallback(async () => {
     if (!vpnPluginAvailable || !isNativePlatform) {
       setWarning('VPN доступен только в нативной сборке');
@@ -982,9 +1252,12 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     }
     setLoading(true);
     setVpnError(null);
+    resetConnectionChecklist('pending');
     appendVpnLog('VPN', 'enable_request', null, true);
+    updateChecklistStep('tunnelUp', 'pending', 'Готовим запуск NativeVpn');
     try {
       const preflight = await performWireGuardPreflight();
+      await verifyEndpointReachability(preflight.endpointInfo);
       const configBase64 = encodeUtf8Base64(preflight.configText);
       const vpnResult = await NativeVpn.start({
         host: form.host || PROXY_CONFIG.host,
@@ -1000,6 +1273,11 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         running: vpnResult.running,
         endpoint: preflight.endpointInfo,
       });
+      updateChecklistStep(
+        'tunnelUp',
+        vpnResult.running ? 'success' : 'error',
+        vpnResult.running ? 'NativeVpn активен' : 'NativeVpn не запустился'
+      );
       setRuntime((previous) => ({
         ...previous,
         enabled: vpnResult.running,
@@ -1015,6 +1293,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       const message = error instanceof Error ? error.message : String(error);
       setVpnError(message);
       appendVpnLog('VPN_ERROR', 'start_failed', { error: message }, true);
+      updateChecklistStep('tunnelUp', 'error', message);
     } finally {
       setLoading(false);
     }
@@ -1030,25 +1309,29 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     isNativePlatform,
     performWireGuardPreflight,
     refreshStatus,
+    resetConnectionChecklist,
+    updateChecklistStep,
+    verifyEndpointReachability,
     vpnPluginAvailable,
   ]);
 
-  const handleDisableProxy = useCallback(async () => {
+const handleDisableProxy = useCallback(async () => {
     if (!vpnPluginAvailable || !isNativePlatform) {
       return;
     }
     setLoading(true);
     setVpnError(null);
     appendVpnLog('VPN', 'disable_request', null, true);
-    try {
-      const state = await NativeVpn.stop();
-      setVpnState(state);
-      appendVpnLog('VPN', 'stopped', { exitCode: state?.exitCode ?? 'n/a' });
-      setRuntime((previous) => ({
-        ...previous,
-        enabled: false,
-        connectedAt: null,
-        lastError: null,
+      try {
+        const state = await NativeVpn.stop();
+        setVpnState(state);
+        appendVpnLog('VPN', 'stopped', { exitCode: state?.exitCode ?? 'n/a' });
+        updateChecklistStep('tunnelUp', 'idle', 'Туннель отключен пользователем');
+        setRuntime((previous) => ({
+          ...previous,
+          enabled: false,
+          connectedAt: null,
+          lastError: null,
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1057,7 +1340,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [appendVpnLog, isNativePlatform, vpnPluginAvailable]);
+    }, [appendVpnLog, isNativePlatform, updateChecklistStep, vpnPluginAvailable]);
 
 const handleServerSnapshot = useCallback(async () => {
     setDiagProgress('Собираем снимок сервера...');
@@ -1113,12 +1396,12 @@ const handleServerSnapshot = useCallback(async () => {
     setLastDiagAt(null);
     appendVpnLog('DIAG', 'full_test_requested', {
       host: form.host || PROXY_CONFIG.host,
-      httpPort: form.httpPort,
+      tcpPort: DEFAULT_API_TCP_PORT,
     });
     try {
       const request: VpnDiagnosticRequest = {
         host: form.host || PROXY_CONFIG.host,
-        port: Number(form.httpPort) || 8080,
+        port: DEFAULT_API_TCP_PORT,
         tests: ['ping', 'dns', 'tcp', 'http', 'https'],
         timeoutMs: 8000,
       };
@@ -1148,6 +1431,42 @@ const handleServerSnapshot = useCallback(async () => {
           setDiagProgressValue(Math.min(processed / totalTracked, 1));
         }
       });
+      if (FULL_TEST_TYPES.some((test) => test.id === 'api_tls')) {
+        const tlsBase = normalizeApiBase(form.apiBase, form.host || PROXY_CONFIG.host);
+        const token = form.apiToken.trim() || PROXY_CONFIG.apiToken;
+        setDiagProgress('Проверяем TLS API (system/info)...');
+        try {
+          const startedTls = Date.now();
+          const response = await CapacitorHttp.request({
+            url: `${tlsBase}/system/info`,
+            method: 'GET',
+            headers: {
+              Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8',
+              'X-Auth-Token': token ?? '',
+            },
+          });
+          const ok = (response.status ?? 200) < 400;
+          const latency = Date.now() - startedTls;
+          appendVpnLog('DIAG_RESULT', 'tls_api_test', {
+            base: tlsBase,
+            success: ok,
+            latencyMs: latency,
+            status: response.status ?? null,
+          });
+          upcomingResults.api_tls = {
+            status: ok ? 'success' : 'error',
+            latencyMs: latency,
+            message: ok ? tlsBase : `HTTP ${response.status ?? 'ERR'}`,
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          appendVpnLog('DIAG_RESULT', 'tls_api_test', {
+            success: false,
+            message,
+          });
+          upcomingResults.api_tls = { status: 'error', message };
+        }
+      }
       FULL_TEST_TYPES.forEach(({ id }) => {
         if (upcomingResults[id].status === 'pending') {
           upcomingResults[id] =
@@ -1184,7 +1503,8 @@ const handleServerSnapshot = useCallback(async () => {
   }, [
     appendVpnLog,
     form.host,
-    form.httpPort,
+    form.apiBase,
+    form.apiToken,
     isNativePlatform,
     refreshExternalIp,
     resetDiagResults,
@@ -1345,6 +1665,48 @@ const handleServerSnapshot = useCallback(async () => {
         {warning && <p className="text-amber-400 text-sm">{warning}</p>}
         {vpnError && <p className="text-rose-400 text-sm">{vpnError}</p>}
         {diagProgress && <p className="text-slate-300 text-sm">{diagProgress}</p>}
+      </section>
+
+      <section className="rounded-3xl bg-slate-950/70 border border-emerald-500/20 shadow-[0_18px_40px_rgba(16,185,129,0.12)] p-8 space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Чек-лист подключения</h3>
+            <p className="text-sm text-slate-400">
+              Отслеживаем путь до устойчивого туннеля, шаги автоматически логируются.
+            </p>
+          </div>
+          <p className="text-xs text-slate-500">
+            Если этап застыл, смотрим журнал (тег CHECKLIST) и серверные логи.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {CONNECTION_CHECKLIST_STEPS.map((step) => {
+            const entry = connectionChecklist[step.id];
+            const meta = getChecklistStatusMeta(entry?.status ?? 'idle');
+            return (
+              <div
+                key={step.id}
+                className={`rounded-2xl border px-4 py-5 transition-colors ${meta.container}`}
+              >
+                <div
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest ${meta.pill}`}
+                >
+                  {meta.label}
+                </div>
+                <p className="mt-3 text-base font-semibold text-white">{step.label}</p>
+                <p className="text-sm text-slate-400">{step.description}</p>
+                {entry?.detail && (
+                  <p className="mt-2 text-sm text-slate-200 break-words">{entry.detail}</p>
+                )}
+                {entry?.updatedAt && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Обновлено: {formatTimestamp(entry.updatedAt)}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       <section className="rounded-3xl bg-slate-950/70 border border-cyan-500/20 shadow-[0_20px_45px_rgba(0,212,255,0.1)] p-8 space-y-6">

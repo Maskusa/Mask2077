@@ -2,7 +2,7 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">45.151.183.153</domain>
+        <domain includeSubdomains="true">45-151-183-153.sslip.io</domain>
         <domain includeSubdomains="true">open.server</domain>
     </domain-config>
 </network-security-config>
-

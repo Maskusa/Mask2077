@@ -1,0 +1,179 @@
+Device serial: 
+371da893
+Timestamp: 10.11.2025 21:19:55,30 
+Package name : com.wireguard.android 
+
+===== dumpsys connectivity ===== 
+"head" не является внутренней или внешней
+командой, исполняемой программой или пакетным файлом.
+
+===== ip addr / rule / route ===== 
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: dummy0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/ether 76:3a:f0:46:c3:9d brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::743a:f0ff:fe46:c39d/64 scope link 
+       valid_lft forever preferred_lft forever
+3: tunl0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN group default qlen 1000
+    link/ipip 0.0.0.0 brd 0.0.0.0
+4: gre0@NONE: <NOARP> mtu 1476 qdisc noop state DOWN group default qlen 1000
+    link/gre 0.0.0.0 brd 0.0.0.0
+5: gretap0@NONE: <BROADCAST,MULTICAST> mtu 1462 qdisc noop state DOWN group default qlen 1000
+    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+6: erspan0@NONE: <BROADCAST,MULTICAST> mtu 1450 qdisc noop state DOWN group default qlen 1000
+    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+7: ip_vti0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN group default qlen 1000
+    link/ipip 0.0.0.0 brd 0.0.0.0
+8: ip6_vti0@NONE: <NOARP> mtu 1364 qdisc noop state DOWN group default qlen 1000
+    link/tunnel6 :: brd ::
+9: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN group default qlen 1000
+    link/sit 0.0.0.0 brd 0.0.0.0
+10: ip6tnl0@NONE: <NOARP> mtu 1452 qdisc noop state DOWN group default qlen 1000
+    link/tunnel6 :: brd ::
+11: ip6gre0@NONE: <NOARP> mtu 1448 qdisc noop state DOWN group default qlen 1000
+    link/gre6 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00 brd 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+13: rmnet_ipa0: <UP,LOWER_UP> mtu 9216 qdisc pfifo_fast state UNKNOWN group default qlen 1000
+    link/[519] 
+14: rmnet_data0@rmnet_ipa0: <UP,LOWER_UP> mtu 1500 qdisc mq state UNKNOWN group default qlen 1000
+    link/[519] 
+    inet6 fe80::689a:ebff:fe75:a1c/64 scope link 
+       valid_lft forever preferred_lft forever
+15: rmnet_data1@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+16: rmnet_data2@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+17: rmnet_data3@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+18: rmnet_data4@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+19: rmnet_data5@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+20: r_rmnet_data0@rmnet_ipa0: <UP,LOWER_UP> mtu 1500 qdisc mq state UNKNOWN group default qlen 1000
+    link/[519] 
+    inet6 fe80::48fe:beff:fefd:56c/64 scope link 
+       valid_lft forever preferred_lft forever
+21: r_rmnet_data1@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+22: r_rmnet_data2@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+23: r_rmnet_data3@rmnet_ipa0: <> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/[519] 
+24: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 3000
+    link/ether 5e:6f:8f:c2:53:92 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.0.101/24 brd 192.168.0.255 scope global wlan0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::5c6f:8fff:fec2:5392/64 scope link 
+       valid_lft forever preferred_lft forever
+25: p2p0: <BROADCAST,MULTICAST> mtu 1500 qdisc mq state DOWN group default qlen 3000
+    link/ether 6e:f7:84:56:91:09 brd ff:ff:ff:ff:ff:ff
+26: wifi-aware0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 3000
+    link/ether 6e:f7:84:57:91:09 brd ff:ff:ff:ff:ff:ff
+99: tun0: <POINTOPOINT,UP,LOWER_UP> mtu 1280 qdisc pfifo_fast state UNKNOWN group default qlen 500
+    link/none 
+    inet 192.168.6.250/32 scope global tun0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::d4ae:27f:98f1:5e24/64 scope link stable-privacy 
+       valid_lft forever preferred_lft forever
+0:	from all lookup local 
+10000:	from all fwmark 0xc0000/0xd0000 lookup 99 
+11000:	from all iif lo oif dummy0 uidrange 0-0 lookup 1002 
+11000:	from all iif lo oif rmnet_data0 uidrange 0-0 lookup 1014 
+11000:	from all iif lo oif wlan0 uidrange 0-0 lookup 1024 
+11000:	from all iif lo oif r_rmnet_data0 uidrange 0-0 lookup 1020 
+12000:	from all iif tun0 lookup 97 
+13000:	from all fwmark 0xc00b5/0xcffff lookup 1099 
+13000:	from all fwmark 0x0/0x20000 iif lo uidrange 0-99999 lookup 1099 
+15040:	from all fwmark 0x100af/0x1ffff iif lo uidrange 10069-10069 lookup 1024 
+15040:	from all fwmark 0x100af/0x1ffff iif lo uidrange 10224-10224 lookup 1024 
+15040:	from all fwmark 0x100af/0x1ffff iif lo uidrange 10225-10225 lookup 1024 
+15040:	from all fwmark 0x100af/0x1ffff iif lo uidrange 10343-10343 lookup 1024 
+15040:	from all fwmark 0x100af/0x1ffff iif lo uidrange 10459-10459 lookup 1024 
+16000:	from all fwmark 0x10063/0x1ffff iif lo lookup 97 
+16000:	from all fwmark 0x10062/0x1ffff iif lo lookup 97 
+16000:	from all fwmark 0xd0001/0xdffff iif lo lookup 1014 
+16000:	from all fwmark 0x100af/0x1ffff iif lo lookup 1024 
+16000:	from all fwmark 0xd0002/0xdffff iif lo lookup 1020 
+16000:	from all fwmark 0x100b5/0x1ffff iif lo uidrange 0-0 lookup 1099 
+16000:	from all fwmark 0x100b5/0x1ffff iif lo uidrange 0-99999 lookup 1099 
+17000:	from all iif lo oif dummy0 lookup 1002 
+17000:	from all fwmark 0xc0000/0xc0000 iif lo oif rmnet_data0 lookup 1014 
+17000:	from all iif lo oif wlan0 lookup 1024 
+17000:	from all fwmark 0xc0000/0xc0000 iif lo oif r_rmnet_data0 lookup 1020 
+17000:	from all iif lo oif tun0 uidrange 0-99999 lookup 1099 
+18000:	from all fwmark 0x0/0x10000 lookup 99 
+19000:	from all fwmark 0x0/0x10000 lookup 98 
+20000:	from all fwmark 0x0/0x10000 lookup 97 
+20000:	from all fwmark 0x0/0x10000 lookup 97 
+21000:	from all iif r_rmnet_data0 lookup 1024 
+21000:	from all iif r_rmnet_data0 lookup 1002 
+22040:	from all fwmark 0xaf/0x1ffff iif lo uidrange 10069-10069 lookup 1024 
+22040:	from all fwmark 0xaf/0x1ffff iif lo uidrange 10224-10224 lookup 1024 
+22040:	from all fwmark 0xaf/0x1ffff iif lo uidrange 10225-10225 lookup 1024 
+22040:	from all fwmark 0xaf/0x1ffff iif lo uidrange 10343-10343 lookup 1024 
+22040:	from all fwmark 0xaf/0x1ffff iif lo uidrange 10459-10459 lookup 1024 
+23000:	from all fwmark 0xaf/0x1ffff iif lo lookup 1024 
+25000:	from all fwmark 0x0/0x10000 iif lo uidrange 10069-10069 lookup 1000000024 
+25000:	from all fwmark 0x0/0x10000 iif lo uidrange 10224-10224 lookup 1000000024 
+25000:	from all fwmark 0x0/0x10000 iif lo uidrange 10225-10225 lookup 1000000024 
+25000:	from all fwmark 0x0/0x10000 iif lo uidrange 10343-10343 lookup 1000000024 
+25000:	from all fwmark 0x0/0x10000 iif lo uidrange 10459-10459 lookup 1000000024 
+26000:	from all fwmark 0x0/0x10000 iif lo lookup 1000000024 
+28000:	from all fwmark 0xb5/0xffff lookup 1024 
+29040:	from all fwmark 0x0/0xffff iif lo uidrange 10069-10069 lookup 1024 
+29040:	from all fwmark 0x0/0xffff iif lo uidrange 10224-10224 lookup 1024 
+29040:	from all fwmark 0x0/0xffff iif lo uidrange 10225-10225 lookup 1024 
+29040:	from all fwmark 0x0/0xffff iif lo uidrange 10343-10343 lookup 1024 
+29040:	from all fwmark 0x0/0xffff iif lo uidrange 10459-10459 lookup 1024 
+31000:	from all fwmark 0x0/0xffff iif lo lookup 1024 
+32000:	from all unreachable
+default via 192.168.0.1 dev wlan0 table 1024 proto static 
+192.168.0.0/24 dev wlan0 table 1024 proto static scope link 
+224.0.0.0/24 dev rmnet_data0 table 1000000014 proto static scope link 
+224.0.0.0/24 dev r_rmnet_data0 table 1000000020 proto static scope link 
+192.168.0.0/24 dev wlan0 table 1000000024 proto static scope link 
+224.0.0.0/24 dev wlan0 table 1000000024 proto static scope link 
+default dev tun0 table 1099 proto static scope link 
+192.168.6.250 dev tun0 table 1099 proto static scope link 
+192.168.6.250 dev tun0 table 1000000099 proto static scope link 
+default dev dummy0 table 1002 proto static scope link 
+255.0.1.0 dev r_rmnet_data0 table 1020 proto static scope link 
+192.168.0.0/24 dev wlan0 proto kernel scope link src 192.168.0.101 
+broadcast 127.0.0.0 dev lo table local proto kernel scope link src 127.0.0.1 
+local 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1 
+local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1 
+broadcast 127.255.255.255 dev lo table local proto kernel scope link src 127.0.0.1 
+broadcast 192.168.0.0 dev wlan0 table local proto kernel scope link src 192.168.0.101 
+local 192.168.0.101 dev wlan0 table local proto kernel scope host src 192.168.0.101 
+broadcast 192.168.0.255 dev wlan0 table local proto kernel scope link src 192.168.0.101 
+local 192.168.6.250 dev tun0 table local proto kernel scope host src 192.168.6.250 
+fe80::/64 dev wlan0 table 1024 proto kernel metric 256 pref medium
+fe80::/64 dev wlan0 table 1024 proto static metric 1024 pref medium
+fd95:d1e:12:: dev r_rmnet_data0 table 1000000020 proto static metric 1024 pref medium
+fe80::/64 dev wlan0 table 1000000024 proto static metric 1024 pref medium
+fe80::/64 dev tun0 table 1099 proto kernel metric 256 pref medium
+default dev tun0 table 1099 proto static metric 1024 pref medium
+fe80::/64 dev dummy0 table 1002 proto kernel metric 256 pref medium
+default dev dummy0 table 1002 proto static metric 1024 pref medium
+fe80::/64 dev rmnet_data0 table 1014 proto kernel metric 256 pref medium
+fd95:d1e:12:: dev r_rmnet_data0 table 1020 proto static metric 1024 pref medium
+fe80::/64 dev r_rmnet_data0 table 1020 proto kernel metric 256 pref medium
+local ::1 dev lo table local proto kernel metric 0 pref medium
+anycast fe80:: dev dummy0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev rmnet_data0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev r_rmnet_data0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev wlan0 table local proto kernel metric 0 pref medium
+anycast fe80:: dev tun0 table local proto kernel metric 0 pref medium
+local fe80::48fe:beff:fefd:56c dev r_rmnet_data0 table local proto kernel metric 0 pref medium
+local fe80::5c6f:8fff:fec2:5392 dev wlan0 table local proto kernel metric 0 pref medium
+local fe80::689a:ebff:fe75:a1c dev rmnet_data0 table local proto kernel metric 0 pref medium
+local fe80::743a:f0ff:fe46:c39d dev dummy0 table local proto kernel metric 0 pref medium
+local fe80::d4ae:27f:98f1:5e24 dev tun0 table local proto kernel metric 0 pref medium
+multicast ff00::/8 dev dummy0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev rmnet_data0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev wlan0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev r_rmnet_data0 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev tun0 table local proto kernel metric 256 pref medium

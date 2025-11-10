@@ -1,15 +1,7 @@
 import { registerPlugin } from '@capacitor/core';
 
 export interface VpnStartOptions {
-  host: string;
-  httpPort: number;
-  socksPort: number;
-  username: string;
-  password: string;
-  mode: 'HTTP' | 'SOCKS5';
-  enableUdp?: boolean;
-  debugMode?: boolean;
-  wireguardConfigBase64?: string;
+  wireguardConfigBase64: string;
 }
 
 export interface VpnState {
@@ -17,13 +9,6 @@ export interface VpnState {
   exitCode?: number;
   error?: string;
   requestedStart?: boolean;
-  config?: {
-    host: string;
-    httpPort: number;
-    socksPort: number;
-    username: string;
-    udp: boolean;
-  };
   stats?: VpnStats;
 }
 

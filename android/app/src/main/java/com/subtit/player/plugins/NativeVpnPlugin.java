@@ -1,4 +1,4 @@
-package com.subtit.player.plugins;
+﻿package com.subtit.player.plugins;
 
 import android.app.Activity;
 import android.content.Context;
@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.VpnService;
 import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -22,11 +23,10 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.subtit.player.vpn.ProxyVpnManager;
-import com.wireguard.android.backend.GoBackend;
 import com.wireguard.android.backend.Tunnel;
 import com.wireguard.android.backend.Statistics;
 import com.wireguard.config.Config;
+import com.wireguard.android.backend.EnhancedGoBackend;
 
 import java.io.ByteArrayInputStream;
 import java.io.BufferedReader;
@@ -81,7 +81,7 @@ public class NativeVpnPlugin extends Plugin {
     private volatile boolean requestedStart = false;
     private final Object wireguardLock = new Object();
     @Nullable
-    private GoBackend wireguardBackend;
+    private EnhancedGoBackend wireguardBackend;
     @Nullable
     private PluginTunnel wireguardTunnel;
     private volatile long vpnStartedRealtime = 0L;
@@ -110,6 +110,7 @@ public class NativeVpnPlugin extends Plugin {
         ConnectivityManager cm = ensureConnectivityManager();
         if (cm == null) {
             baselineNetwork = null;
+            applyPreferredUnderlyingNetworks();
             return;
         }
         Network[] networks = cm.getAllNetworks();
@@ -137,7 +138,17 @@ public class NativeVpnPlugin extends Plugin {
         baselineNetwork = candidate;
         if (previous != candidate) {
             resetApiClient();
+            applyPreferredUnderlyingNetworks();
         }
+    }
+
+    private void applyPreferredUnderlyingNetworks() {
+        EnhancedGoBackend backend = wireguardBackend;
+        if (backend == null) {
+            return;
+        }
+        Network[] networks = baselineNetwork != null ? new Network[]{baselineNetwork} : null;
+        backend.setPreferredUnderlyingNetworks(networks);
     }
 
     private void resetApiClient() {
@@ -185,7 +196,7 @@ public class NativeVpnPlugin extends Plugin {
     @PluginMethod
     public void checkPermission(PluginCall call) {
         Context context = getContext();
-        boolean granted = ProxyVpnManager.isPermissionGranted(context);
+        boolean granted = context != null && VpnService.prepare(context) == null;
         Log.i(TAG, "[checkPermission] granted=" + granted);
         JSObject ret = new JSObject();
         ret.put("granted", granted);
@@ -195,7 +206,11 @@ public class NativeVpnPlugin extends Plugin {
     @PluginMethod
     public void requestPermission(PluginCall call) {
         Activity activity = getActivity();
-        Intent intent = ProxyVpnManager.buildPermissionIntent(activity);
+        if (activity == null) {
+            call.reject("activity_unavailable");
+            return;
+        }
+        Intent intent = VpnService.prepare(activity);
         if (intent == null) {
             Log.i(TAG, "[requestPermission] already granted (intent=null)");
             JSObject ret = new JSObject();
@@ -255,18 +270,23 @@ public class NativeVpnPlugin extends Plugin {
             return;
         }
         Context context = getContext();
-        if (!ProxyVpnManager.isPermissionGranted(context)) {
+        if (context == null) {
+            call.reject("context_unavailable");
+            return;
+        }
+        if (VpnService.prepare(context) != null) {
             call.reject("vpn permission not granted");
             return;
         }
         try {
             refreshBaselineNetwork();
             Config config = parseWireGuardConfig(configBase64);
-            GoBackend backend;
+            EnhancedGoBackend backend;
             PluginTunnel tunnel;
             synchronized (wireguardLock) {
                 if (wireguardBackend == null) {
-                    wireguardBackend = new GoBackend(context.getApplicationContext());
+                    wireguardBackend = new EnhancedGoBackend(context.getApplicationContext());
+                    applyPreferredUnderlyingNetworks();
                 }
                 if (wireguardTunnel == null) {
                     wireguardTunnel = new PluginTunnel(DEFAULT_TUNNEL_NAME);
@@ -300,7 +320,7 @@ public class NativeVpnPlugin extends Plugin {
     public void stop(PluginCall call) {
         Log.i(TAG, "[stop] requested");
         try {
-            GoBackend backend;
+            EnhancedGoBackend backend;
             PluginTunnel tunnel;
             synchronized (wireguardLock) {
                 backend = wireguardBackend;
@@ -467,7 +487,7 @@ public class NativeVpnPlugin extends Plugin {
 
     private JSObject buildState() {
         JSObject state = new JSObject();
-        GoBackend backendRef;
+        EnhancedGoBackend backendRef;
         PluginTunnel tunnelRef;
         synchronized (wireguardLock) {
             backendRef = wireguardBackend;

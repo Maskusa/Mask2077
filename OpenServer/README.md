@@ -17,16 +17,15 @@
 Актуальные сборки Mask2077 больше не используют ProxyController/WebView-интерсепторы. Все сетевые подключения приложения заворачиваются в полноценный VPN через `NativeVpnPlugin`, поэтому достаточно передать корректные параметры сервера и API.
 
 ### Что входит в Android-часть
-- `android/app/src/main/java/com/subtit/player/plugins/NativeVpnPlugin.java` — обёртка Capacitor над `ProxyVpnService`.
-- `android/app/src/main/java/com/subtit/player/vpn/` + `android/app/src/main/cpp/` — сервис, notification, tun2socks и SOCKS→HTTP bridge.
-- `components/ServerSettings.tsx` — экран «Настройка сервера», который управляет VPN, показывает статистику, форму авторизации и диагностику.
-- `constants/proxy.ts` + `.env` — значения по умолчанию для host/портов/токена.
+- `android/app/src/main/java/com/subtit/player/plugins/NativeVpnPlugin.java` — обёртка Capacitor над `GoBackend` из `com.wireguard.android:tunnel`; напрямую управляет системным `VpnService`, без каких‑либо прокси-мостов.
+- `components/ServerSettings.tsx` — экран «Настройка сервера», который управляет WireGuard-туннелем, показывает статистику, форму авторизации и диагностику.
+- `constants/proxy.ts` + `.env` — значения по умолчанию для host, API base и токена.
 
 ### Мини-чек-лист
-1. В `.env` (или `capacitor.config.ts`) задайте `VITE_PROXY_HOST`, `VITE_PROXY_HTTP_PORT`, `VITE_PROXY_SOCKS_PORT`, `VITE_PROXY_API_BASE` и `VITE_PROXY_API_TOKEN`. Эти же значения подставляются в форму на экране.
-2. В `AndroidManifest.xml` уже прописан `android:networkSecurityConfig="@xml/network_security_config"`, который разрешает HTTP к `45.151.183.153` и `open.server`. При смене домена не забудьте обновить XML.
-3. Соберите VPN-модуль (`./gradlew :app:assembleDebug`). При первом запуске приложение попросит разрешение VPN — без него туннель не стартует.
-4. Для ручного запроса статуса используйте `CapacitorHttp` — он отправляет `X-Auth-Token` и в случае ошибки пишет в лог `[Proxy] api_request_failed ...`.
+1. В `.env` (или `capacitor.config.ts`) задайте `VITE_PROXY_HOST`, `VITE_PROXY_API_BASE` и `VITE_PROXY_API_TOKEN`. Старые `*_HTTP`/`*_SOCKS` переменные больше не читаются — приложение работает только через чистый WireGuard + HTTPS API.
+2. В `AndroidManifest.xml` уже прописан `android:networkSecurityConfig="@xml/network_security_config"`, который разрешает HTTPS к `45.151.183.153` и `open.server`. При смене домена обновите XML.
+3. Соберите приложение (`./gradlew :app:assembleDebug`). При первом запуске система спросит стандартное VPN-разрешение для GoBackend — без него туннель не поднимется.
+4. Для ручных вызовов API используйте `CapacitorHttp`/`NativeVpn.apiRequest`. Все запросы автоматически добавляют `X-Auth-Token`, а ошибки попадают в лог `[API] ...`.
 
 ### API-токен
 - Сам 3proxy по-прежнему авторизует трафик через `masku/superproxy123`, но HTTP API на `:8787` принимает **только** `X-Auth-Token`.
@@ -34,15 +33,21 @@
 - Значение надо вписать в `.env` и/или в поле «API token» на экране. При ошибке 401 проверьте, что токен совпадает.
 
 ### Экран «Настройка сервера»
-- Кнопка «Включить VPN» вызывает `NativeVpn.start`, который форсирует SOCKS5 и ведёт статистику (байты/пакеты/uptime).
+- Кнопка «Включить VPN» вызывает `NativeVpn.start` и сразу передаёт WireGuard-конфиг в `GoBackend`. Никаких HTTP/SOCKS-мостов больше нет — статистика берётся из WireGuard API.
 - «Обновить статус» дергает `/proxy/status`, `/wg/status`, `/system/info`. Если HTTPS не работает (self-signed), компонент автоматически откатывается на HTTP и пишет об этом в лог.
 - «Проверить пинг» просто делает ручной статус-запрос (без постоянных таймеров) и логирует причину `reason=ping`.
 - Внизу страницы есть блок «Сырые данные» — туда выводится всё, что пришло от API, чтобы можно было сравнить с `curl`.
 
 ### Диагностика
 - `[Diag] ...` события появляются, когда пользователь запускает встроенную проверку (ping/dns/tcp/http/https). Результаты показываются на экране и в логах.
-- Кнопка «Логи» открывает общий LogOverlay, так что при репортах достаточно приложить скрин с `[Proxy] status_*` и `[VPN] ...`.
+- Кнопка «Логи» открывает общий LogOverlay, так что при репортах достаточно приложить скрин с `[API] status_*` и `[VPN] ...`.
 - «Отчёт в поддержку» (кнопка «Скопировать сводку») формируется функцией `buildEnvironmentReport` и включает текущие host/порт/токен/последние ответы API.
+
+### Обновление HTTP API (`/diag/*`)
+- Все новые эндпоинты (`/diag/wg-show`, `/diag/ip-rule`, `/diag/server-snapshot` и т.д.) живут в `/usr/local/bin/wg_api_http.py`. После правок в репозитории обязательно перезаливайте скрипт на сервер:  
+  `cd OpenServer/tools && WG_HOST=45.151.183.153 WG_PASS=760RBeSbt57T python provision_wg_api_http.py`
+- Скрипт сам скопирует файл, обновит unit `wg-api-http.service`, выполнит `systemctl daemon-reload` и перезапустит службу. При необходимости можно вручную выполнить `systemctl restart wg-api-http.service`.
+- Перед запуском диагностики в приложении убедитесь, что `https://<host>:8787/diag/wg-show` и `/diag/ip-rule` отвечают 200 OK — иначе UI получит 404 и тесты не стартуют.
 
 ### Журналы подключения
 - `vpn_connection_client_log` — отдельный журнал внутри приложения (экран «Настройка сервера»). Можно мгновенно скопировать или сохранить файл через две специальные кнопки.
