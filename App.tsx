@@ -6,7 +6,6 @@ import React, {
   useState,
 } from 'react';
 import { Capacitor, type PermissionState, type PluginListenerHandle } from '@capacitor/core';
-import { App as CapacitorApp } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import {
   AdMob,
@@ -438,41 +437,6 @@ const App: React.FC = () => {
   useEffect(() => {
     exitPromptVisibleRef.current = confirmExitVisible;
   }, [confirmExitVisible]);
-
-  useEffect(() => {
-    if (!Capacitor.isPluginAvailable('App')) {
-      return;
-    }
-
-    let listener: PluginListenerHandle | undefined;
-
-    const registerBackHandler = async () => {
-      try {
-        listener = await CapacitorApp.addListener('backButton', () => {
-          if (screenRef.current !== 'home') {
-            resetToHome();
-            return;
-          }
-
-          if (exitPromptVisibleRef.current) {
-            setConfirmExitVisible(false);
-            return;
-          }
-
-          setConfirmExitVisible(true);
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        addLog(`[App] Failed to attach back handler: ${message}`);
-      }
-    };
-
-    void registerBackHandler();
-
-    return () => {
-      void listener?.remove();
-    };
-  }, [resetToHome, addLog]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1131,7 +1095,6 @@ const App: React.FC = () => {
     }
   }, [addLog]);
 
-
   const resetToHome = useCallback(() => {
     addLog('screen_home');
     setScreen('home');
@@ -1142,16 +1105,71 @@ const App: React.FC = () => {
     setBrowserUrlError(null);
   }, [addLog]);
 
+  useEffect(() => {
+    let listener: PluginListenerHandle | undefined;
+    let cancelled = false;
+
+    const registerBackHandler = async () => {
+      try {
+        const plugin = Capacitor.Plugins?.App as
+          | {
+              addListener: (
+                eventName: string,
+                listener: () => void
+              ) => Promise<PluginListenerHandle>;
+            }
+          | undefined;
+        if (!plugin) {
+          addLog('[App] App plugin not available on this platform');
+          return;
+        }
+        if (cancelled) {
+          return;
+        }
+        listener = await plugin.addListener('backButton', () => {
+          if (screenRef.current !== 'home') {
+            resetToHome();
+            return;
+          }
+
+          if (exitPromptVisibleRef.current) {
+            setConfirmExitVisible(false);
+            return;
+          }
+
+          setConfirmExitVisible(true);
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`[App] Failed to attach back handler: ${message}`);
+      }
+    };
+
+    void registerBackHandler();
+
+    return () => {
+      cancelled = true;
+      void listener?.remove();
+    };
+  }, [resetToHome, addLog]);
+
+
   const handleConfirmExit = useCallback(() => {
     setConfirmExitVisible(false);
-    if (Capacitor.isPluginAvailable('App')) {
-      void CapacitorApp.exitApp();
+    const plugin = Capacitor.Plugins?.App as { exitApp?: () => Promise<void> } | undefined;
+    if (plugin?.exitApp) {
+      void plugin
+        .exitApp()
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : String(error);
+          addLog(`[App] Failed to exit: ${message}`);
+        });
       return;
     }
     if (typeof window !== 'undefined') {
       window.close();
     }
-  }, []);
+  }, [addLog]);
 
   const handleCancelExit = useCallback(() => {
     setConfirmExitVisible(false);
