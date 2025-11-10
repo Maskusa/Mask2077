@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import { Capacitor, type PermissionState, type PluginListenerHandle } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import {
   AdMob,
@@ -323,6 +324,7 @@ const App: React.FC = () => {
   const [rate, setRate] = useState<number>(1);
   const [voiceId, setVoiceId] = useState<string>('');
   const [showLogs, setShowLogs] = useState(false);
+  const [confirmExitVisible, setConfirmExitVisible] = useState(false);
   const [availableFonts, setAvailableFonts] = useState<FontOption[]>([]);
   const [fontDetectionCompleted, setFontDetectionCompleted] = useState(false);
   const [selectedFontFamily, setSelectedFontFamily] = useState<string | null>(null);
@@ -356,6 +358,8 @@ const App: React.FC = () => {
   const remindersRef = useRef<Reminder[]>([]);
   const remindersLoadedRef = useRef<boolean>(false);
   const reminderLastTriggerRef = useRef<Map<string, number>>(new Map());
+  const screenRef = useRef<Screen>(screen);
+  const exitPromptVisibleRef = useRef<boolean>(false);
   const localNotificationPermission = useRef<PermissionState>('prompt');
   const adSubscriptions = useRef<PluginListenerHandle[]>([]);
 
@@ -426,6 +430,49 @@ const App: React.FC = () => {
   useEffect(() => {
     remindersRef.current = reminders;
   }, [reminders]);
+
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
+
+  useEffect(() => {
+    exitPromptVisibleRef.current = confirmExitVisible;
+  }, [confirmExitVisible]);
+
+  useEffect(() => {
+    if (!Capacitor.isPluginAvailable('App')) {
+      return;
+    }
+
+    let listener: PluginListenerHandle | undefined;
+
+    const registerBackHandler = async () => {
+      try {
+        listener = await CapacitorApp.addListener('backButton', () => {
+          if (screenRef.current !== 'home') {
+            resetToHome();
+            return;
+          }
+
+          if (exitPromptVisibleRef.current) {
+            setConfirmExitVisible(false);
+            return;
+          }
+
+          setConfirmExitVisible(true);
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        addLog(`[App] Failed to attach back handler: ${message}`);
+      }
+    };
+
+    void registerBackHandler();
+
+    return () => {
+      void listener?.remove();
+    };
+  }, [resetToHome, addLog]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1094,6 +1141,21 @@ const App: React.FC = () => {
     setBrowserUrlInput(DEFAULT_BROWSER_URL);
     setBrowserUrlError(null);
   }, [addLog]);
+
+  const handleConfirmExit = useCallback(() => {
+    setConfirmExitVisible(false);
+    if (Capacitor.isPluginAvailable('App')) {
+      void CapacitorApp.exitApp();
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      window.close();
+    }
+  }, []);
+
+  const handleCancelExit = useCallback(() => {
+    setConfirmExitVisible(false);
+  }, []);
 
   const buildWebPortalUrl = useCallback(() => {
     try {
@@ -2533,10 +2595,26 @@ const App: React.FC = () => {
         onClose={() => setShowLogs(false)}
         onClear={clearLogs}
       />
+      {confirmExitVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-6">
+          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900/95 p-6 shadow-2xl space-y-4">
+            <h3 className="text-xl font-semibold text-center">Выйти из приложения?</h3>
+            <p className="text-sm text-slate-300 text-center">
+              Нажмите «Выйти», чтобы закрыть Mask2077, или останьтесь, чтобы продолжить работу.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button variant="neutral" className="sm:flex-1" onClick={handleCancelExit}>
+                Остаться
+              </Button>
+              <Button variant="secondary" className="sm:flex-1" onClick={handleConfirmExit}>
+                Выйти
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default App;
-
-
