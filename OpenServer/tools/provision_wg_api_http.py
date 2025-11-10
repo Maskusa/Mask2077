@@ -30,6 +30,9 @@ WG_INTERFACE = os.environ.get('WG_INTERFACE', 'wg0')
 WG_CONFIG_PATH = os.environ.get('WG_CONFIG_PATH', f'/etc/wireguard/{WG_INTERFACE}.conf')
 PUB_ENDPOINT = os.environ.get('PUB_ENDPOINT')
 
+class ClientRequestError(Exception):
+    pass
+
 def write_server_log(message):
     try:
         timestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
@@ -366,7 +369,7 @@ def issue_device_profile(payload):
     raw_device_id = payload.get('device_id') or payload.get('deviceId')
     device_id = sanitize_device_id(raw_device_id)
     if not device_id:
-        raise RuntimeError('device_id required')
+        raise ClientRequestError('device_id required')
     profile = read_device_profile(device_id)
     created = False
     if profile and needs_profile_refresh(profile):
@@ -938,6 +941,9 @@ class H(BaseHTTPRequestHandler):
                 return
             self._json(404, {'ok': False, 'error': 'not found'})
             self._log_request(path, 'not_found')
+        except ClientRequestError as e:
+            self._json(400, {'ok': False, 'error': str(e)})
+            self._log_request(path, 'bad_request', str(e))
         except Exception as e:
             self._json(500, {'ok': False, 'error': str(e)})
             self._log_request(path, 'error', str(e))

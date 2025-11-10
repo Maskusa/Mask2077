@@ -108,6 +108,59 @@ const DEFAULT_WIREGUARD_KEEPALIVE = '25';
 const DEFAULT_WIREGUARD_ALLOWED_IPS = '0.0.0.0/0, ::/0';
 const API_VERBOSE_PREVIEW_LIMIT = 4000;
 const MAX_VPN_LOG_ENTRIES = 500;
+const FULL_TEST_TYPES = [
+  { id: 'ping', label: 'PING 1.1.1.1' },
+  { id: 'dns', label: 'DNS 1.1.1.1' },
+  { id: 'tcp', label: 'TCP 80' },
+  { id: 'udp', label: 'UDP 53' },
+  { id: 'http', label: 'HTTP 1.1.1.1' },
+  { id: 'https', label: 'HTTPS api.ipify.org' },
+] as const;
+type FullTestType = (typeof FULL_TEST_TYPES)[number]['id'];
+
+interface DiagResult {
+  status: 'idle' | 'pending' | 'success' | 'error';
+  latencyMs?: number | null;
+  message?: string | null;
+}
+
+const buildInitialDiagResults = (): Record<FullTestType, DiagResult> =>
+  FULL_TEST_TYPES.reduce(
+    (acc, test) => {
+      acc[test.id] = { status: 'idle' };
+      return acc;
+    },
+    {} as Record<FullTestType, DiagResult>
+  );
+
+const getDiagStatusMeta = (status: DiagResult['status']) => {
+  switch (status) {
+    case 'success':
+      return {
+        label: 'Успешно',
+        container: 'bg-emerald-500/10 border-emerald-400/50 text-emerald-100',
+        pill: 'bg-emerald-500/20 text-emerald-100',
+      };
+    case 'error':
+      return {
+        label: 'Ошибка',
+        container: 'bg-rose-500/10 border-rose-400/50 text-rose-100',
+        pill: 'bg-rose-500/20 text-rose-100',
+      };
+    case 'pending':
+      return {
+        label: 'В процессе',
+        container: 'bg-amber-500/10 border-amber-400/50 text-amber-100',
+        pill: 'bg-amber-500/20 text-amber-900',
+      };
+    default:
+      return {
+        label: 'Не запускался',
+        container: 'bg-slate-800/70 border-slate-700/70 text-slate-200',
+        pill: 'bg-slate-700/70 text-slate-200',
+      };
+  }
+};
 
 interface ExternalIpSource {
   id: string;
@@ -545,13 +598,19 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   const [warning, setWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [pinging, setPinging] = useState(false);
+  const [diagnosticsRunning, setDiagnosticsRunning] = useState(false);
   const [vpnLog, setVpnLog] = useState<string[]>([]);
+  const [initialIp, setInitialIp] = useState<string | null>(null);
   const [currentIp, setCurrentIp] = useState<string | null>(null);
   const [ipSourceLabel, setIpSourceLabel] = useState<string | null>(null);
   const [ipError, setIpError] = useState<string | null>(null);
   const [statusReport, setStatusReport] = useState('');
   const [diagProgress, setDiagProgress] = useState<string | null>(null);
+  const [diagResults, setDiagResults] = useState<Record<FullTestType, DiagResult>>(
+    () => buildInitialDiagResults()
+  );
+  const [diagProgressValue, setDiagProgressValue] = useState(0);
+  const [lastDiagAt, setLastDiagAt] = useState<number | null>(null);
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const deviceIdRef = useRef<string | null>(loadStoredDeviceId());
@@ -575,6 +634,20 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         }
         return next;
       });
+    },
+    []
+  );
+
+  const resetDiagResults = useCallback(
+    (initialStatus: DiagResult['status'] = 'idle') => {
+      setDiagResults(() => {
+        const initial = buildInitialDiagResults();
+        FULL_TEST_TYPES.forEach(({ id }) => {
+          initial[id] = { status: initialStatus };
+        });
+        return initial;
+      });
+      setDiagProgressValue(0);
     },
     []
   );
@@ -612,51 +685,69 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   const buildApiContext = useCallback(() => {
     const host = form.host.trim() || PROXY_CONFIG.host;
     const token = form.apiToken.trim() || PROXY_CONFIG.apiToken;
-    const apiBase = normalizeApiBase(form.apiBase, host);
-    return { host, token, apiBase };
+    const primaryBase = normalizeApiBase(form.apiBase, host);
+    const fallbackBase = primaryBase.replace(/^https:/, 'http:');
+    const candidateBases = primaryBase === fallbackBase ? [primaryBase] : [primaryBase, fallbackBase];
+    return { host, token, candidateBases };
   }, [form.apiBase, form.apiToken, form.host]);
 
   const callServerApi = useCallback(
     async (path: string, options: CallServerApiOptions = {}): Promise<ApiCallResult> => {
-      const { host, token, apiBase } = buildApiContext();
-      const base = normalizeApiBase(apiBase, host);
+      const { token, candidateBases } = buildApiContext();
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-      const url = `${base}${normalizedPath}`;
       const method = (options.method ?? 'GET').toUpperCase() as CallServerApiOptions['method'];
       const headers: Record<string, string> = {
         Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8',
         'X-Auth-Token': token ?? '',
       };
       const body = options.body ?? null;
+      const methodSupportsBody = method !== 'GET' && method !== 'DELETE';
+      const shouldSendBody = methodSupportsBody && body !== null;
+      if (shouldSendBody) {
+        headers['Content-Type'] = 'application/json';
+      }
       try {
-        const started = Date.now();
-        const response = await CapacitorHttp.request({
-          url,
-          method,
-          headers,
-          data: body ?? undefined,
-        });
-        if ((response.status ?? 200) >= 400) {
-          throw new Error(`HTTP ${response.status} for ${normalizedPath}`);
+        let lastError: Error | null = null;
+        for (const base of candidateBases) {
+          const url = `${base}${normalizedPath}`;
+          const started = Date.now();
+          try {
+            const response = await CapacitorHttp.request({
+              url,
+              method,
+              headers,
+              data: shouldSendBody ? JSON.stringify(body) : undefined,
+            });
+            if ((response.status ?? 200) >= 400) {
+              throw new Error(`HTTP ${response.status} for ${normalizedPath}`);
+            }
+            const data = response.data ?? null;
+            appendVpnLog('API', 'success', {
+              path: normalizedPath,
+              durationMs: Date.now() - started,
+              description: options.description ?? null,
+              base,
+            });
+            appendVpnLog('API_VERBOSE', 'payload', {
+              path: normalizedPath,
+              preview: buildPayloadPreview(data),
+            });
+            return { data, apiBase: base, tokenUsed: token };
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            appendVpnLog('API_ERROR', 'request_failed', {
+              url,
+              description: options.description ?? null,
+              error: message,
+            });
+            lastError = error instanceof Error ? error : new Error(message);
+            if (!message.toLowerCase().includes('tls packet header') || base.startsWith('http://')) {
+              break;
+            }
+          }
         }
-        const data = response.data ?? null;
-        appendVpnLog('API', 'success', {
-          path: normalizedPath,
-          durationMs: Date.now() - started,
-          description: options.description ?? null,
-        });
-        appendVpnLog('API_VERBOSE', 'payload', {
-          path: normalizedPath,
-          preview: buildPayloadPreview(data),
-        });
-        return { data, apiBase: base, tokenUsed: token };
+        throw lastError ?? new Error('API request failed');
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        appendVpnLog('API_ERROR', 'request_failed', {
-          url,
-          description: options.description ?? null,
-          error: message,
-        });
         throw error;
       }
     },
@@ -791,6 +882,9 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         }
         const ip = parseExternalIp(source, response.data ?? null);
         if (ip && ip.length > 2) {
+          if (!initialIp) {
+            setInitialIp(ip);
+          }
           setCurrentIp(ip);
           setIpSourceLabel(source.label);
           setIpError(null);
@@ -808,7 +902,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     setIpSourceLabel(null);
     appendVpnLog('IP_ERROR', 'failed to detect IP', { error: combined });
     return null;
-  }, [appendVpnLog]);
+  }, [appendVpnLog, initialIp]);
 
   const refreshStatus = useCallback(
     async (options: { reason: RefreshReason; silent?: boolean } = { reason: 'manual' }) => {
@@ -965,6 +1059,25 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     }
   }, [appendVpnLog, isNativePlatform, vpnPluginAvailable]);
 
+const handleServerSnapshot = useCallback(async () => {
+    setDiagProgress('Собираем снимок сервера...');
+    try {
+      const response = await callServerApi('/diag/server-snapshot', {
+        method: 'POST',
+        description: 'server_diag_snapshot',
+      });
+      appendVpnLog('SERVER_SNAPSHOT', 'collected', {
+        preview: buildPayloadPreview(response.data),
+      });
+      setDiagProgress('Снимок сервера готов');
+      setWarning(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendVpnLog('SERVER_SNAPSHOT_ERROR', 'failed', { error: message }, true);
+      setDiagProgress(`Ошибка снимка сервера: ${message}`);
+      setWarning(`Снимок сервера: ${message}`);
+    }
+  }, [appendVpnLog, callServerApi]);
   const shareStatus = useCallback(async () => {
     const report = buildEnvironmentReport(runtime, form, serverMetrics, runtime.enabled);
     try {
@@ -994,48 +1107,123 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       setDiagProgress('Диагностика доступна только в нативной версии приложения');
       return;
     }
-    setPinging(true);
-    setDiagProgress('Проверяем HTTP/HTTPS');
-    appendVpnLog('PING', 'diagnostic_request');
+    setDiagnosticsRunning(true);
+    setDiagProgress('Запускаем полный тест (PING/DNS/TCP/UDP/HTTP/HTTPS)...');
+    resetDiagResults('pending');
+    setLastDiagAt(null);
+    appendVpnLog('DIAG', 'full_test_requested', {
+      host: form.host || PROXY_CONFIG.host,
+      httpPort: form.httpPort,
+    });
     try {
       const request: VpnDiagnosticRequest = {
         host: form.host || PROXY_CONFIG.host,
         port: Number(form.httpPort) || 8080,
-        tests: ['http', 'https'],
-        timeoutMs: 7000,
+        tests: ['ping', 'dns', 'tcp', 'http', 'https'],
+        timeoutMs: 8000,
       };
       const diagnostic = await NativeVpn.diagnose(request);
+      const upcomingResults = buildInitialDiagResults();
+      FULL_TEST_TYPES.forEach(({ id }) => {
+        upcomingResults[id] = { status: 'pending' };
+      });
+      let processed = 0;
+      const totalTracked = FULL_TEST_TYPES.length;
       diagnostic.results.forEach((entry: VpnDiagnosticEntry) => {
-        appendVpnLog('DIAG', 'result', {
+        const normalized = (entry.type ?? '').toLowerCase() as FullTestType;
+        appendVpnLog('DIAG_RESULT', 'full_test', {
           type: entry.type,
           success: entry.success,
           latencyMs: entry.latencyMs,
+          status: entry.status ?? null,
           message: entry.message ?? null,
         });
+        if (FULL_TEST_TYPES.some((test) => test.id === normalized)) {
+          processed += 1;
+          upcomingResults[normalized] = {
+            status: entry.success ? 'success' : 'error',
+            latencyMs: entry.latencyMs ?? null,
+            message: entry.message ?? null,
+          };
+          setDiagProgressValue(Math.min(processed / totalTracked, 1));
+        }
       });
-      setDiagProgress('Диагностика завершена');
+      FULL_TEST_TYPES.forEach(({ id }) => {
+        if (upcomingResults[id].status === 'pending') {
+          upcomingResults[id] =
+            id === 'udp'
+              ? { status: 'idle', message: 'Тест UDP недоступен на этом клиенте' }
+              : { status: 'error', message: 'Нет данных от диагностики' };
+        }
+      });
+      setDiagResults(upcomingResults);
+      setLastDiagAt(Date.now());
+      setDiagProgressValue(1);
+      setDiagProgress('Полный тест завершён');
+      await refreshExternalIp();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      appendVpnLog('DIAG_ERROR', 'diagnostic_failed', { error: message });
-      setDiagProgress(`Ошибка диагностики: ${message}`);
+      appendVpnLog('DIAG_ERROR', 'full_test_failed', { error: message });
+      setDiagProgress(`Ошибка полного теста: ${message}`);
+      setDiagProgressValue(0);
+      setDiagResults((prev) => {
+        const failed = { ...prev };
+        Object.keys(failed).forEach((key) => {
+          if (failed[key as FullTestType].status === 'pending') {
+            failed[key as FullTestType] = {
+              status: 'error',
+              message,
+            };
+          }
+        });
+        return failed;
+      });
     } finally {
-      setPinging(false);
+      setDiagnosticsRunning(false);
     }
-  }, [appendVpnLog, form.host, form.httpPort]);
+  }, [
+    appendVpnLog,
+    form.host,
+    form.httpPort,
+    isNativePlatform,
+    refreshExternalIp,
+    resetDiagResults,
+    vpnPluginAvailable,
+  ]);
 
-  const handleExportLog = useCallback(async () => {
+  const handleShareLog = useCallback(async () => {
+    if (vpnLog.length === 0) {
+      setDiagProgress('Журнал пока пуст — включите VPN или запустите тест.');
+      return;
+    }
+    const fileName = `wireguard-log-${Date.now()}.txt`;
+    const directory = Directory.Cache;
     try {
-      const fileName = `vpn-log-${Date.now()}.txt`;
       await Filesystem.writeFile({
         path: fileName,
         data: vpnLog.join('\n'),
         encoding: FilesystemEncoding.UTF8,
-        directory: Directory.Documents,
+        directory,
       });
-      appendVpnLog('LOG', 'exported', { fileName });
+      let shareUrl: string | undefined;
+      if (typeof Filesystem.getUri === 'function' && Capacitor.getPlatform() !== 'web') {
+        const uri = await Filesystem.getUri({ directory, path: fileName });
+        shareUrl = uri.uri;
+      } else {
+        const fileData = await Filesystem.readFile({ directory, path: fileName });
+        shareUrl = `data:text/plain;base64,${fileData.data}`;
+      }
+      await Share.share({
+        title: 'WireGuard журнал',
+        text: 'Во вложении файл журнала.',
+        url: shareUrl,
+        dialogTitle: 'Поделиться журналом',
+      });
+      appendVpnLog('LOG', 'shared_file', { fileName, lines: vpnLog.length });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      appendVpnLog('LOG_ERROR', 'export_failed', { error: message });
+      appendVpnLog('LOG_ERROR', 'share_failed', { error: message });
+      setDiagProgress(`Не удалось поделиться журналом: ${message}`);
     }
   }, [appendVpnLog, vpnLog]);
 
@@ -1059,7 +1247,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-3xl bg-slate-800/70 backdrop-blur p-8 shadow-xl space-y-6 border border-slate-700">
+      <section className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-black border border-emerald-500/20 shadow-[0_25px_60px_rgba(16,185,129,0.15)] backdrop-blur-xl p-8 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h2 className="text-xl font-semibold text-white">WireGuard сервер</h2>
@@ -1092,26 +1280,65 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button variant="primary" disabled={!canStart} onClick={handleEnableProxy}>
-            {loading && !vpnRunning ? 'Проверяем конфиг...' : 'Включить VPN'}
+          <Button
+            variant="neutral"
+            disabled={!canStart}
+            onClick={handleEnableProxy}
+            className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-lg shadow-emerald-500/30"
+          >
+            {loading && !vpnRunning ? 'Запрашиваем профиль...' : 'Включить VPN'}
           </Button>
-          <Button variant="danger" disabled={!canStop} onClick={handleDisableProxy}>
+          <Button
+            variant="neutral"
+            disabled={!canStop}
+            onClick={handleDisableProxy}
+            className="bg-rose-500 text-white hover:bg-rose-400 shadow-lg shadow-rose-500/30"
+          >
             {loading && vpnRunning ? 'Отключаем...' : 'Выключить VPN'}
           </Button>
-          <Button variant="neutral" disabled={!canRefresh} onClick={() => void refreshStatus({ reason: 'manual' })}>
+          <Button
+            variant="neutral"
+            disabled={!canRefresh}
+            onClick={() => void refreshStatus({ reason: 'manual' })}
+            className="bg-sky-500/80 text-white hover:bg-sky-400 shadow-md shadow-sky-500/30"
+          >
             {refreshing ? 'Обновляем...' : 'Обновить статус'}
           </Button>
-          <Button variant="neutral" disabled={pinging} onClick={handlePing}>
-            {pinging ? 'Диагностика...' : 'Пинг / HTTPS тест'}
+          <Button
+            variant="neutral"
+            disabled={diagnosticsRunning}
+            onClick={handlePing}
+            className="bg-violet-500/80 text-white hover:bg-violet-400 shadow-md shadow-violet-500/30"
+          >
+            {diagnosticsRunning ? 'Полный тест…' : 'Полный тест'}
           </Button>
-          <Button variant="neutral" onClick={() => void refreshExternalIp()}>
-            Мой IP
+          <Button
+            variant="neutral"
+            onClick={handleServerSnapshot}
+            className="bg-amber-500/80 text-slate-900 hover:bg-amber-400 shadow-md shadow-amber-500/30"
+          >
+            Снимок сервера
           </Button>
-          <Button variant="neutral" onClick={shareStatus}>
-            Экспортировать статус
+          <Button
+            variant="neutral"
+            onClick={() => void refreshExternalIp()}
+            className="bg-cyan-500/80 text-slate-900 hover:bg-cyan-400 shadow-md shadow-cyan-500/30"
+          >
+            Обновить новый IP
           </Button>
-          <Button variant="neutral" onClick={handleExportLog}>
-            Экспортировать лог
+          <Button
+            variant="neutral"
+            onClick={shareStatus}
+            className="bg-fuchsia-500/80 text-white hover:bg-fuchsia-400 shadow-md shadow-fuchsia-500/30"
+          >
+            Поделиться статусом
+          </Button>
+          <Button
+            variant="neutral"
+            onClick={handleShareLog}
+            className="bg-indigo-500/80 text-white hover:bg-indigo-400 shadow-md shadow-indigo-500/30"
+          >
+            Поделиться журналом
           </Button>
         </div>
 
@@ -1120,7 +1347,56 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         {diagProgress && <p className="text-slate-300 text-sm">{diagProgress}</p>}
       </section>
 
-      <section className="rounded-3xl bg-slate-900/60 p-8 border border-slate-800 space-y-4">
+      <section className="rounded-3xl bg-slate-950/70 border border-cyan-500/20 shadow-[0_20px_45px_rgba(0,212,255,0.1)] p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Полный тест</h3>
+            <p className="text-sm text-slate-400">
+              Контроль PING/DNS/TCP/UDP/HTTP/HTTPS через 1.1.1.1 и api.ipify.org
+            </p>
+          </div>
+          <div className="text-sm text-slate-300">
+            <p>Последний запуск: {lastDiagAt ? formatTimestamp(lastDiagAt) : 'ещё не запускался'}</p>
+            <p>Статус: {diagProgress ?? (lastDiagAt ? 'Тест завершён' : 'Ожидает запуска')}</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="h-2 rounded-full bg-slate-800/70 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 transition-all duration-300"
+              style={{ width: `${Math.min(100, Math.round(diagProgressValue * 100))}%` }}
+            />
+          </div>
+          <p className="text-xs text-slate-400">
+            Прогресс: {Math.round(diagProgressValue * 100)}%
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {FULL_TEST_TYPES.map(({ id, label }) => {
+            const result = diagResults[id];
+            const meta = getDiagStatusMeta(result.status);
+            return (
+              <div
+                key={id}
+                className={`rounded-2xl border px-4 py-5 backdrop-blur ${meta.container}`}
+              >
+                <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest ${meta.pill}`}>
+                  {meta.label}
+                </div>
+                <p className="mt-3 text-base font-medium">{label}</p>
+                {result.latencyMs != null && (
+                  <p className="text-sm text-slate-200 mt-1">Latency: {result.latencyMs} ms</p>
+                )}
+                {result.message && (
+                  <p className="text-xs text-slate-300 mt-2 break-words">{result.message}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 border border-cyan-500/15 space-y-4 shadow-[0_15px_45px_rgba(59,130,246,0.12)]">
         <header className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h3 className="text-lg font-semibold text-white">Статус туннеля</h3>
@@ -1155,14 +1431,16 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-300">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 text-sm text-slate-300">
           <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
-            <p className="text-xs uppercase tracking-widest text-slate-400">Внешний IP</p>
+            <p className="text-xs uppercase tracking-widest text-slate-400">Мой IP (при запуске)</p>
+            <p>{initialIp ?? 'не зафиксирован'}</p>
+            <p className="text-xs text-slate-400">Снимок захвачен при открытии экрана</p>
+          </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
+            <p className="text-xs uppercase tracking-widest text-slate-400">Новый IP (через VPN)</p>
             <p>{currentIp ?? 'нет данных'}</p>
-            <p className="text-xs text-slate-400">
-              Источник: {ipSourceLabel ?? 'н/д'}{' '}
-              {ipError ? `Ошибка: ${ipError}` : ''}
-            </p>
+            <p className="text-xs text-slate-400">Источник: {ipSourceLabel ?? 'н/д'} {ipError ? `• Ошибка: ${ipError}` : ''}</p>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
             <p className="text-xs uppercase tracking-widest text-slate-400">API база</p>
@@ -1174,7 +1452,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         </div>
       </section>
 
-      <section className="rounded-3xl bg-slate-900/60 p-8 border border-slate-800 space-y-4">
+      <section className="rounded-3xl bg-slate-950/70 p-8 border border-violet-500/15 space-y-4 shadow-[0_20px_50px_rgba(139,92,246,0.12)]">
         <header className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h3 className="text-lg font-semibold text-white">WireGuard лог</h3>
@@ -1190,7 +1468,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         </pre>
       </section>
 
-      <section className="rounded-3xl bg-slate-900/60 p-8 border border-slate-800 space-y-4">
+      <section className="rounded-3xl bg-slate-950/70 p-8 border border-slate-800/70 space-y-4 shadow-[0_20px_50px_rgba(148,163,184,0.12)]">
         <header>
           <h3 className="text-lg font-semibold text-white">Отчёт окружения</h3>
           <p className="text-sm text-slate-400">
