@@ -29,6 +29,29 @@ DEVICE_STORE = '/etc/wireguard/device_profiles'
 WG_INTERFACE = os.environ.get('WG_INTERFACE', 'wg0')
 WG_CONFIG_PATH = os.environ.get('WG_CONFIG_PATH', f'/etc/wireguard/{WG_INTERFACE}.conf')
 PUB_ENDPOINT = os.environ.get('PUB_ENDPOINT')
+PROBE_PORTS_FILE = os.environ.get('PROBE_PORTS_FILE', '/etc/wireguard/probe_ports.txt')
+DEFAULT_PROBE_PORTS = [
+    443,
+    1443,
+    8080,
+    8443,
+    3389,
+    15443,
+    51820,
+    58210,
+    20053,
+    33445,
+    1315,
+    1194,
+    8888,
+    10053,
+    12912,
+    1024,
+    53,
+    123,
+    500,
+    65065,
+]
 
 class ClientRequestError(Exception):
     pass
@@ -516,6 +539,19 @@ def get_token():
     with open(TOKEN_FILE, 'r') as f:
         return f.read().strip()
 
+def load_probe_ports():
+    ports = []
+    try:
+        with open(PROBE_PORTS_FILE, 'r') as f:
+            for line in f:
+                entry = line.strip()
+                if not entry:
+                    continue
+                ports.append(int(entry))
+    except Exception:
+        pass
+    return ports or list(DEFAULT_PROBE_PORTS)
+
 def ctrl(action):
     if not os.path.exists(CTRL_SCRIPT):
         raise RuntimeError('tcpdump control script missing')
@@ -800,6 +836,11 @@ class H(BaseHTTPRequestHandler):
             if path == '/proxy/users':
                 self._json(200, {'ok': True, 'users': read_proxy_users()})
                 self._log_request(path, 'ok', 'users_listed')
+                return
+            if path == '/probe/ports':
+                ports = load_probe_ports()
+                self._json(200, {'ok': True, 'ports': ports})
+                self._log_request(path, 'ok', f"ports={len(ports)}")
                 return
             self._json(404, {'ok': False, 'error': 'not found'})
             self._log_request(path, 'not_found')

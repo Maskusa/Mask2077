@@ -15,14 +15,19 @@ WAN_IF="${WAN_IF:-$(ip -o -4 route show to default | awk '{print $5}' | head -n1
 # Keep this list in sync with components/ServerSettings.tsx > ENDPOINT_PORT_PROBES.
 # Add extra "popular" ports that frequently bypass ISP firewalls so diagnostics
 # can find at least one reachable option.
-PORTS=(
+PROBE_PORTS_FILE="${PROBE_PORTS_FILE:-/etc/wireguard/probe_ports.txt}"
+DEFAULT_PORTS=(
+  443
+  1443
+  8080
+  8443
+  3389
+  15443
   51820
   58210
   20053
   33445
   1315
-  1443
-  443
   1194
   8888
   10053
@@ -31,12 +36,24 @@ PORTS=(
   53
   123
   500
-  8080
-  8443
-  3389
-  15443
   65065
 )
+
+PORTS=("${DEFAULT_PORTS[@]}")
+
+load_probe_ports() {
+  if [[ -f "$PROBE_PORTS_FILE" ]]; then
+    mapfile -t loaded <"$PROBE_PORTS_FILE"
+    PORTS=()
+    for entry in "${loaded[@]}"; do
+      port=$(printf '%s' "$entry" | tr -d '[:space:]')
+      if [[ -n "$port" ]]; then
+        PORTS+=("$port")
+      fi
+    done
+  fi
+}
+load_probe_ports
 
 log() {
   local msg="$1"

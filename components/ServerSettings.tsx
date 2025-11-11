@@ -120,16 +120,26 @@ const FULL_TEST_TYPES = [
 ] as const;
 type FullTestType = (typeof FULL_TEST_TYPES)[number]['id'];
 const ENDPOINT_PORT_PROBES = [
+  443,
+  1443,
+  8080,
+  8443,
+  3389,
+  15443,
   51820,
   58210,
   20053,
   33445,
-  1443,
-  443,
+  1315,
   1194,
   8888,
   10053,
   12912,
+  1024,
+  53,
+  123,
+  500,
+  65065,
 ];
 const DNS_PROBE_HOSTS = [
   '45-151-183-153.sslip.io',
@@ -584,6 +594,20 @@ const extractEndpointInfo = (configText: string): WireGuardEndpointInfo | null =
   };
 };
 
+const overrideWireGuardEndpoint = (
+  configText: string,
+  endpoint: WireGuardEndpointInfo
+): string => {
+  const regex = /(Endpoint\s*=\s*)([^\s:]+):(\d+)/i;
+  if (!regex.test(configText)) {
+    return configText;
+  }
+  return configText.replace(
+    regex,
+    (_match, prefix: string) => `${prefix}${endpoint.host}:${endpoint.port}`
+  );
+};
+
 const extractListenPortFromSummary = (payload: unknown): number | null => {
   if (typeof payload === 'string') {
     const match = payload.match(/listening port:\s*(\d+)/i);
@@ -803,6 +827,13 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   });
   const [connectionChecklist, setConnectionChecklist] =
     useState<ConnectionChecklistState>(() => buildInitialChecklistState());
+  const [probePortList, setProbePortList] = useState<number[]>(ENDPOINT_PORT_PROBES);
+  const [testBlockInProgress, setTestBlockInProgress] = useState(false);
+  const [testBlockStatus, setTestBlockStatus] = useState<string | null>(null);
+  const displayedPortList = useMemo(
+    () => (probePortList.length > 0 ? probePortList : ENDPOINT_PORT_PROBES),
+    [probePortList]
+  );
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const deviceIdRef = useRef<string | null>(loadStoredDeviceId());
@@ -886,17 +917,23 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   );
 
   const runPortProbeMatrix = useCallback(
-    async (host: string, phase: ProbePhase) => {
+    async (host: string, phase: ProbePhase, ports?: number[]) => {
       if (!host) {
         return [];
       }
-      appendVpnLog('PORT_PROBE', `${phase}_start`, { host, ports: ENDPOINT_PORT_PROBES });
+      const availablePorts =
+        ports && ports.length > 0
+          ? ports
+          : probePortList.length > 0
+          ? probePortList
+          : ENDPOINT_PORT_PROBES;
+      appendVpnLog('PORT_PROBE', `${phase}_start`, { host, ports: availablePorts });
       if (!vpnPluginAvailable || !NativeVpn?.diagnose) {
-        const fallbackRows = ENDPOINT_PORT_PROBES.map<PortProbeRow>((port) => ({
+        const fallbackRows = availablePorts.map<PortProbeRow>((port) => ({
           port,
           success: false,
           latencyMs: null,
-          message: 'Диагностика недоступна (NativeVpn)',
+          message: '??????????? ?????????? (NativeVpn)',
         }));
         setPortProbeResults((previous) => ({
           ...previous,
@@ -910,7 +947,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         return fallbackRows;
       }
       const rows: PortProbeRow[] = [];
-      for (const port of ENDPOINT_PORT_PROBES) {
+      for (const port of availablePorts) {
         try {
           const diagnostic = await NativeVpn.diagnose({
             host,
@@ -943,9 +980,8 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       }));
       return rows;
     },
-    [appendVpnLog, vpnPluginAvailable]
+    [appendVpnLog, probePortList, vpnPluginAvailable]
   );
-
   const runDnsProbeMatrix = useCallback(
     async (hosts: string[], phase: ProbePhase) => {
       if (!hosts || hosts.length === 0) {
@@ -1113,6 +1149,29 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     [appendVpnLog, buildApiContext]
   );
 
+  const loadProbePorts = useCallback(async (): Promise<number[]> => {
+    try {
+      const response = await callServerApi('/probe/ports', {
+        method: 'GET',
+        description: 'probe_ports',
+      });
+      const portsPayload = response.data ?? {};
+      const ports = Array.isArray(portsPayload?.ports) ? portsPayload.ports : [];
+      const normalized = ports
+        .map((port) => Number(port))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      if (normalized.length > 0) {
+        setProbePortList(normalized);
+        appendVpnLog('PROBE_PORTS', 'loaded', { count: normalized.length });
+        return normalized;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendVpnLog('PROBE_PORTS', 'load_failed', { error: message });
+    }
+    return probePortList.length > 0 ? probePortList : ENDPOINT_PORT_PROBES;
+  }, [appendVpnLog, callServerApi, probePortList]);
+
   const resolveDeviceId = useCallback(async (): Promise<string> => {
     if (deviceIdRef.current) {
       return deviceIdRef.current;
@@ -1193,7 +1252,8 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
               .join(', ')}`
           : 'DNS не отвечает (до подключения)'
       );
-      const portMatrix = await runPortProbeMatrix(endpointInfo.host, 'pre');
+      const availablePorts = await loadProbePorts();
+      const portMatrix = await runPortProbeMatrix(endpointInfo.host, 'pre', availablePorts);
       const reachablePort = portMatrix.find((row) => row.success);
       updateChecklistStep(
         'endpointReachable',
@@ -1202,6 +1262,14 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           ? `TCP ${reachablePort.port} (${reachablePort.latencyMs ?? '?'} мс)`
           : 'Нет доступных портов (до подключения)'
       );
+
+      const effectiveEndpointInfo = reachablePort
+        ? { ...endpointInfo, port: reachablePort.port }
+        : endpointInfo;
+      const configText =
+        reachablePort && reachablePort.port !== endpointInfo.port
+          ? overrideWireGuardEndpoint(normalizedConfig, effectiveEndpointInfo)
+          : normalizedConfig;
       const serverListenPort = extractListenPortFromSummary(wgStatusResponse.data);
       const reused = Boolean(profilePayload.reused);
       appendVpnLog(
@@ -1209,10 +1277,14 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         reused ? 'profile reused from cache' : 'new profile issued',
         {
           deviceId,
-          endpointPort: endpointInfo.port,
+          endpointPort: effectiveEndpointInfo.port,
+          profilePort: endpointInfo.port,
           serverListenPort: serverListenPort ?? 'n/a',
           profileIp: profilePayload.ip ?? 'n/a',
           profileName: profilePayload.name ?? 'n/a',
+          endpointPortOverridden:
+            Boolean(reachablePort && reachablePort.port !== endpointInfo.port) ||
+            undefined,
         },
         true
       );
@@ -1224,9 +1296,10 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       updateChecklistStep(
         'profileReady',
         'success',
-        `${endpointInfo.host}:${endpointInfo.port}`
+        `${effectiveEndpointInfo.host}:${effectiveEndpointInfo.port}`
       );
       if (
+        !reachablePort &&
         serverListenPort &&
         endpointInfo.port &&
         serverListenPort !== endpointInfo.port
@@ -1246,8 +1319,8 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         );
       }
       return {
-        configText: normalizedConfig,
-        endpointInfo,
+        configText,
+        endpointInfo: effectiveEndpointInfo,
         serverListenPort,
         profileMeta: {
           deviceId,
@@ -1257,7 +1330,16 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         },
       };
     },
-    [appendVpnLog, callServerApi, resolveDeviceId, runDnsProbeMatrix, runPortProbeMatrix, updateChecklistStep]
+      [
+        appendVpnLog,
+        callServerApi,
+        loadProbePorts,
+        resolveDeviceId,
+        runDnsProbeMatrix,
+        runPortProbeMatrix,
+        updateChecklistStep,
+        overrideWireGuardEndpoint,
+      ]
   );
 
   const verifyEndpointReachability = useCallback(
@@ -1312,6 +1394,27 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     },
     [updateChecklistStep, vpnPluginAvailable]
   );
+
+  const handleTestBlockUdp = useCallback(async () => {
+    setTestBlockInProgress(true);
+    setTestBlockStatus(
+      'Шаги: 1) заблокируйте UDP на устройстве/сети. 2) нажмите Test block UDP. 3) дождитесь результатов preflight и запустите VPN на указанном порту.'
+    );
+    appendVpnLog('TEST_BLOCK_UDP', 'start', null, true);
+    try {
+      await loadProbePorts();
+      const preflight = await performWireGuardPreflight();
+      setTestBlockStatus(
+        `Тест завершён. Endpoint: ${preflight.endpointInfo.host}:${preflight.endpointInfo.port}. Проверьте логи endpointPortOverridden и стабильность DNS/TCP внутри туннеля.`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendVpnLog('TEST_BLOCK_UDP', 'error', { error: message }, true);
+      setTestBlockStatus(`Ошибка теста: ${message}`);
+    } finally {
+      setTestBlockInProgress(false);
+    }
+  }, [appendVpnLog, loadProbePorts, performWireGuardPreflight]);
 
   const refreshExternalIp = useCallback(async () => {
     const reasons: string[] = [];
@@ -1932,7 +2035,7 @@ const handleServerSnapshot = useCallback(async () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {ENDPOINT_PORT_PROBES.map((port) => {
+                      {displayedPortList.map((port) => {
                         const row = summary?.rows.find((item) => item.port === port);
                         const success = row?.success ?? false;
                         return (
@@ -2061,6 +2164,48 @@ const handleServerSnapshot = useCallback(async () => {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="rounded-3xl bg-slate-950/70 border border-yellow-400/30 shadow-[0_20px_45px_rgba(234,179,8,0.25)] p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Тест блокировки UDP</h3>
+            <p className="text-sm text-slate-400">
+              Проверяем устойчивость туннеля, когда UDP полностью заблокирован, и фиксируем
+              рабочий TCP-порт.
+            </p>
+          </div>
+          <p className="text-xs text-slate-400 max-w-xs">
+            После запуска теста будет показан порт, на котором endpoint остаётся доступен и
+            работает DNS/TCP внутри туннеля.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3">
+            <Button
+              variant="highlight"
+              onClick={handleTestBlockUdp}
+              disabled={testBlockInProgress}
+            >
+              {testBlockInProgress ? 'test block UDP…' : 'test block UDP'}
+            </Button>
+            <ol className="text-xs text-slate-400 list-decimal list-inside space-y-1">
+              <li>Заблокируйте UDP на устройстве/сети (firewall, роутер или локальный фаервол).</li>
+              <li>Нажмите кнопку и дождитесь завершения preflight — он подбирает доступный TCP-порт.</li>
+              <li>После появления хоста/порта из статуса запустите VPN и проверьте DNS/TCP внутри.</li>
+            </ol>
+          </div>
+          <div className="rounded-2xl border border-yellow-400/40 bg-slate-900/70 p-4">
+            <p className="text-xs uppercase tracking-widest text-yellow-300">Статус теста</p>
+            <p className="mt-2 text-sm text-slate-200 break-words">
+              {testBlockStatus ??
+                'Готов к запуску: блокируйте UDP и нажимайте кнопку для тренировки fallback-порта.'}
+            </p>
+            <p className="mt-3 text-xs text-slate-500">
+              Лог: тег TEST_BLOCK_UDP и VPN_PREFLIGHT → PORT_PROBE.
+            </p>
+          </div>
         </div>
       </section>
 
