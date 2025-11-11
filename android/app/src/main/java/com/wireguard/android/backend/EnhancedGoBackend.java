@@ -124,12 +124,10 @@ public final class EnhancedGoBackend implements Backend {
         return wgVersion();
     }
 
-    @Override
     public boolean isAlwaysOn() throws ExecutionException, InterruptedException, TimeoutException {
         return vpnService.get(0, TimeUnit.NANOSECONDS).isAlwaysOn();
     }
 
-    @Override
     public boolean isLockdownEnabled() throws ExecutionException, InterruptedException, TimeoutException {
         return vpnService.get(0, TimeUnit.NANOSECONDS).isLockdownEnabled();
     }

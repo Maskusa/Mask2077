@@ -1,13 +1,51 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Helper that mirrors the Android diagnostics port list and installs all
+# required iptables rules (forwarding and DNAT) so that every tested port can
+# terminate on the same WireGuard interface/port.
+
 ACTION="${1:-}"
 
 WG_IF="${WG_IF:-wg0}"
 WG_SUBNET="${WG_SUBNET:-10.7.0.0/24}"
 WG_PORT="${WG_PORT:-51820}"
 WAN_IF="${WAN_IF:-$(ip -o -4 route show to default | awk '{print $5}' | head -n1)}"
-PORTS=(1024 53 123 443 500 51820 8443 3389)
+
+# Keep this list in sync with components/ServerSettings.tsx > ENDPOINT_PORT_PROBES.
+# Add extra "popular" ports that frequently bypass ISP firewalls so diagnostics
+# can find at least one reachable option.
+PORTS=(
+  51820
+  58210
+  20053
+  33445
+  1315
+  1443
+  443
+  1194
+  8888
+  10053
+  12912
+  1024
+  53
+  123
+  500
+  8080
+  8443
+  3389
+  15443
+  65065
+)
+
+log() {
+  local msg="$1"
+  if command -v logger >/dev/null 2>&1; then
+    logger -t wg-net-hooks "$msg"
+  else
+    echo "wg-net-hooks: $msg"
+  fi
+}
 
 apply_rules() {
   local mode="$1"
@@ -17,6 +55,8 @@ apply_rules() {
   else
     op="-D"
   fi
+
+  log "apply_rules mode=${mode} wan=${WAN_IF} wg_port=${WG_PORT} ports=${PORTS[*]}"
 
   iptables -t nat $op POSTROUTING -s "$WG_SUBNET" -o "$WAN_IF" -j MASQUERADE 2>/dev/null || true
   iptables $op FORWARD -i "$WAN_IF" -o "$WG_IF" -m state --state RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
@@ -42,3 +82,4 @@ case "$ACTION" in
     exit 1
     ;;
 esac
+

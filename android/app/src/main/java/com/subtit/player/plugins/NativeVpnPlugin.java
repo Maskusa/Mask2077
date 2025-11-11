@@ -1,4 +1,4 @@
-﻿package com.subtit.player.plugins;
+package com.subtit.player.plugins;
 
 import android.app.Activity;
 import android.content.Context;
@@ -23,10 +23,10 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.wireguard.android.backend.GoBackend;
 import com.wireguard.android.backend.Tunnel;
 import com.wireguard.android.backend.Statistics;
 import com.wireguard.config.Config;
-import com.wireguard.android.backend.EnhancedGoBackend;
 
 import java.io.ByteArrayInputStream;
 import java.io.BufferedReader;
@@ -81,7 +81,7 @@ public class NativeVpnPlugin extends Plugin {
     private volatile boolean requestedStart = false;
     private final Object wireguardLock = new Object();
     @Nullable
-    private EnhancedGoBackend wireguardBackend;
+    private GoBackend wireguardBackend;
     @Nullable
     private PluginTunnel wireguardTunnel;
     private volatile long vpnStartedRealtime = 0L;
@@ -110,7 +110,6 @@ public class NativeVpnPlugin extends Plugin {
         ConnectivityManager cm = ensureConnectivityManager();
         if (cm == null) {
             baselineNetwork = null;
-            applyPreferredUnderlyingNetworks();
             return;
         }
         Network[] networks = cm.getAllNetworks();
@@ -138,17 +137,7 @@ public class NativeVpnPlugin extends Plugin {
         baselineNetwork = candidate;
         if (previous != candidate) {
             resetApiClient();
-            applyPreferredUnderlyingNetworks();
         }
-    }
-
-    private void applyPreferredUnderlyingNetworks() {
-        EnhancedGoBackend backend = wireguardBackend;
-        if (backend == null) {
-            return;
-        }
-        Network[] networks = baselineNetwork != null ? new Network[]{baselineNetwork} : null;
-        backend.setPreferredUnderlyingNetworks(networks);
     }
 
     private void resetApiClient() {
@@ -281,12 +270,11 @@ public class NativeVpnPlugin extends Plugin {
         try {
             refreshBaselineNetwork();
             Config config = parseWireGuardConfig(configBase64);
-            EnhancedGoBackend backend;
+            GoBackend backend;
             PluginTunnel tunnel;
             synchronized (wireguardLock) {
                 if (wireguardBackend == null) {
-                    wireguardBackend = new EnhancedGoBackend(context.getApplicationContext());
-                    applyPreferredUnderlyingNetworks();
+                    wireguardBackend = new GoBackend(context.getApplicationContext());
                 }
                 if (wireguardTunnel == null) {
                     wireguardTunnel = new PluginTunnel(DEFAULT_TUNNEL_NAME);
@@ -320,7 +308,7 @@ public class NativeVpnPlugin extends Plugin {
     public void stop(PluginCall call) {
         Log.i(TAG, "[stop] requested");
         try {
-            EnhancedGoBackend backend;
+            GoBackend backend;
             PluginTunnel tunnel;
             synchronized (wireguardLock) {
                 backend = wireguardBackend;
@@ -487,7 +475,7 @@ public class NativeVpnPlugin extends Plugin {
 
     private JSObject buildState() {
         JSObject state = new JSObject();
-        EnhancedGoBackend backendRef;
+        GoBackend backendRef;
         PluginTunnel tunnelRef;
         synchronized (wireguardLock) {
             backendRef = wireguardBackend;
@@ -777,3 +765,4 @@ public class NativeVpnPlugin extends Plugin {
 
     
 }
+

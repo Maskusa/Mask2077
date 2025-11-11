@@ -116,55 +116,14 @@ const FULL_TEST_TYPES = [
   { id: 'udp', label: 'UDP 53' },
   { id: 'http', label: 'HTTP 1.1.1.1' },
   { id: 'https', label: 'HTTPS api.ipify.org' },
-  { id: 'api_tls', label: `API TLS (РїРѕСЂС‚ ${DEFAULT_API_TCP_PORT})` },
+  { id: 'api_tls', label: `API TLS (порт ${DEFAULT_API_TCP_PORT})` },
 ] as const;
 type FullTestType = (typeof FULL_TEST_TYPES)[number]['id'];
-const ENDPOINT_PORT_PROBES = [
-  51820,
-  58210,
-  20053,
-  33445,
-  1443,
-  443,
-  1194,
-  8888,
-  10053,
-  12912,
-];
-const DNS_PROBE_HOSTS = [
-  '45-151-183-153.sslip.io',
-  'api.ipify.org',
-  'ipv4.icanhazip.com',
-  'ifconfig.me',
-];
-type ProbePhase = 'pre' | 'post';
-const PROBE_PHASES: ProbePhase[] = ['pre', 'post'];
 
 interface DiagResult {
   status: 'idle' | 'pending' | 'success' | 'error';
   latencyMs?: number | null;
   message?: string | null;
-}
-
-interface PortProbeRow {
-  port: number;
-  success: boolean;
-  latencyMs: number | null;
-  message: string | null;
-}
-
-interface DnsProbeRow {
-  host: string;
-  success: boolean;
-  latencyMs: number | null;
-  message: string | null;
-}
-
-interface ProbeSummary<Row> {
-  host: string;
-  phase: ProbePhase;
-  timestamp: number;
-  rows: Row[];
 }
 
 const buildInitialDiagResults = (): Record<FullTestType, DiagResult> =>
@@ -180,25 +139,25 @@ const getDiagStatusMeta = (status: DiagResult['status']) => {
   switch (status) {
     case 'success':
       return {
-        label: 'РЈСЃРїРµС€РЅРѕ',
+        label: 'Успешно',
         container: 'bg-emerald-500/10 border-emerald-400/50 text-emerald-100',
         pill: 'bg-emerald-500/20 text-emerald-100',
       };
     case 'error':
       return {
-        label: 'РћС€РёР±РєР°',
+        label: 'Ошибка',
         container: 'bg-rose-500/10 border-rose-400/50 text-rose-100',
         pill: 'bg-rose-500/20 text-rose-100',
       };
     case 'pending':
       return {
-        label: 'Р’ РїСЂРѕС†РµСЃСЃРµ',
+        label: 'В процессе',
         container: 'bg-amber-500/10 border-amber-400/50 text-amber-100',
         pill: 'bg-amber-500/20 text-amber-900',
       };
     default:
       return {
-        label: 'РќРµ Р·Р°РїСѓСЃРєР°Р»СЃСЏ',
+        label: 'Не запускался',
         container: 'bg-slate-800/70 border-slate-700/70 text-slate-200',
         pill: 'bg-slate-700/70 text-slate-200',
       };
@@ -208,42 +167,37 @@ const getDiagStatusMeta = (status: DiagResult['status']) => {
 const CONNECTION_CHECKLIST_STEPS = [
   {
     id: 'serverHealth',
-    label: 'РџСЂРѕРІРµСЂРєР° СЃРµСЂРІРµСЂР°',
+    label: 'Проверка сервера',
     description: 'API /oneclick + /wg/status',
   },
   {
     id: 'endpointReachable',
-    label: 'РџРёРЅРі СЃРµСЂРІРµСЂР°',
-    description: 'Ping/TCP РґРѕ Endpoint',
+    label: 'Пинг сервера',
+    description: 'Ping/TCP до Endpoint',
   },
   {
     id: 'profileReady',
-    label: 'WireGuard РїСЂРѕС„РёР»СЊ',
-    description: 'РљРѕРЅС„РёРі РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅ',
+    label: 'WireGuard профиль',
+    description: 'Конфиг нормализован',
   },
   {
     id: 'routingReady',
-    label: 'РњР°СЂС€СЂСѓС‚РёР·Р°С†РёСЏ',
-    description: 'proxy/status + wg/status РЅР° СЃРІСЏР·Рё',
+    label: 'Маршрутизация',
+    description: 'proxy/status + wg/status на связи',
   },
   {
     id: 'handshake',
-    label: 'Р СѓРєРѕРїРѕР¶Р°С‚РёРµ',
-    description: 'wg show РѕР±РЅРѕРІР»СЏРµС‚ latest handshake',
+    label: 'Рукопожатие',
+    description: 'wg show обновляет latest handshake',
   },
   {
     id: 'tunnelUp',
-    label: 'РўСѓРЅРЅРµР»СЊ',
-    description: 'NativeVpn СЃРѕРѕР±С‰Р°РµС‚ running',
-  },
-  {
-    id: 'dnsReady',
-    label: 'DNS',
-    description: 'Р Р°Р·СЂРµС€РµРЅРёРµ РєР»СЋС‡РµРІС‹С… РґРѕРјРµРЅРѕРІ',
+    label: 'Туннель',
+    description: 'NativeVpn сообщает running',
   },
   {
     id: 'ipUpdated',
-    label: 'РќРѕРІС‹Р№ IP',
+    label: 'Новый IP',
     description: 'ipify / api.myip.com',
   },
 ] as const;
@@ -273,31 +227,31 @@ const getChecklistStatusMeta = (status: ChecklistStatus) => {
   switch (status) {
     case 'success':
       return {
-        label: 'Р“РѕС‚РѕРІРѕ',
+        label: 'Готово',
         pill: 'bg-emerald-500/20 text-emerald-100',
         container: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-100',
       };
     case 'error':
       return {
-        label: 'РћС€РёР±РєР°',
+        label: 'Ошибка',
         pill: 'bg-rose-500/20 text-rose-100',
         container: 'border-rose-500/30 bg-rose-500/5 text-rose-100',
       };
     case 'in_progress':
       return {
-        label: 'Р’С‹РїРѕР»РЅСЏРµС‚СЃСЏ',
+        label: 'Выполняется',
         pill: 'bg-sky-500/20 text-sky-100',
         container: 'border-sky-500/30 bg-sky-500/5 text-sky-100',
       };
     case 'pending':
       return {
-        label: 'РћР¶РёРґР°РµС‚',
+        label: 'Ожидает',
         pill: 'bg-amber-500/20 text-amber-900',
         container: 'border-amber-500/30 bg-amber-500/10 text-amber-100',
       };
     default:
       return {
-        label: 'РќРµ Р·Р°РїСѓСЃРєР°Р»РѕСЃСЊ',
+        label: 'Не запускалось',
         pill: 'bg-slate-700/60 text-slate-200',
         container: 'border-slate-700/70 bg-slate-900/70 text-slate-300',
       };
@@ -793,14 +747,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   );
   const [diagProgressValue, setDiagProgressValue] = useState(0);
   const [lastDiagAt, setLastDiagAt] = useState<number | null>(null);
-  const [portProbeResults, setPortProbeResults] = useState<Record<ProbePhase, ProbeSummary<PortProbeRow> | null>>({
-    pre: null,
-    post: null,
-  });
-  const [dnsProbeResults, setDnsProbeResults] = useState<Record<ProbePhase, ProbeSummary<DnsProbeRow> | null>>({
-    pre: null,
-    post: null,
-  });
   const [connectionChecklist, setConnectionChecklist] =
     useState<ConnectionChecklistState>(() => buildInitialChecklistState());
 
@@ -883,132 +829,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       setDiagProgressValue(0);
     },
     []
-  );
-
-  const runPortProbeMatrix = useCallback(
-    async (host: string, phase: ProbePhase) => {
-      if (!host) {
-        return [];
-      }
-      appendVpnLog('PORT_PROBE', `${phase}_start`, { host, ports: ENDPOINT_PORT_PROBES });
-      if (!vpnPluginAvailable || !NativeVpn?.diagnose) {
-        const fallbackRows = ENDPOINT_PORT_PROBES.map<PortProbeRow>((port) => ({
-          port,
-          success: false,
-          latencyMs: null,
-          message: 'Р”РёР°РіРЅРѕСЃС‚РёРєР° РЅРµРґРѕСЃС‚СѓРїРЅР° (NativeVpn)',
-        }));
-        setPortProbeResults((previous) => ({
-          ...previous,
-          [phase]: {
-            host,
-            phase,
-            timestamp: Date.now(),
-            rows: fallbackRows,
-          },
-        }));
-        return fallbackRows;
-      }
-      const rows: PortProbeRow[] = [];
-      for (const port of ENDPOINT_PORT_PROBES) {
-        try {
-          const diagnostic = await NativeVpn.diagnose({
-            host,
-            port,
-            tests: ['tcp'],
-            timeoutMs: 6000,
-          });
-          const entry = diagnostic.results.find(
-            (result) => (result.type ?? '').toLowerCase() === 'tcp'
-          );
-          const success = entry?.success ?? false;
-          const latencyMs = entry?.latencyMs ?? null;
-          const message = entry?.message ?? null;
-          rows.push({ port, success, latencyMs, message });
-          appendVpnLog('PORT_PROBE_RESULT', phase, { port, success, latencyMs, message });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          rows.push({ port, success: false, latencyMs: null, message });
-          appendVpnLog('PORT_PROBE_ERROR', phase, { port, error: message });
-        }
-      }
-      setPortProbeResults((previous) => ({
-        ...previous,
-        [phase]: {
-          host,
-          phase,
-          timestamp: Date.now(),
-          rows,
-        },
-      }));
-      return rows;
-    },
-    [appendVpnLog, vpnPluginAvailable]
-  );
-
-  const runDnsProbeMatrix = useCallback(
-    async (hosts: string[], phase: ProbePhase) => {
-      if (!hosts || hosts.length === 0) {
-        return [];
-      }
-      appendVpnLog('DNS_PROBE', `${phase}_start`, { hosts });
-      if (!vpnPluginAvailable || !NativeVpn?.diagnose) {
-        const fallbackRows = hosts.map<DnsProbeRow>((host) => ({
-          host,
-          success: false,
-          latencyMs: null,
-          message: 'Р”РёР°РіРЅРѕСЃС‚РёРєР° РЅРµРґРѕСЃС‚СѓРїРЅР° (NativeVpn)',
-        }));
-        setDnsProbeResults((previous) => ({
-          ...previous,
-          [phase]: {
-            host: hosts.join(', '),
-            phase,
-            timestamp: Date.now(),
-            rows: fallbackRows,
-          },
-        }));
-        return fallbackRows;
-      }
-      const rows: DnsProbeRow[] = [];
-      for (const target of hosts) {
-        try {
-          const diagnostic = await NativeVpn.diagnose({
-            host: target,
-            tests: ['dns'],
-            timeoutMs: 5000,
-          });
-          const entry = diagnostic.results.find(
-            (result) => (result.type ?? '').toLowerCase() === 'dns'
-          );
-          const success = entry?.success ?? false;
-          const latencyMs = entry?.latencyMs ?? null;
-          const message = entry?.message ?? null;
-          rows.push({ host: target, success, latencyMs, message });
-          appendVpnLog('DNS_PROBE_RESULT', phase, {
-            host: target,
-            success,
-            latencyMs,
-            message,
-          });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          rows.push({ host: target, success: false, latencyMs: null, message });
-          appendVpnLog('DNS_PROBE_ERROR', phase, { host: target, error: message });
-        }
-      }
-      setDnsProbeResults((previous) => ({
-        ...previous,
-        [phase]: {
-          host: hosts.join(', '),
-          phase,
-          timestamp: Date.now(),
-          rows,
-        },
-      }));
-      return rows;
-    },
-    [appendVpnLog, vpnPluginAvailable]
   );
 
   const renderInput = useCallback(
@@ -1145,8 +965,8 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     async (): Promise<WireGuardPreflightResult> => {
       const deviceId = await resolveDeviceId();
       appendVpnLog('VPN_PREFLIGHT', 'requesting profile', { deviceId }, true);
-      updateChecklistStep('serverHealth', 'in_progress', 'Р—Р°РїСЂРѕСЃ РїСЂРѕС„РёР»СЏ WireGuard');
-      updateChecklistStep('profileReady', 'pending', 'Р–РґС‘Рј РїСЂРѕС„РёР»СЊ РѕС‚ API');
+      updateChecklistStep('serverHealth', 'in_progress', 'Запрос профиля WireGuard');
+      updateChecklistStep('profileReady', 'pending', 'Ждём профиль от API');
       const [profileResponse, wgStatusResponse] = await Promise.all([
         callServerApi('/oneclick', {
           method: 'POST',
@@ -1172,36 +992,15 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           profilePayload,
           true
         );
-        updateChecklistStep('serverHealth', 'error', 'API РЅРµ РІРµСЂРЅСѓР» РїСЂРѕС„РёР»СЊ');
+        updateChecklistStep('serverHealth', 'error', 'API не вернул профиль');
         throw new Error('WireGuard profile is missing in API response');
       }
       const normalizedConfig = normalizeWireGuardConfig(rawConfig);
       const endpointInfo = extractEndpointInfo(normalizedConfig);
       if (!endpointInfo) {
-        updateChecklistStep('profileReady', 'error', 'Endpoint РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚ РІ РїСЂРѕС„РёР»Рµ');
+        updateChecklistStep('profileReady', 'error', 'Endpoint отсутствует в профиле');
         throw new Error('Endpoint is missing in the WireGuard profile');
       }
-      const dnsMatrix = await runDnsProbeMatrix(DNS_PROBE_HOSTS, 'pre');
-      const dnsHealthy = dnsMatrix.some((row) => row.success);
-      updateChecklistStep(
-        'dnsReady',
-        dnsHealthy ? 'success' : 'error',
-        dnsHealthy
-          ? `Resolved: ${dnsMatrix
-              .filter((row) => row.success)
-              .map((row) => row.host)
-              .join(', ')}`
-          : 'DNS РЅРµ РѕС‚РІРµС‡Р°РµС‚ (РґРѕ РїРѕРґРєР»СЋС‡РµРЅРёСЏ)'
-      );
-      const portMatrix = await runPortProbeMatrix(endpointInfo.host, 'pre');
-      const reachablePort = portMatrix.find((row) => row.success);
-      updateChecklistStep(
-        'endpointReachable',
-        reachablePort ? 'success' : 'error',
-        reachablePort
-          ? `TCP ${reachablePort.port} (${reachablePort.latencyMs ?? '?'} РјСЃ)`
-          : 'РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РїРѕСЂС‚РѕРІ (РґРѕ РїРѕРґРєР»СЋС‡РµРЅРёСЏ)'
-      );
       const serverListenPort = extractListenPortFromSummary(wgStatusResponse.data);
       const reused = Boolean(profilePayload.reused);
       appendVpnLog(
@@ -1219,7 +1018,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       updateChecklistStep(
         'serverHealth',
         'success',
-        reused ? 'РџСЂРѕС„РёР»СЊ РїРѕР»СѓС‡РµРЅ РёР· РєСЌС€Р°' : 'РџСЂРѕС„РёР»СЊ РІС‹РґР°РЅ Р·Р°РЅРѕРІРѕ'
+        reused ? 'Профиль получен из кэша' : 'Профиль выдан заново'
       );
       updateChecklistStep(
         'profileReady',
@@ -1240,7 +1039,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           },
           true
         );
-        updateChecklistStep('profileReady', 'error', 'ListenPort РЅРµ СЃРѕРІРїР°РґР°РµС‚');
+        updateChecklistStep('profileReady', 'error', 'ListenPort не совпадает');
         throw new Error(
           `Server ListenPort (${serverListenPort}) differs from profile Endpoint (${endpointInfo.port}). Update the client profile before enabling VPN.`
         );
@@ -1257,7 +1056,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         },
       };
     },
-    [appendVpnLog, callServerApi, resolveDeviceId, runDnsProbeMatrix, runPortProbeMatrix, updateChecklistStep]
+    [appendVpnLog, callServerApi, resolveDeviceId, updateChecklistStep]
   );
 
   const verifyEndpointReachability = useCallback(
@@ -1265,13 +1064,13 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       updateChecklistStep(
         'endpointReachable',
         'in_progress',
-        `РџСЂРѕРІРµСЂСЏРµРј ping/tcp ${endpoint.host}:${endpoint.port}`
+        `Проверяем ping/tcp ${endpoint.host}:${endpoint.port}`
       );
       if (!vpnPluginAvailable || typeof NativeVpn.diagnose !== 'function') {
         updateChecklistStep(
           'endpointReachable',
           'success',
-          'Р”РёР°РіРЅРѕСЃС‚РёРєР° РЅРµРґРѕСЃС‚СѓРїРЅР°, РїСЂРѕРїСѓСЃРєР°РµРј'
+          'Диагностика недоступна, пропускаем'
         );
         return;
       }
@@ -1303,7 +1102,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         updateChecklistStep(
           'endpointReachable',
           failed ? 'error' : 'success',
-          summary || (failed ? 'РџСЂРѕР±Р»РµРјС‹ СЃ ping/tcp' : 'Р”РёР°РіРЅРѕСЃС‚РёРєР° СѓСЃРїРµС€РЅР°')
+          summary || (failed ? 'Проблемы с ping/tcp' : 'Диагностика успешна')
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -1315,7 +1114,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
 
   const refreshExternalIp = useCallback(async () => {
     const reasons: string[] = [];
-    updateChecklistStep('ipUpdated', 'in_progress', 'Р—Р°РїСЂРѕСЃ РІРЅРµС€РЅРµРіРѕ IP');
+    updateChecklistStep('ipUpdated', 'in_progress', 'Запрос внешнего IP');
     for (const source of EXTERNAL_IP_SOURCES) {
       try {
         const response = await CapacitorHttp.request({
@@ -1351,7 +1150,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     setIpError(combined);
     setIpSourceLabel(null);
     appendVpnLog('IP_ERROR', 'failed to detect IP', { error: combined });
-    updateChecklistStep('ipUpdated', 'error', combined || 'РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ IP');
+    updateChecklistStep('ipUpdated', 'error', combined || 'Не удалось получить IP');
     return null;
   }, [appendVpnLog, initialIp, updateChecklistStep]);
 
@@ -1387,18 +1186,18 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         updateChecklistStep(
           'routingReady',
           'success',
-          `РЎС‚Р°С‚СѓСЃ РѕР±РЅРѕРІР»С‘РЅ ${formatTimestamp(result.updatedAt)}`
+          `Статус обновлён ${formatTimestamp(result.updatedAt)}`
         );
         const handshakeAge = extractHandshakeAgeSeconds(wgResponse.data);
         if (handshakeAge == null) {
-          updateChecklistStep('handshake', 'pending', 'РќРµС‚ РґР°РЅРЅС‹С… РѕС‚ wg show');
+          updateChecklistStep('handshake', 'pending', 'Нет данных от wg show');
         } else if (handshakeAge <= HANDSHAKE_FRESH_THRESHOLD_SEC) {
-          updateChecklistStep('handshake', 'success', `РїРѕСЃР»РµРґРЅРµРµ ${handshakeAge} СЃРµРє РЅР°Р·Р°Рґ`);
+          updateChecklistStep('handshake', 'success', `последнее ${handshakeAge} сек назад`);
         } else {
           updateChecklistStep(
             'handshake',
             'error',
-            `СЂСѓРєРѕРїРѕР¶Р°С‚РёРµ ${handshakeAge} СЃРµРє РЅР°Р·Р°Рґ`
+            `рукопожатие ${handshakeAge} сек назад`
           );
         }
         appendVpnLog('STATUS', 'refresh_success', {
@@ -1407,13 +1206,13 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        setWarning(`РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СѓСЃ: ${message}`);
+        setWarning(`Не удалось обновить статус: ${message}`);
         appendVpnLog('STATUS_ERROR', 'refresh_failed', {
           reason: options.reason,
           error: message,
         });
         updateChecklistStep('routingReady', 'error', message);
-        updateChecklistStep('handshake', 'error', 'РќРµС‚ РґР°РЅРЅС‹С… РѕС‚ СЃРµСЂРІРµСЂР°');
+        updateChecklistStep('handshake', 'error', 'Нет данных от сервера');
       } finally {
         if (!options.silent) {
           setRefreshing(false);
@@ -1448,14 +1247,14 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   
   const handleEnableProxy = useCallback(async () => {
     if (!vpnPluginAvailable || !isNativePlatform) {
-      setWarning('VPN РґРѕСЃС‚СѓРїРµРЅ С‚РѕР»СЊРєРѕ РІ РЅР°С‚РёРІРЅРѕР№ СЃР±РѕСЂРєРµ');
+      setWarning('VPN доступен только в нативной сборке');
       return;
     }
     setLoading(true);
     setVpnError(null);
     resetConnectionChecklist('pending');
     appendVpnLog('VPN', 'enable_request', null, true);
-    updateChecklistStep('tunnelUp', 'pending', 'Р“РѕС‚РѕРІРёРј Р·Р°РїСѓСЃРє NativeVpn');
+    updateChecklistStep('tunnelUp', 'pending', 'Готовим запуск NativeVpn');
     try {
       const preflight = await performWireGuardPreflight();
       await verifyEndpointReachability(preflight.endpointInfo);
@@ -1477,7 +1276,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       updateChecklistStep(
         'tunnelUp',
         vpnResult.running ? 'success' : 'error',
-        vpnResult.running ? 'NativeVpn Р°РєС‚РёРІРµРЅ' : 'NativeVpn РЅРµ Р·Р°РїСѓСЃС‚РёР»СЃСЏ'
+        vpnResult.running ? 'NativeVpn активен' : 'NativeVpn не запустился'
       );
       setRuntime((previous) => ({
         ...previous,
@@ -1490,32 +1289,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         apiToken: form.apiToken.trim() || PROXY_CONFIG.apiToken,
       }));
       void refreshStatus({ reason: 'manual', silent: true });
-      void runPortProbeMatrix(preflight.endpointInfo.host, 'post').then((rows) => {
-        const reachable = rows.find((row) => row.success);
-        if (reachable) {
-          updateChecklistStep(
-            'endpointReachable',
-            'success',
-            `Р’РЅСѓС‚СЂРё С‚СѓРЅРЅРµР»СЏ: TCP ${reachable.port} (${reachable.latencyMs ?? '?'} РјСЃ)`
-          );
-        } else {
-          updateChecklistStep(
-            'endpointReachable',
-            'error',
-            'РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РїРѕСЂС‚РѕРІ РІРЅСѓС‚СЂРё С‚СѓРЅРЅРµР»СЏ'
-          );
-        }
-      });
-      void runDnsProbeMatrix(DNS_PROBE_HOSTS, 'post').then((rows) => {
-        const okHosts = rows.filter((row) => row.success).map((row) => row.host);
-        updateChecklistStep(
-          'dnsReady',
-          okHosts.length > 0 ? 'success' : 'error',
-          okHosts.length > 0
-            ? `DNS (РІРЅСѓС‚СЂРё С‚СѓРЅРЅРµР»СЏ): ${okHosts.join(', ')}`
-            : 'DNS РІРЅСѓС‚СЂРё С‚СѓРЅРЅРµР»СЏ РЅРµ РѕС‚РІРµС‡Р°РµС‚'
-        );
-      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setVpnError(message);
@@ -1535,8 +1308,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     form.username,
     isNativePlatform,
     performWireGuardPreflight,
-    runDnsProbeMatrix,
-    runPortProbeMatrix,
     refreshStatus,
     resetConnectionChecklist,
     updateChecklistStep,
@@ -1555,7 +1326,7 @@ const handleDisableProxy = useCallback(async () => {
         const state = await NativeVpn.stop();
         setVpnState(state);
         appendVpnLog('VPN', 'stopped', { exitCode: state?.exitCode ?? 'n/a' });
-        updateChecklistStep('tunnelUp', 'idle', 'РўСѓРЅРЅРµР»СЊ РѕС‚РєР»СЋС‡РµРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј');
+        updateChecklistStep('tunnelUp', 'idle', 'Туннель отключен пользователем');
         setRuntime((previous) => ({
           ...previous,
           enabled: false,
@@ -1572,7 +1343,7 @@ const handleDisableProxy = useCallback(async () => {
     }, [appendVpnLog, isNativePlatform, updateChecklistStep, vpnPluginAvailable]);
 
 const handleServerSnapshot = useCallback(async () => {
-    setDiagProgress('РЎРѕР±РёСЂР°РµРј СЃРЅРёРјРѕРє СЃРµСЂРІРµСЂР°...');
+    setDiagProgress('Собираем снимок сервера...');
     try {
       const response = await callServerApi('/diag/server-snapshot', {
         method: 'POST',
@@ -1581,13 +1352,13 @@ const handleServerSnapshot = useCallback(async () => {
       appendVpnLog('SERVER_SNAPSHOT', 'collected', {
         preview: buildPayloadPreview(response.data),
       });
-      setDiagProgress('РЎРЅРёРјРѕРє СЃРµСЂРІРµСЂР° РіРѕС‚РѕРІ');
+      setDiagProgress('Снимок сервера готов');
       setWarning(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       appendVpnLog('SERVER_SNAPSHOT_ERROR', 'failed', { error: message }, true);
-      setDiagProgress(`РћС€РёР±РєР° СЃРЅРёРјРєР° СЃРµСЂРІРµСЂР°: ${message}`);
-      setWarning(`РЎРЅРёРјРѕРє СЃРµСЂРІРµСЂР°: ${message}`);
+      setDiagProgress(`Ошибка снимка сервера: ${message}`);
+      setWarning(`Снимок сервера: ${message}`);
     }
   }, [appendVpnLog, callServerApi]);
   const shareStatus = useCallback(async () => {
@@ -1604,7 +1375,7 @@ const handleServerSnapshot = useCallback(async () => {
         await Share.share({
           title: 'VPN status',
           text: report,
-          dialogTitle: 'РџРѕРґРµР»РёС‚СЊСЃСЏ СЃРѕСЃС‚РѕСЏРЅРёРµРј СЃРµСЂРІРµСЂР°',
+          dialogTitle: 'Поделиться состоянием сервера',
         });
       }
       appendVpnLog('STATUS', 'report exported');
@@ -1616,11 +1387,11 @@ const handleServerSnapshot = useCallback(async () => {
 
   const handlePing = useCallback(async () => {
     if (!vpnPluginAvailable || !isNativePlatform || typeof NativeVpn.diagnose !== 'function') {
-      setDiagProgress('Р”РёР°РіРЅРѕСЃС‚РёРєР° РґРѕСЃС‚СѓРїРЅР° С‚РѕР»СЊРєРѕ РІ РЅР°С‚РёРІРЅРѕР№ РІРµСЂСЃРёРё РїСЂРёР»РѕР¶РµРЅРёСЏ');
+      setDiagProgress('Диагностика доступна только в нативной версии приложения');
       return;
     }
     setDiagnosticsRunning(true);
-    setDiagProgress('Р—Р°РїСѓСЃРєР°РµРј РїРѕР»РЅС‹Р№ С‚РµСЃС‚ (PING/DNS/TCP/UDP/HTTP/HTTPS)...');
+    setDiagProgress('Запускаем полный тест (PING/DNS/TCP/UDP/HTTP/HTTPS)...');
     resetDiagResults('pending');
     setLastDiagAt(null);
     appendVpnLog('DIAG', 'full_test_requested', {
@@ -1663,7 +1434,7 @@ const handleServerSnapshot = useCallback(async () => {
       if (FULL_TEST_TYPES.some((test) => test.id === 'api_tls')) {
         const tlsBase = normalizeApiBase(form.apiBase, form.host || PROXY_CONFIG.host);
         const token = form.apiToken.trim() || PROXY_CONFIG.apiToken;
-        setDiagProgress('РџСЂРѕРІРµСЂСЏРµРј TLS API (system/info)...');
+        setDiagProgress('Проверяем TLS API (system/info)...');
         try {
           const startedTls = Date.now();
           const response = await CapacitorHttp.request({
@@ -1700,19 +1471,19 @@ const handleServerSnapshot = useCallback(async () => {
         if (upcomingResults[id].status === 'pending') {
           upcomingResults[id] =
             id === 'udp'
-              ? { status: 'idle', message: 'РўРµСЃС‚ UDP РЅРµРґРѕСЃС‚СѓРїРµРЅ РЅР° СЌС‚РѕРј РєР»РёРµРЅС‚Рµ' }
-              : { status: 'error', message: 'РќРµС‚ РґР°РЅРЅС‹С… РѕС‚ РґРёР°РіРЅРѕСЃС‚РёРєРё' };
+              ? { status: 'idle', message: 'Тест UDP недоступен на этом клиенте' }
+              : { status: 'error', message: 'Нет данных от диагностики' };
         }
       });
       setDiagResults(upcomingResults);
       setLastDiagAt(Date.now());
       setDiagProgressValue(1);
-      setDiagProgress('РџРѕР»РЅС‹Р№ С‚РµСЃС‚ Р·Р°РІРµСЂС€С‘РЅ');
+      setDiagProgress('Полный тест завершён');
       await refreshExternalIp();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       appendVpnLog('DIAG_ERROR', 'full_test_failed', { error: message });
-      setDiagProgress(`РћС€РёР±РєР° РїРѕР»РЅРѕРіРѕ С‚РµСЃС‚Р°: ${message}`);
+      setDiagProgress(`Ошибка полного теста: ${message}`);
       setDiagProgressValue(0);
       setDiagResults((prev) => {
         const failed = { ...prev };
@@ -1742,7 +1513,7 @@ const handleServerSnapshot = useCallback(async () => {
 
   const handleShareLog = useCallback(async () => {
     if (vpnLog.length === 0) {
-      setDiagProgress('Р–СѓСЂРЅР°Р» РїРѕРєР° РїСѓСЃС‚ вЂ” РІРєР»СЋС‡РёС‚Рµ VPN РёР»Рё Р·Р°РїСѓСЃС‚РёС‚Рµ С‚РµСЃС‚.');
+      setDiagProgress('Журнал пока пуст — включите VPN или запустите тест.');
       return;
     }
     const fileName = `wireguard-log-${Date.now()}.txt`;
@@ -1763,16 +1534,16 @@ const handleServerSnapshot = useCallback(async () => {
         shareUrl = `data:text/plain;base64,${fileData.data}`;
       }
       await Share.share({
-        title: 'WireGuard Р¶СѓСЂРЅР°Р»',
-        text: 'Р’Рѕ РІР»РѕР¶РµРЅРёРё С„Р°Р№Р» Р¶СѓСЂРЅР°Р»Р°.',
+        title: 'WireGuard журнал',
+        text: 'Во вложении файл журнала.',
         url: shareUrl,
-        dialogTitle: 'РџРѕРґРµР»РёС‚СЊСЃСЏ Р¶СѓСЂРЅР°Р»РѕРј',
+        dialogTitle: 'Поделиться журналом',
       });
       appendVpnLog('LOG', 'shared_file', { fileName, lines: vpnLog.length });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       appendVpnLog('LOG_ERROR', 'share_failed', { error: message });
-      setDiagProgress(`РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕРґРµР»РёС‚СЊСЃСЏ Р¶СѓСЂРЅР°Р»РѕРј: ${message}`);
+      setDiagProgress(`Не удалось поделиться журналом: ${message}`);
     }
   }, [appendVpnLog, vpnLog]);
 
@@ -1799,27 +1570,27 @@ const handleServerSnapshot = useCallback(async () => {
       <section className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-black border border-emerald-500/20 shadow-[0_25px_60px_rgba(16,185,129,0.15)] backdrop-blur-xl p-8 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h2 className="text-xl font-semibold text-white">WireGuard СЃРµСЂРІРµСЂ</h2>
+            <h2 className="text-xl font-semibold text-white">WireGuard сервер</h2>
             <p className="text-sm text-slate-400">
-              РЎР»РµРґРёРј Р·Р° РєРѕРЅС„РёРіРѕРј, РїРѕСЂС‚Р°РјРё Рё Р»РѕРіР°РјРё РїРµСЂРµРґ Р·Р°РїСѓСЃРєРѕРј С‚СѓРЅРЅРµР»СЏ.
+              Следим за конфигом, портами и логами перед запуском туннеля.
             </p>
           </div>
           <div className="flex gap-3">
             <Button variant="neutral" onClick={onBack}>
-              РќР°Р·Р°Рґ
+              Назад
             </Button>
             <Button variant="neutral" onClick={onShowLogs}>
-              РћР±С‰РёРµ Р»РѕРіРё
+              Общие логи
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {renderInput('Host', 'host', 'text', '45.151.183.153')}
-          {renderInput('HTTP РїРѕСЂС‚', 'httpPort', 'text', '8080')}
-          {renderInput('SOCKS РїРѕСЂС‚', 'socksPort', 'text', '1080')}
-          {renderInput('Р›РѕРіРёРЅ (HTTP/SOCKS)', 'username')}
-          {renderInput('РџР°СЂРѕР»СЊ (HTTP/SOCKS)', 'password', 'password', undefined, {
+          {renderInput('HTTP порт', 'httpPort', 'text', '8080')}
+          {renderInput('SOCKS порт', 'socksPort', 'text', '1080')}
+          {renderInput('Логин (HTTP/SOCKS)', 'username')}
+          {renderInput('Пароль (HTTP/SOCKS)', 'password', 'password', undefined, {
             autoComplete: 'current-password',
           })}
           {renderInput('API token', 'apiToken', 'text', 'e55757...', {
@@ -1835,7 +1606,7 @@ const handleServerSnapshot = useCallback(async () => {
             onClick={handleEnableProxy}
             className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-lg shadow-emerald-500/30"
           >
-            {loading && !vpnRunning ? 'Р—Р°РїСЂР°С€РёРІР°РµРј РїСЂРѕС„РёР»СЊ...' : 'Р’РєР»СЋС‡РёС‚СЊ VPN'}
+            {loading && !vpnRunning ? 'Запрашиваем профиль...' : 'Включить VPN'}
           </Button>
           <Button
             variant="neutral"
@@ -1843,7 +1614,7 @@ const handleServerSnapshot = useCallback(async () => {
             onClick={handleDisableProxy}
             className="bg-rose-500 text-white hover:bg-rose-400 shadow-lg shadow-rose-500/30"
           >
-            {loading && vpnRunning ? 'РћС‚РєР»СЋС‡Р°РµРј...' : 'Р’С‹РєР»СЋС‡РёС‚СЊ VPN'}
+            {loading && vpnRunning ? 'Отключаем...' : 'Выключить VPN'}
           </Button>
           <Button
             variant="neutral"
@@ -1851,7 +1622,7 @@ const handleServerSnapshot = useCallback(async () => {
             onClick={() => void refreshStatus({ reason: 'manual' })}
             className="bg-sky-500/80 text-white hover:bg-sky-400 shadow-md shadow-sky-500/30"
           >
-            {refreshing ? 'РћР±РЅРѕРІР»СЏРµРј...' : 'РћР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СѓСЃ'}
+            {refreshing ? 'Обновляем...' : 'Обновить статус'}
           </Button>
           <Button
             variant="neutral"
@@ -1859,35 +1630,35 @@ const handleServerSnapshot = useCallback(async () => {
             onClick={handlePing}
             className="bg-violet-500/80 text-white hover:bg-violet-400 shadow-md shadow-violet-500/30"
           >
-            {diagnosticsRunning ? 'РџРѕР»РЅС‹Р№ С‚РµСЃС‚вЂ¦' : 'РџРѕР»РЅС‹Р№ С‚РµСЃС‚'}
+            {diagnosticsRunning ? 'Полный тест…' : 'Полный тест'}
           </Button>
           <Button
             variant="neutral"
             onClick={handleServerSnapshot}
             className="bg-amber-500/80 text-slate-900 hover:bg-amber-400 shadow-md shadow-amber-500/30"
           >
-            РЎРЅРёРјРѕРє СЃРµСЂРІРµСЂР°
+            Снимок сервера
           </Button>
           <Button
             variant="neutral"
             onClick={() => void refreshExternalIp()}
             className="bg-cyan-500/80 text-slate-900 hover:bg-cyan-400 shadow-md shadow-cyan-500/30"
           >
-            РћР±РЅРѕРІРёС‚СЊ РЅРѕРІС‹Р№ IP
+            Обновить новый IP
           </Button>
           <Button
             variant="neutral"
             onClick={shareStatus}
             className="bg-fuchsia-500/80 text-white hover:bg-fuchsia-400 shadow-md shadow-fuchsia-500/30"
           >
-            РџРѕРґРµР»РёС‚СЊСЃСЏ СЃС‚Р°С‚СѓСЃРѕРј
+            Поделиться статусом
           </Button>
           <Button
             variant="neutral"
             onClick={handleShareLog}
             className="bg-indigo-500/80 text-white hover:bg-indigo-400 shadow-md shadow-indigo-500/30"
           >
-            РџРѕРґРµР»РёС‚СЊСЃСЏ Р¶СѓСЂРЅР°Р»РѕРј
+            Поделиться журналом
           </Button>
         </div>
 
@@ -1896,142 +1667,16 @@ const handleServerSnapshot = useCallback(async () => {
         {diagProgress && <p className="text-slate-300 text-sm">{diagProgress}</p>}
       </section>
 
-      <section className="rounded-3xl bg-slate-950/70 border border-cyan-500/20 p-8 space-y-6 shadow-[0_20px_50px_rgba(6,182,212,0.12)]">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Порты WireGuard (TCP-проверки)</h3>
-            <p className="text-sm text-slate-400">
-              Помогает понять, какие альтернативные порты доступны до подключения и внутри туннеля.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {PROBE_PHASES.map((phase) => {
-            const summary = portProbeResults[phase];
-            return (
-              <div key={phase} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-base font-semibold text-white">
-                      {phase === 'pre' ? 'До подключения' : 'Внутри туннеля'}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {summary
-                        ? `Хост: ${summary.host} • ${formatTimestamp(summary.timestamp)}`
-                        : 'нет данных'}
-                    </p>
-                  </div>
-                </div>
-                <div className="overflow-auto">
-                  <table className="w-full text-sm text-left text-slate-200">
-                    <thead>
-                      <tr className="text-xs uppercase text-slate-400">
-                        <th className="py-1 pr-2">Порт</th>
-                        <th className="py-1 pr-2">Статус</th>
-                        <th className="py-1 pr-2">Комментарий</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ENDPOINT_PORT_PROBES.map((port) => {
-                        const row = summary?.rows.find((item) => item.port === port);
-                        const success = row?.success ?? false;
-                        return (
-                          <tr key={`${phase}-${port}`} className="border-t border-slate-800/60">
-                            <td className="py-1 pr-2 font-mono text-xs">{port}</td>
-                            <td className="py-1 pr-2 text-xs">
-                              {success ? (
-                                <span className="text-emerald-300">OK{row?.latencyMs ? ` (${row.latencyMs} мс)` : ''}</span>
-                              ) : (
-                                <span className="text-rose-300">нет</span>
-                              )}
-                            </td>
-                            <td className="py-1 pr-2 text-xs text-slate-400">
-                              {row?.message ?? (success ? 'ответил' : 'нет ответа')}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="rounded-3xl bg-slate-950/70 border border-fuchsia-500/20 p-8 space-y-6 shadow-[0_20px_50px_rgba(217,70,239,0.12)]">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-white">DNS-проверки</h3>
-            <p className="text-sm text-slate-400">
-              Сравниваем доступность ключевых доменов до подключения и внутри туннеля.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {PROBE_PHASES.map((phase) => {
-            const summary = dnsProbeResults[phase];
-            return (
-              <div key={`dns-${phase}`} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-base font-semibold text-white">
-                      {phase === 'pre' ? 'До подключения' : 'Внутри туннеля'}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {summary ? formatTimestamp(summary.timestamp) : 'нет данных'}
-                    </p>
-                  </div>
-                </div>
-                <div className="overflow-auto">
-                  <table className="w-full text-sm text-left text-slate-200">
-                    <thead>
-                      <tr className="text-xs uppercase text-slate-400">
-                        <th className="py-1 pr-2">Хост</th>
-                        <th className="py-1 pr-2">Статус</th>
-                        <th className="py-1 pr-2">Комментарий</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {DNS_PROBE_HOSTS.map((host) => {
-                        const row = summary?.rows.find((entry) => entry.host === host);
-                        const success = row?.success ?? false;
-                        return (
-                          <tr key={`${phase}-${host}`} className="border-t border-slate-800/60">
-                            <td className="py-1 pr-2 text-xs break-all">{host}</td>
-                            <td className="py-1 pr-2 text-xs">
-                              {success ? (
-                                <span className="text-emerald-300">OK{row?.latencyMs ? ` (${row.latencyMs} мс)` : ''}</span>
-                              ) : (
-                                <span className="text-rose-300">нет</span>
-                              )}
-                            </td>
-                            <td className="py-1 pr-2 text-xs text-slate-400">
-                              {row?.message ?? (success ? 'разрешён' : 'ошибка DNS')}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       <section className="rounded-3xl bg-slate-950/70 border border-emerald-500/20 shadow-[0_18px_40px_rgba(16,185,129,0.12)] p-8 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Р§РµРє-Р»РёСЃС‚ РїРѕРґРєР»СЋС‡РµРЅРёСЏ</h3>
+            <h3 className="text-lg font-semibold text-white">Чек-лист подключения</h3>
             <p className="text-sm text-slate-400">
-              РћС‚СЃР»РµР¶РёРІР°РµРј РїСѓС‚СЊ РґРѕ СѓСЃС‚РѕР№С‡РёРІРѕРіРѕ С‚СѓРЅРЅРµР»СЏ, С€Р°РіРё Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё Р»РѕРіРёСЂСѓСЋС‚СЃСЏ.
+              Отслеживаем путь до устойчивого туннеля, шаги автоматически логируются.
             </p>
           </div>
           <p className="text-xs text-slate-500">
-            Р•СЃР»Рё СЌС‚Р°Рї Р·Р°СЃС‚С‹Р», СЃРјРѕС‚СЂРёРј Р¶СѓСЂРЅР°Р» (С‚РµРі CHECKLIST) Рё СЃРµСЂРІРµСЂРЅС‹Рµ Р»РѕРіРё.
+            Если этап застыл, смотрим журнал (тег CHECKLIST) и серверные логи.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -2055,7 +1700,7 @@ const handleServerSnapshot = useCallback(async () => {
                 )}
                 {entry?.updatedAt && (
                   <p className="mt-1 text-xs text-slate-500">
-                    РћР±РЅРѕРІР»РµРЅРѕ: {formatTimestamp(entry.updatedAt)}
+                    Обновлено: {formatTimestamp(entry.updatedAt)}
                   </p>
                 )}
               </div>
@@ -2067,14 +1712,14 @@ const handleServerSnapshot = useCallback(async () => {
       <section className="rounded-3xl bg-slate-950/70 border border-cyan-500/20 shadow-[0_20px_45px_rgba(0,212,255,0.1)] p-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">РџРѕР»РЅС‹Р№ С‚РµСЃС‚</h3>
+            <h3 className="text-lg font-semibold text-white">Полный тест</h3>
             <p className="text-sm text-slate-400">
-              РљРѕРЅС‚СЂРѕР»СЊ PING/DNS/TCP/UDP/HTTP/HTTPS С‡РµСЂРµР· 1.1.1.1 Рё api.ipify.org
+              Контроль PING/DNS/TCP/UDP/HTTP/HTTPS через 1.1.1.1 и api.ipify.org
             </p>
           </div>
           <div className="text-sm text-slate-300">
-            <p>РџРѕСЃР»РµРґРЅРёР№ Р·Р°РїСѓСЃРє: {lastDiagAt ? formatTimestamp(lastDiagAt) : 'РµС‰С‘ РЅРµ Р·Р°РїСѓСЃРєР°Р»СЃСЏ'}</p>
-            <p>РЎС‚Р°С‚СѓСЃ: {diagProgress ?? (lastDiagAt ? 'РўРµСЃС‚ Р·Р°РІРµСЂС€С‘РЅ' : 'РћР¶РёРґР°РµС‚ Р·Р°РїСѓСЃРєР°')}</p>
+            <p>Последний запуск: {lastDiagAt ? formatTimestamp(lastDiagAt) : 'ещё не запускался'}</p>
+            <p>Статус: {diagProgress ?? (lastDiagAt ? 'Тест завершён' : 'Ожидает запуска')}</p>
           </div>
         </div>
         <div className="space-y-2">
@@ -2085,7 +1730,7 @@ const handleServerSnapshot = useCallback(async () => {
             />
           </div>
           <p className="text-xs text-slate-400">
-            РџСЂРѕРіСЂРµСЃСЃ: {Math.round(diagProgressValue * 100)}%
+            Прогресс: {Math.round(diagProgressValue * 100)}%
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -2116,22 +1761,22 @@ const handleServerSnapshot = useCallback(async () => {
       <section className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 border border-cyan-500/15 space-y-4 shadow-[0_15px_45px_rgba(59,130,246,0.12)]">
         <header className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">РЎС‚Р°С‚СѓСЃ С‚СѓРЅРЅРµР»СЏ</h3>
+            <h3 className="text-lg font-semibold text-white">Статус туннеля</h3>
             <p className="text-sm text-slate-400">
-              РџРѕСЃР»РµРґРЅСЏСЏ РїСЂРѕРІРµСЂРєР°: {formatTimestamp(serverMetrics.updatedAt)}
+              Последняя проверка: {formatTimestamp(serverMetrics.updatedAt)}
             </p>
           </div>
           <div className="flex gap-3 text-sm text-slate-300">
-            <span>РЎРѕСЃС‚РѕСЏРЅРёРµ: {vpnRunning ? 'Р°РєС‚РёРІРµРЅ' : 'РІС‹РєР»СЋС‡РµРЅ'}</span>
-            <span>Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЊ: {runtimeDuration}</span>
+            <span>Состояние: {vpnRunning ? 'активен' : 'выключен'}</span>
+            <span>Длительность: {runtimeDuration}</span>
           </div>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
-            <p className="text-xs uppercase tracking-widest text-slate-400">РРЅС‚РµСЂС„РµР№СЃ</p>
+            <p className="text-xs uppercase tracking-widest text-slate-400">Интерфейс</p>
             <p className="text-sm text-slate-200 break-all">
-              {runtime.host ? `${runtime.host}:${runtime.port}` : 'РЅ/Рґ'}
+              {runtime.host ? `${runtime.host}:${runtime.port}` : 'н/д'}
             </p>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
@@ -2150,17 +1795,17 @@ const handleServerSnapshot = useCallback(async () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 text-sm text-slate-300">
           <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
-            <p className="text-xs uppercase tracking-widest text-slate-400">РњРѕР№ IP (РїСЂРё Р·Р°РїСѓСЃРєРµ)</p>
-            <p>{initialIp ?? 'РЅРµ Р·Р°С„РёРєСЃРёСЂРѕРІР°РЅ'}</p>
-            <p className="text-xs text-slate-400">РЎРЅРёРјРѕРє Р·Р°С…РІР°С‡РµРЅ РїСЂРё РѕС‚РєСЂС‹С‚РёРё СЌРєСЂР°РЅР°</p>
+            <p className="text-xs uppercase tracking-widest text-slate-400">Мой IP (при запуске)</p>
+            <p>{initialIp ?? 'не зафиксирован'}</p>
+            <p className="text-xs text-slate-400">Снимок захвачен при открытии экрана</p>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
-            <p className="text-xs uppercase tracking-widest text-slate-400">РќРѕРІС‹Р№ IP (С‡РµСЂРµР· VPN)</p>
-            <p>{currentIp ?? 'РЅРµС‚ РґР°РЅРЅС‹С…'}</p>
-            <p className="text-xs text-slate-400">РСЃС‚РѕС‡РЅРёРє: {ipSourceLabel ?? 'РЅ/Рґ'} {ipError ? `вЂў РћС€РёР±РєР°: ${ipError}` : ''}</p>
+            <p className="text-xs uppercase tracking-widest text-slate-400">Новый IP (через VPN)</p>
+            <p>{currentIp ?? 'нет данных'}</p>
+            <p className="text-xs text-slate-400">Источник: {ipSourceLabel ?? 'н/д'} {ipError ? `• Ошибка: ${ipError}` : ''}</p>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
-            <p className="text-xs uppercase tracking-widest text-slate-400">API Р±Р°Р·Р°</p>
+            <p className="text-xs uppercase tracking-widest text-slate-400">API база</p>
             <p className="break-all">
               {runtime.apiBase || normalizeApiBase(form.apiBase, form.host)}
             </p>
@@ -2172,24 +1817,24 @@ const handleServerSnapshot = useCallback(async () => {
       <section className="rounded-3xl bg-slate-950/70 p-8 border border-violet-500/15 space-y-4 shadow-[0_20px_50px_rgba(139,92,246,0.12)]">
         <header className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">WireGuard Р»РѕРі</h3>
+            <h3 className="text-lg font-semibold text-white">WireGuard лог</h3>
             <p className="text-sm text-slate-400">
-              РњР°РєСЃРёРјСѓРј {MAX_VPN_LOG_ENTRIES} СЃС‚СЂРѕРє, РЅРѕРІС‹Рµ Р·Р°РїРёСЃРё РґРѕР±Р°РІР»СЏСЋС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.
+              Максимум {MAX_VPN_LOG_ENTRIES} строк, новые записи добавляются автоматически.
             </p>
           </div>
         </header>
         <pre className="max-h-[320px] overflow-auto rounded-2xl bg-slate-950/70 border border-slate-800 p-4 text-xs text-slate-200 font-mono whitespace-pre-wrap">
           {vpnLog.length > 0
             ? vpnLog.join('\n')
-            : 'Р›РѕРі РїСѓСЃС‚ вЂ” РІРєР»СЋС‡РёС‚Рµ VPN РёР»Рё РІС‹РїРѕР»РЅРёС‚Рµ РґРёР°РіРЅРѕСЃС‚РёРєСѓ.'}
+            : 'Лог пуст — включите VPN или выполните диагностику.'}
         </pre>
       </section>
 
       <section className="rounded-3xl bg-slate-950/70 p-8 border border-slate-800/70 space-y-4 shadow-[0_20px_50px_rgba(148,163,184,0.12)]">
         <header>
-          <h3 className="text-lg font-semibold text-white">РћС‚С‡С‘С‚ РѕРєСЂСѓР¶РµРЅРёСЏ</h3>
+          <h3 className="text-lg font-semibold text-white">Отчёт окружения</h3>
           <p className="text-sm text-slate-400">
-            РСЃРїРѕР»СЊР·СѓР№С‚Рµ РїСЂРё РѕР±СЂР°С‰РµРЅРёРё РІ РїРѕРґРґРµСЂР¶РєСѓ вЂ” СЃРѕРґРµСЂР¶РёС‚ С‚РµРєСѓС‰РёРµ РѕС‚РІРµС‚С‹ API.
+            Используйте при обращении в поддержку — содержит текущие ответы API.
           </p>
         </header>
         <textarea
@@ -2206,5 +1851,3 @@ const handleServerSnapshot = useCallback(async () => {
 };
 
 export default ServerSettings;
-
-
