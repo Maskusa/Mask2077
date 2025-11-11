@@ -89,7 +89,19 @@ interface WireGuardPreflightResult {
     reused: boolean;
     ip?: string | null;
     name?: string | null;
+    publicKey?: string | null;
   };
+}
+
+interface ProfileCardField {
+  label: string;
+  value: string;
+  monospace?: boolean;
+}
+
+interface ProfileCardData {
+  title: string;
+  fields: ProfileCardField[];
 }
 
 const DEVICE_ID_STORAGE_KEY = 'vpn_device_id';
@@ -98,13 +110,13 @@ const PROXY_ENV_BYPASS = 'localhost,127.0.0.1';
 const DEFAULT_WIREGUARD_DNS = '1.1.1.1, 8.8.8.8';
 const DEFAULT_WIREGUARD_MTU = '1280';
 const DEFAULT_WIREGUARD_KEEPALIVE = '25';
-const DEFAULT_WIREGUARD_ALLOWED_IPS = '0.0.0.0/0, ::/0';
+const DEFAULT_WIREGUARD_ALLOWED_IPS = '0.0.0.0/0';
 const DEFAULT_API_TCP_PORT = 8787;
 const API_VERBOSE_PREVIEW_LIMIT = 4000;
 const MAX_VPN_LOG_ENTRIES = 500;
 const FULL_TEST_TYPES = ['ping', 'dns', 'tcp', 'http', 'https', 'api_tls'] as const;
 type FullTestType = (typeof FULL_TEST_TYPES)[number];
-const ENDPOINT_PORT_PROBES = [443, 8080, 8787, 1024, 51820];
+const ENDPOINT_PORT_PROBES = [443];
 const DNS_PROBE_HOSTS = [
   '45-151-183-153.sslip.io',
   'api.ipify.org',
@@ -594,6 +606,101 @@ const extractEndpointInfo = (configText: string): WireGuardEndpointInfo | null =
   };
 };
 
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const readConfigValue = (configText: string, directive: string): string | null => {
+  if (!configText || !directive) {
+    return null;
+  }
+  const pattern = new RegExp(`^\\s*${escapeRegExp(directive)}\\s*=\\s*(.+)$`, 'mi');
+  const match = pattern.exec(configText);
+  return match ? match[1].trim() : null;
+};
+
+interface PeerSummaryDetails {
+  endpoint?: string | null;
+  allowedIps?: string | null;
+  latestHandshake?: string | null;
+  transferReceived?: string | null;
+  transferSent?: string | null;
+  transferRaw?: string | null;
+}
+
+const extractPeerSummaryDetails = (
+  source: unknown,
+  peerPublicKey?: string | null
+): PeerSummaryDetails | null => {
+  if (!peerPublicKey) {
+    return null;
+  }
+  const summary =
+    typeof source === 'string'
+      ? source
+      : source && typeof source === 'object' && 'summary' in (source as Record<string, unknown>)
+      ? String((source as { summary?: unknown }).summary ?? '')
+      : '';
+  if (!summary) {
+    return null;
+  }
+  const target = peerPublicKey.trim();
+  if (!target) {
+    return null;
+  }
+  const lines = summary.split('\n');
+  let capture = false;
+  const details: PeerSummaryDetails = {};
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      continue;
+    }
+    if (line.toLowerCase().startsWith('peer:')) {
+      const value = line.slice(line.indexOf(':') + 1).trim();
+      if (capture && value !== target) {
+        break;
+      }
+      capture = value === target;
+      continue;
+    }
+    if (!capture) {
+      continue;
+    }
+    const separator = line.indexOf(':');
+    if (separator === -1) {
+      continue;
+    }
+    const key = line.slice(0, separator).trim().toLowerCase();
+    const value = line.slice(separator + 1).trim();
+    if (!value) {
+      continue;
+    }
+    switch (key) {
+      case 'endpoint':
+        details.endpoint = value;
+        break;
+      case 'allowed ips':
+        details.allowedIps = value;
+        break;
+      case 'latest handshake':
+        details.latestHandshake = value;
+        break;
+      case 'transfer': {
+        details.transferRaw = value;
+        const match = value.match(/([\d.,]+\s*\w+)\s+received,\s+([\d.,]+\s*\w+)\s+sent/i);
+        if (match) {
+          details.transferReceived = match[1].trim();
+          details.transferSent = match[2].trim();
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  return Object.keys(details).length > 0 ? details : null;
+};
+
 const overrideWireGuardEndpoint = (
   configText: string,
   endpoint: WireGuardEndpointInfo
@@ -829,6 +936,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   const [testBlockInProgress, setTestBlockInProgress] = useState(false);
   const [testBlockStatus, setTestBlockStatus] = useState<string | null>(null);
   const [portFallbackEnabled, setPortFallbackEnabled] = useState(false);
+  const [lastProfileResult, setLastProfileResult] = useState<WireGuardPreflightResult | null>(null);
   const displayedPortList = useMemo(
     () => (probePortList.length > 0 ? probePortList : ENDPOINT_PORT_PROBES),
     [probePortList]
@@ -967,9 +1075,19 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           const entry = diagnostic.results.find(
             (result) => (result.type ?? '').toLowerCase() === protocol
           );
-          const success = entry?.success ?? false;
+          let success = entry?.success ?? false;
           const latencyMs = entry?.latencyMs ?? null;
-          const message = entry?.message ?? null;
+          let message = entry?.message ?? null;
+          if (protocol === 'udp') {
+            const unknown =
+              typeof message === 'string' &&
+              message.trim().length > 0 &&
+              /unknown|unsupported/i.test(message);
+            if (!entry || unknown) {
+              success = false;
+              message = 'UDP-пробы не поддерживаются NativeVpn (пропущено)';
+            }
+          }
           rows.push({ port, protocol, success, latencyMs, message });
           appendVpnLog(`${logTag}_RESULT`, phase, { port, protocol, success, latencyMs, message });
         } catch (error) {
@@ -1188,35 +1306,12 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   );
 
   const loadProbePorts = useCallback(async (): Promise<number[]> => {
-    try {
-      const response = await callServerApi('/probe/ports', {
-        method: 'GET',
-        description: 'probe_ports',
-      });
-      const portsPayload = response.data ?? {};
-      const ports = Array.isArray(portsPayload?.ports) ? portsPayload.ports : [];
-      const normalized = ports
-        .map((port) => Number(port))
-        .filter((value) => Number.isFinite(value) && value > 0);
-      const allowedSet = new Set(
-        normalized.filter((value) => ENDPOINT_PORT_PROBES.includes(value))
-      );
-      const filtered =
-        allowedSet.size > 0
-          ? ENDPOINT_PORT_PROBES.filter((port) => allowedSet.has(port))
-          : [...ENDPOINT_PORT_PROBES];
-      setProbePortList(filtered);
-      appendVpnLog('PROBE_PORTS', 'loaded', {
-        requested: normalized.length,
-        applied: filtered.length,
-      });
-      return filtered;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      appendVpnLog('PROBE_PORTS', 'load_failed', { error: message });
-    }
-    return probePortList.length > 0 ? probePortList : [...ENDPOINT_PORT_PROBES];
-  }, [appendVpnLog, callServerApi, probePortList]);
+    setProbePortList([...ENDPOINT_PORT_PROBES]);
+    appendVpnLog('PROBE_PORTS', 'static_list_applied', {
+      count: ENDPOINT_PORT_PROBES.length,
+    });
+    return [...ENDPOINT_PORT_PROBES];
+  }, [appendVpnLog]);
 
   const resolveDeviceId = useCallback(async (): Promise<string> => {
     if (deviceIdRef.current) {
@@ -1268,6 +1363,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         reused?: boolean;
         ip?: string;
         name?: string;
+        public_key?: string;
       };
       const rawConfig = typeof profilePayload.config === 'string' ? profilePayload.config : null;
       if (!rawConfig) {
@@ -1380,7 +1476,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           `Server ListenPort (${serverListenPort}) differs from profile Endpoint (${endpointInfo.port}). Update the client profile before enabling VPN.`
         );
       }
-      return {
+      const result: WireGuardPreflightResult = {
         configText,
         endpointInfo: effectiveEndpointInfo,
         serverListenPort,
@@ -1389,8 +1485,12 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           reused,
           ip: profilePayload.ip ?? null,
           name: profilePayload.name ?? null,
+          publicKey:
+            typeof profilePayload.public_key === 'string' ? profilePayload.public_key : null,
         },
       };
+      setLastProfileResult(result);
+      return result;
     },
     [
       appendVpnLog,
@@ -1402,6 +1502,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       runDnsProbeMatrix,
       runUdpProbeMatrix,
       runPortProbeMatrix,
+      setLastProfileResult,
       updateChecklistStep,
     ]
   );
@@ -1867,7 +1968,9 @@ const handleServerSnapshot = useCallback(async () => {
       FULL_TEST_TYPES.forEach((id) => {
         upcomingResults[id] = { status: 'pending' };
       });
-      void runUdpProbeMatrix(preflight.endpointInfo.host, 'post');
+      if (diagHost) {
+        void runUdpProbeMatrix(diagHost, 'post');
+      }
       let processed = 0;
       const totalTracked = FULL_TEST_TYPES.length;
       diagnostic.results.forEach((entry: VpnDiagnosticEntry) => {
@@ -2001,6 +2104,58 @@ const handleServerSnapshot = useCallback(async () => {
       setDiagProgress(`Не удалось поделиться журналом: ${message}`);
     }
   }, [appendVpnLog, vpnLog]);
+
+  const profileCards = useMemo<{
+    interfaceCard: ProfileCardData;
+    peerCard: ProfileCardData;
+  } | null>(() => {
+    if (!lastProfileResult) {
+      return null;
+    }
+    const { configText, endpointInfo, profileMeta } = lastProfileResult;
+    const ensureValue = (value?: string | null) =>
+      value && value.trim().length > 0 ? value.trim() : 'н/д';
+    const interfaceName = ensureValue(profileMeta.name ?? profileMeta.deviceId);
+    const interfacePublicKey = ensureValue(profileMeta.publicKey);
+    const interfaceAddress = ensureValue(readConfigValue(configText, 'Address'));
+    const interfaceDns = ensureValue(readConfigValue(configText, 'DNS'));
+    const peerPublicKey = ensureValue(readConfigValue(configText, 'PublicKey'));
+    const configAllowedIps = readConfigValue(configText, 'AllowedIPs');
+    const peerSummary = extractPeerSummaryDetails(
+      serverMetrics.wireguardStatus,
+      profileMeta.publicKey
+    );
+    const allowedIps =
+      peerSummary?.allowedIps ?? configAllowedIps ?? DEFAULT_WIREGUARD_ALLOWED_IPS;
+    const endpointLabel =
+      peerSummary?.endpoint ?? `${endpointInfo.host}:${endpointInfo.port}`;
+    const statsLabel =
+      peerSummary?.transferReceived && peerSummary?.transferSent
+        ? `Принято: ${peerSummary.transferReceived}, Передано: ${peerSummary.transferSent}`
+        : peerSummary?.transferRaw ?? 'н/д';
+    const handshakeLabel = peerSummary?.latestHandshake ?? 'н/д';
+    return {
+      interfaceCard: {
+        title: 'Интерфейс',
+        fields: [
+          { label: 'Название', value: interfaceName },
+          { label: 'Публичный ключ', value: interfacePublicKey, monospace: true },
+          { label: 'Адреса', value: interfaceAddress },
+          { label: 'DNS-серверы', value: interfaceDns },
+        ],
+      },
+      peerCard: {
+        title: 'Пир',
+        fields: [
+          { label: 'Публичный ключ', value: peerPublicKey, monospace: true },
+          { label: 'Разрешённые IP-адреса', value: ensureValue(allowedIps) },
+          { label: 'Конечная точка', value: ensureValue(endpointLabel) },
+          { label: 'Статистика', value: statsLabel },
+          { label: 'Последнее рукопожатие', value: handshakeLabel },
+        ],
+      },
+    };
+  }, [lastProfileResult, serverMetrics.wireguardStatus]);
 
   const runtimeDuration = useMemo(() => {
     if (!runtime.connectedAt || !runtime.enabled) {
@@ -2283,12 +2438,59 @@ const handleServerSnapshot = useCallback(async () => {
           })}
         </div>
       </section>
+      <section className="rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-cyan-500/20 p-8 space-y-6 shadow-[0_20px_50px_rgba(6,182,212,0.15)]">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">WireGuard профиль</h3>
+            <p className="text-sm text-slate-400">
+              Сводка по последнему выданному конфигу: можно свериться с интерфейсом клиента в одно касание.
+            </p>
+          </div>
+          {lastProfileResult && (
+            <p className="text-xs text-slate-400">
+              Device ID: {lastProfileResult.profileMeta.deviceId}
+            </p>
+          )}
+        </div>
+        {profileCards ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[profileCards.interfaceCard, profileCards.peerCard].map((card) => (
+              <div
+                key={card.title}
+                className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 space-y-3"
+              >
+                <p className="text-base font-semibold text-white">{card.title}</p>
+                <div className="space-y-3">
+                  {card.fields.map((field) => (
+                    <div key={`${card.title}-${field.label}`} className="space-y-1">
+                      <p className="text-[11px] uppercase tracking-widest text-slate-400">
+                        {field.label}
+                      </p>
+                      <p
+                        className={`text-sm text-slate-100 ${
+                          field.monospace ? 'font-mono break-all' : 'break-words'
+                        }`}
+                      >
+                        {field.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">
+            Запросите профиль (через preflight или «Включить VPN»), чтобы отобразить ключи и адреса.
+          </p>
+        )}
+      </section>
       <section className="rounded-3xl bg-slate-950/70 border border-emerald-500/20 p-8 space-y-6 shadow-[0_20px_50px_rgba(16,185,129,0.12)]">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h3 className="text-lg font-semibold text-white">Порты WireGuard (UDP-проверки)</h3>
             <p className="text-sm text-slate-400">
-              Та же матрица, но через UDP 51820 — видно, доступен ли чистый WireGuard до и после подключения.
+              Та же матрица, но через UDP 443 — видно, доступен ли чистый WireGuard до и после подключения.
             </p>
           </div>
         </div>
@@ -2353,15 +2555,17 @@ const handleServerSnapshot = useCallback(async () => {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 className="text-lg font-semibold text-white">Smart порт</h3>
-            <p className="text-sm text-slate-400">Держим Endpoint на 45.151.183.153:51820 и не переключаемся без вашего разрешения.</p>
+            <p className="text-sm text-slate-400">
+              Держим Endpoint на 45.151.183.153:443 и не прыгаем по нестандартным портам без вашего разрешения.
+            </p>
           </div>
           <Button variant="neutral" onClick={togglePortFallback}>
             {portFallbackEnabled ? 'fallback включён' : 'fallback выключен'}
           </Button>
         </div>
         <p className="text-xs text-slate-500">
-          Когда fallback выключен, приложение не будет заменять порт 51820 на 443. Если UDP блокируется,
-          вручную вернитесь к 443 или включите fallback обратно.
+          Когда fallback выключен, приложение использует только 443. Если когда-нибудь понадобится другой TCP-порт,
+          включите fallback — мы попробуем выбрать любой доступный вариант из сервера (сейчас в списке только 443).
         </p>
       </section>
 

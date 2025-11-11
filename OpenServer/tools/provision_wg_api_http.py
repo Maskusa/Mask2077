@@ -30,28 +30,7 @@ WG_INTERFACE = os.environ.get('WG_INTERFACE', 'wg0')
 WG_CONFIG_PATH = os.environ.get('WG_CONFIG_PATH', f'/etc/wireguard/{WG_INTERFACE}.conf')
 PUB_ENDPOINT = os.environ.get('PUB_ENDPOINT')
 PROBE_PORTS_FILE = os.environ.get('PROBE_PORTS_FILE', '/etc/wireguard/probe_ports.txt')
-DEFAULT_PROBE_PORTS = [
-    443,
-    1443,
-    8080,
-    8443,
-    3389,
-    15443,
-    51820,
-    58210,
-    20053,
-    33445,
-    1315,
-    1194,
-    8888,
-    10053,
-    12912,
-    1024,
-    53,
-    123,
-    500,
-    65065,
-]
+DEFAULT_PROBE_PORTS = [443]
 
 class ClientRequestError(Exception):
     pass
@@ -231,7 +210,7 @@ def get_listen_port():
             return int(output)
     except Exception:
         pass
-    return 51820
+    return 443
 
 def extract_endpoint_port(config_text):
     if not config_text:
@@ -444,13 +423,13 @@ def collect_server_diag_snapshot(duration=5):
     snapshot['ip_route_get_1_1_1_1'] = safe_command_output(['ip', 'route', 'get', '1.1.1.1'])
     snapshot['iptables_forward'] = safe_command_output(['iptables', '-S', 'FORWARD'])
     snapshot['iptables_nat_postrouting'] = safe_command_output(['iptables', '-t', 'nat', '-S', 'POSTROUTING'])
-    snapshot['listening_wg_ports'] = safe_command_output(['/bin/sh', '-c', "ss -lunp | grep -E ':1024|:443|:51820'"])
+    snapshot['listening_wg_ports'] = safe_command_output(['/bin/sh', '-c', "ss -lunp | grep -E ':443'"])
     wg_brief_cmd = f"(wg show {WG_INTERFACE} | grep -E \"peer|latest handshake|transfer\") || true"
     snapshot['wg_brief'] = safe_command_output(['/bin/sh', '-c', wg_brief_cmd])
     snapshot['wg_full'] = safe_command_output(['wg', 'show', WG_INTERFACE])
     tcpdump_cmd = f"timeout {duration} tcpdump -ni {WG_INTERFACE} udp and port 53 2>&1 || true"
     snapshot['tcpdump_wg_udp53'] = safe_command_output(['/bin/sh', '-c', tcpdump_cmd])
-    snapshot['ss_udp_ports'] = safe_command_output(['/bin/sh', '-c', "ss -lun | grep -E ':1024|:443|:51820'"])
+    snapshot['ss_udp_ports'] = safe_command_output(['/bin/sh', '-c', "ss -lun | grep -E ':443'"])
     write_server_log(
         f"server_diag_snapshot duration={duration} wg0_len={len(snapshot['tcpdump']['wg0'])} ens3_len={len(snapshot['tcpdump']['ens3'])}"
     )

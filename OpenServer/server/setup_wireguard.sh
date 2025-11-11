@@ -7,7 +7,7 @@ PUB_ENDPOINT="${PUB_ENDPOINT:-45.151.183.153}"
 # Интерфейс WireGuard
 WG_IF="${WG_IF:-wg0}"
 # Порт WireGuard (UDP)
-WG_PORT="${WG_PORT:-51820}"
+WG_PORT="${WG_PORT:-443}"
 # Подсеть VPN и адрес сервера
 WG_SUBNET="${WG_SUBNET:-10.7.0.0/24}"
 WG_SERVER_IP="${WG_SERVER_IP:-10.7.0.1}"
@@ -113,7 +113,7 @@ endpoint() {
   ip=$(curl -fsS ifconfig.me || true)
   port=$(awk -F= '/ListenPort/ {print $2}' "$WG_DIR/$WG_IF.conf" | tr -d ' ')
   if [[ -z "$ip" ]]; then ip=$(hostname -I | awk '{print $1}'); fi
-  echo "$ip:${port:-51820}"
+  echo "$ip:${port:-443}"
 }
 
 next_ip() {
@@ -173,7 +173,7 @@ DNS = ${sDNS:-1.1.1.1}
 [Peer]
 PublicKey = $spub
 Endpoint = $endpoint
-AllowedIPs = 0.0.0.0/0, ::/0
+AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 "
   echo "$cfg" | tee "$CLIENTS_DIR/$name.conf" >/dev/null
