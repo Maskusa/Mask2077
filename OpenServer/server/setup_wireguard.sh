@@ -7,10 +7,10 @@ PUB_ENDPOINT="${PUB_ENDPOINT:-45.151.183.153}"
 # Интерфейс WireGuard
 WG_IF="${WG_IF:-wg0}"
 # Порт WireGuard (UDP)
-WG_PORT="${WG_PORT:-443}"
+WG_PORT="${WG_PORT:-51820}"
 # Подсеть VPN и адрес сервера
-WG_SUBNET="${WG_SUBNET:-10.66.66.0/24}"
-WG_SERVER_IP="${WG_SERVER_IP:-10.66.66.1}"
+WG_SUBNET="${WG_SUBNET:-10.7.0.0/24}"
+WG_SERVER_IP="${WG_SERVER_IP:-10.7.0.1}"
 # DNS для клиентов
 WG_DNS="${WG_DNS:-1.1.1.1,1.0.0.1}"
 
@@ -50,7 +50,7 @@ generate_server_keys() {
 
 write_wg_conf() {
   local wan
-  wan=$(detect_wan_iface)
+  wan="${WAN_IF:-$(detect_wan_iface)}"
   local priv
   priv=$(cat /etc/wireguard/server_private.key)
 
@@ -60,12 +60,12 @@ Address = ${WG_SERVER_IP}/24
 ListenPort = ${WG_PORT}
 PrivateKey = ${priv}
 # NAT и форвардинг трафика через внешний интерфейс
-PostUp = iptables -t nat -A POSTROUTING -o $(ip -o -4 route show to default | awk '{print $5}') -j MASQUERADE; \
-         iptables -A FORWARD -i $(ip -o -4 route show to default | awk '{print $5}') -o ${WG_IF} -m state --state RELATED,ESTABLISHED -j ACCEPT; \
-         iptables -A FORWARD -i ${WG_IF} -o $(ip -o -4 route show to default | awk '{print $5}') -j ACCEPT
-PostDown = iptables -t nat -D POSTROUTING -o $(ip -o -4 route show to default | awk '{print $5}') -j MASQUERADE; \
-           iptables -D FORWARD -i $(ip -o -4 route show to default | awk '{print $5}') -o ${WG_IF} -m state --state RELATED,ESTABLISHED -j ACCEPT; \
-           iptables -D FORWARD -i ${WG_IF} -o $(ip -o -4 route show to default | awk '{print $5}') -j ACCEPT
+PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET} -o ${wan} -j MASQUERADE; \
+         iptables -A FORWARD -i ${wan} -o ${WG_IF} -m state --state RELATED,ESTABLISHED -j ACCEPT; \
+         iptables -A FORWARD -i ${WG_IF} -o ${wan} -j ACCEPT
+PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET} -o ${wan} -j MASQUERADE; \
+           iptables -D FORWARD -i ${wan} -o ${WG_IF} -m state --state RELATED,ESTABLISHED -j ACCEPT; \
+           iptables -D FORWARD -i ${WG_IF} -o ${wan} -j ACCEPT
 SaveConfig = true
 EOF
 

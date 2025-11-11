@@ -30,7 +30,7 @@ export interface VpnStats {
   lastRestartReason?: string | null;
 }
 
-export type VpnDiagnosticType = 'ping' | 'dns' | 'tcp' | 'http' | 'https';
+export type VpnDiagnosticType = 'ping' | 'dns' | 'tcp' | 'udp' | 'http' | 'https';
 
 export interface VpnDiagnosticRequest {
   host?: string;

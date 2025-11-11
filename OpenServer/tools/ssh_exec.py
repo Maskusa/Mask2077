@@ -42,6 +42,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help='Explicit path to plink executable (optional).',
     )
+    parser.add_argument(
+        '--hostkey',
+        default=None,
+        help='Optional host key fingerprint for plink (e.g. "ssh-ed25519 255 ..." ).',
+    )
     return parser.parse_args()
 
 
@@ -117,6 +122,7 @@ def run_via_plink(
     port: int,
     timeout: int,
     plink_path: str | None,
+    hostkey: str | None = None,
 ) -> tuple[int, bytes, bytes]:
     path = find_plink(plink_path)
     if not path:
@@ -128,9 +134,15 @@ def run_via_plink(
         str(port),
         '-pw',
         password,
-        f'{username}@{host}',
-        command,
     ]
+    if hostkey:
+        cmd.extend(['-hostkey', hostkey])
+    cmd.extend(
+        [
+            f'{username}@{host}',
+            command,
+        ]
+    )
     try:
         proc = subprocess.run(
             cmd,
@@ -152,6 +164,7 @@ def main() -> int:
         kwargs = {'port': args.port, 'timeout': args.timeout}
         if use_plink:
             kwargs['plink_path'] = args.plink_path
+            kwargs['hostkey'] = args.hostkey
         exit_code, out, err = runner(
             args.host,
             args.username,

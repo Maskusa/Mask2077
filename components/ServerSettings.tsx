@@ -23,7 +23,6 @@ import {
   type VpnState,
 } from '../native/nativeVpn';
 
-type ProxyMode = 'http' | 'socks' | 'wireguard';
 type RefreshReason = 'manual' | 'ping' | 'auto';
 
 interface ServerSettingsProps {
@@ -34,18 +33,12 @@ interface ServerSettingsProps {
 
 interface ProxyFormState {
   host: string;
-  httpPort: string;
-  socksPort: string;
-  username: string;
-  password: string;
   apiBase: string;
   apiToken: string;
-  mode: ProxyMode;
 }
 
 interface ProxyRuntimeState {
   enabled: boolean;
-  proxyType: ProxyMode;
   host: string;
   port: number;
   latencyMs: number | null;
@@ -109,38 +102,9 @@ const DEFAULT_WIREGUARD_ALLOWED_IPS = '0.0.0.0/0, ::/0';
 const DEFAULT_API_TCP_PORT = 8787;
 const API_VERBOSE_PREVIEW_LIMIT = 4000;
 const MAX_VPN_LOG_ENTRIES = 500;
-const FULL_TEST_TYPES = [
-  { id: 'ping', label: 'PING 1.1.1.1' },
-  { id: 'dns', label: 'DNS 1.1.1.1' },
-  { id: 'tcp', label: `TCP ${DEFAULT_API_TCP_PORT}` },
-  { id: 'udp', label: 'UDP 53' },
-  { id: 'http', label: 'HTTP 1.1.1.1' },
-  { id: 'https', label: 'HTTPS api.ipify.org' },
-  { id: 'api_tls', label: `API TLS (порт ${DEFAULT_API_TCP_PORT})` },
-] as const;
-type FullTestType = (typeof FULL_TEST_TYPES)[number]['id'];
-const ENDPOINT_PORT_PROBES = [
-  443,
-  1443,
-  8080,
-  8443,
-  3389,
-  15443,
-  51820,
-  58210,
-  20053,
-  33445,
-  1315,
-  1194,
-  8888,
-  10053,
-  12912,
-  1024,
-  53,
-  123,
-  500,
-  65065,
-];
+const FULL_TEST_TYPES = ['ping', 'dns', 'tcp', 'http', 'https', 'api_tls'] as const;
+type FullTestType = (typeof FULL_TEST_TYPES)[number];
+const ENDPOINT_PORT_PROBES = [443, 8080, 8787, 1024, 51820];
 const DNS_PROBE_HOSTS = [
   '45-151-183-153.sslip.io',
   'api.ipify.org',
@@ -158,6 +122,7 @@ interface DiagResult {
 
 interface PortProbeRow {
   port: number;
+  protocol: 'tcp' | 'udp';
   success: boolean;
   latencyMs: number | null;
   message: string | null;
@@ -179,12 +144,15 @@ interface ProbeSummary<Row> {
 
 const buildInitialDiagResults = (): Record<FullTestType, DiagResult> =>
   FULL_TEST_TYPES.reduce(
-    (acc, test) => {
-      acc[test.id] = { status: 'idle' };
+    (acc, testId) => {
+      acc[testId] = { status: 'idle' };
       return acc;
     },
     {} as Record<FullTestType, DiagResult>
   );
+
+const isFullTestType = (value: string): value is FullTestType =>
+  FULL_TEST_TYPES.includes(value as FullTestType);
 
 const getDiagStatusMeta = (status: DiagResult['status']) => {
   switch (status) {
@@ -390,6 +358,38 @@ const EXTERNAL_IP_SOURCES: ExternalIpSource[] = [
     type: 'text',
   },
 ];
+
+const IP_DISCOVERY_DELAY_MS = 5_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const buildIpDiscoveryQueue = (): ExternalIpSource[] => {
+  const queue: ExternalIpSource[] = [...EXTERNAL_IP_SOURCES];
+  const seen = new Set<string>(queue.map((item) => item.id));
+  for (const source of EXTERNAL_IP_SOURCES) {
+    try {
+      const parsed = new URL(source.url);
+      if (parsed.protocol === 'https:') {
+        parsed.protocol = 'http:';
+        const variant: ExternalIpSource = {
+          ...source,
+          id: `${source.id}-http`,
+          label: `${source.label} (http)`,
+          url: parsed.toString(),
+        };
+        if (!seen.has(variant.id)) {
+          queue.push(variant);
+          seen.add(variant.id);
+        }
+      }
+    } catch {
+      // ignore invalid URLs
+    }
+  }
+  return queue;
+};
+
+const IP_DISCOVERY_PROBES = buildIpDiscoveryQueue();
 
 const formatLatency = (value: number | null): string =>
   value == null || value < 0 ? 'n/a' : `${value} ms`;
@@ -735,7 +735,7 @@ const buildEnvironmentReport = (
   const host = runtime.host || form.host || PROXY_CONFIG.host;
   const lines = [
     `Host   : ${host}:${runtime.port}`,
-    `Mode   : ${form.mode.toUpperCase()}`,
+    `Mode   : WireGuard`,
     `VPN    : ${vpnRunning ? 'running' : 'stopped'}`,
     `API    : ${runtime.apiBase}`,
     `Token  : ${runtime.apiToken.slice(0, 4)}***`,
@@ -760,13 +760,8 @@ const buildEnvironmentReport = (
 
 const initialForm: ProxyFormState = {
   host: PROXY_CONFIG.host ?? '',
-  httpPort: String(PROXY_CONFIG.httpPort ?? 8080),
-  socksPort: String(PROXY_CONFIG.socksPort ?? 1080),
-  username: '',
-  password: '',
   apiBase: '',
   apiToken: PROXY_CONFIG.apiToken ?? '',
-  mode: 'wireguard',
 };
 
 const ServerSettings: React.FC<ServerSettingsProps> = ({
@@ -777,7 +772,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   const [form, setForm] = useState<ProxyFormState>(initialForm);
   const [runtime, setRuntime] = useState<ProxyRuntimeState>({
     enabled: false,
-    proxyType: 'wireguard',
     host: '',
     port: 0,
     latencyMs: null,
@@ -821,6 +815,10 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     pre: null,
     post: null,
   });
+  const [udpProbeResults, setUdpProbeResults] = useState<Record<ProbePhase, ProbeSummary<PortProbeRow> | null>>({
+    pre: null,
+    post: null,
+  });
   const [dnsProbeResults, setDnsProbeResults] = useState<Record<ProbePhase, ProbeSummary<DnsProbeRow> | null>>({
     pre: null,
     post: null,
@@ -830,6 +828,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
   const [probePortList, setProbePortList] = useState<number[]>(ENDPOINT_PORT_PROBES);
   const [testBlockInProgress, setTestBlockInProgress] = useState(false);
   const [testBlockStatus, setTestBlockStatus] = useState<string | null>(null);
+  const [portFallbackEnabled, setPortFallbackEnabled] = useState(false);
   const displayedPortList = useMemo(
     () => (probePortList.length > 0 ? probePortList : ENDPOINT_PORT_PROBES),
     [probePortList]
@@ -906,7 +905,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     (initialStatus: DiagResult['status'] = 'idle') => {
       setDiagResults(() => {
         const initial = buildInitialDiagResults();
-        FULL_TEST_TYPES.forEach(({ id }) => {
+        FULL_TEST_TYPES.forEach((id) => {
           initial[id] = { status: initialStatus };
         });
         return initial;
@@ -916,8 +915,17 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     []
   );
 
-  const runPortProbeMatrix = useCallback(
-    async (host: string, phase: ProbePhase, ports?: number[]) => {
+  const runSocketProbeMatrix = useCallback(
+    async (
+      host: string,
+      phase: ProbePhase,
+      ports: number[] | undefined,
+      protocol: 'tcp' | 'udp',
+      logTag: 'PORT_PROBE' | 'UDP_PROBE',
+      setter: React.Dispatch<
+        React.SetStateAction<Record<ProbePhase, ProbeSummary<PortProbeRow> | null>>
+      >
+    ) => {
       if (!host) {
         return [];
       }
@@ -927,15 +935,16 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           : probePortList.length > 0
           ? probePortList
           : ENDPOINT_PORT_PROBES;
-      appendVpnLog('PORT_PROBE', `${phase}_start`, { host, ports: availablePorts });
+      appendVpnLog(logTag, `${phase}_start`, { host, ports: availablePorts, protocol });
       if (!vpnPluginAvailable || !NativeVpn?.diagnose) {
         const fallbackRows = availablePorts.map<PortProbeRow>((port) => ({
           port,
+          protocol,
           success: false,
           latencyMs: null,
-          message: '??????????? ?????????? (NativeVpn)',
+          message: 'Диагностика недоступна (NativeVpn)',
         }));
-        setPortProbeResults((previous) => ({
+        setter((previous) => ({
           ...previous,
           [phase]: {
             host,
@@ -952,24 +961,24 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           const diagnostic = await NativeVpn.diagnose({
             host,
             port,
-            tests: ['tcp'],
+            tests: [protocol as VpnDiagnosticType],
             timeoutMs: 6000,
           });
           const entry = diagnostic.results.find(
-            (result) => (result.type ?? '').toLowerCase() === 'tcp'
+            (result) => (result.type ?? '').toLowerCase() === protocol
           );
           const success = entry?.success ?? false;
           const latencyMs = entry?.latencyMs ?? null;
           const message = entry?.message ?? null;
-          rows.push({ port, success, latencyMs, message });
-          appendVpnLog('PORT_PROBE_RESULT', phase, { port, success, latencyMs, message });
+          rows.push({ port, protocol, success, latencyMs, message });
+          appendVpnLog(`${logTag}_RESULT`, phase, { port, protocol, success, latencyMs, message });
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          rows.push({ port, success: false, latencyMs: null, message });
-          appendVpnLog('PORT_PROBE_ERROR', phase, { port, error: message });
+          rows.push({ port, protocol, success: false, latencyMs: null, message });
+          appendVpnLog(`${logTag}_ERROR`, phase, { port, protocol, error: message });
         }
       }
-      setPortProbeResults((previous) => ({
+      setter((previous) => ({
         ...previous,
         [phase]: {
           host,
@@ -981,6 +990,18 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       return rows;
     },
     [appendVpnLog, probePortList, vpnPluginAvailable]
+  );
+
+  const runPortProbeMatrix = useCallback(
+    (host: string, phase: ProbePhase, ports?: number[]) =>
+      runSocketProbeMatrix(host, phase, ports, 'tcp', 'PORT_PROBE', setPortProbeResults),
+    [runSocketProbeMatrix]
+  );
+
+  const runUdpProbeMatrix = useCallback(
+    (host: string, phase: ProbePhase, ports?: number[]) =>
+      runSocketProbeMatrix(host, phase, ports, 'udp', 'UDP_PROBE', setUdpProbeResults),
+    [runSocketProbeMatrix]
   );
   const runDnsProbeMatrix = useCallback(
     async (hosts: string[], phase: ProbePhase) => {
@@ -1086,6 +1107,23 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     return { host, token, candidateBases };
   }, [form.apiBase, form.apiToken, form.host]);
 
+  const diagHost = useMemo(() => form.host.trim() || PROXY_CONFIG.host, [form.host]);
+  const diagApiBase = useMemo(
+    () => normalizeApiBase(form.apiBase, diagHost),
+    [form.apiBase, diagHost]
+  );
+  const fullTestLabels = useMemo<Record<FullTestType, string>>(
+    () => ({
+      ping: `PING ${diagHost}`,
+      dns: `DNS ${diagHost}`,
+      tcp: `TCP ${diagHost}:${DEFAULT_API_TCP_PORT}`,
+      http: 'HTTP api.ipify.org',
+      https: 'HTTPS api.ipify.org',
+      api_tls: `TLS ${diagApiBase}/system/info`,
+    }),
+    [diagApiBase, diagHost]
+  );
+
   const callServerApi = useCallback(
     async (path: string, options: CallServerApiOptions = {}): Promise<ApiCallResult> => {
       const { token, candidateBases } = buildApiContext();
@@ -1160,16 +1198,24 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       const normalized = ports
         .map((port) => Number(port))
         .filter((value) => Number.isFinite(value) && value > 0);
-      if (normalized.length > 0) {
-        setProbePortList(normalized);
-        appendVpnLog('PROBE_PORTS', 'loaded', { count: normalized.length });
-        return normalized;
-      }
+      const allowedSet = new Set(
+        normalized.filter((value) => ENDPOINT_PORT_PROBES.includes(value))
+      );
+      const filtered =
+        allowedSet.size > 0
+          ? ENDPOINT_PORT_PROBES.filter((port) => allowedSet.has(port))
+          : [...ENDPOINT_PORT_PROBES];
+      setProbePortList(filtered);
+      appendVpnLog('PROBE_PORTS', 'loaded', {
+        requested: normalized.length,
+        applied: filtered.length,
+      });
+      return filtered;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       appendVpnLog('PROBE_PORTS', 'load_failed', { error: message });
     }
-    return probePortList.length > 0 ? probePortList : ENDPOINT_PORT_PROBES;
+    return probePortList.length > 0 ? probePortList : [...ENDPOINT_PORT_PROBES];
   }, [appendVpnLog, callServerApi, probePortList]);
 
   const resolveDeviceId = useCallback(async (): Promise<string> => {
@@ -1253,23 +1299,40 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           : 'DNS не отвечает (до подключения)'
       );
       const availablePorts = await loadProbePorts();
-      const portMatrix = await runPortProbeMatrix(endpointInfo.host, 'pre', availablePorts);
-      const reachablePort = portMatrix.find((row) => row.success);
-      updateChecklistStep(
-        'endpointReachable',
-        reachablePort ? 'success' : 'error',
-        reachablePort
-          ? `TCP ${reachablePort.port} (${reachablePort.latencyMs ?? '?'} мс)`
-          : 'Нет доступных портов (до подключения)'
-      );
+      void runUdpProbeMatrix(endpointInfo.host, 'pre', availablePorts);
+      const defaultPortMatrix = await runPortProbeMatrix(endpointInfo.host, 'pre', [
+        endpointInfo.port,
+      ]);
+      const defaultReachable = defaultPortMatrix.find((row) => row.success);
+      let fallbackMatrix: PortProbeRow[] = [];
+      let fallbackReachable: PortProbeRow | undefined;
+      if (portFallbackEnabled && !defaultReachable) {
+        fallbackMatrix = await runPortProbeMatrix(endpointInfo.host, 'pre', availablePorts);
+        fallbackReachable = fallbackMatrix.find((row) => row.success);
+      }
+      const reachablePort = defaultReachable ?? fallbackReachable;
+      const endpointDetail = reachablePort
+        ? `TCP ${reachablePort.port} (${reachablePort.latencyMs ?? '?'} мс)`
+        : portFallbackEnabled
+        ? 'Нет доступных портов (до подключения)'
+        : `Порт ${endpointInfo.port} недоступен (fallback отключён)`;
+      updateChecklistStep('endpointReachable', reachablePort ? 'success' : 'error', endpointDetail);
 
-      const effectiveEndpointInfo = reachablePort
-        ? { ...endpointInfo, port: reachablePort.port }
-        : endpointInfo;
-      const configText =
-        reachablePort && reachablePort.port !== endpointInfo.port
-          ? overrideWireGuardEndpoint(normalizedConfig, effectiveEndpointInfo)
-          : normalizedConfig;
+      const defaultInUse = Boolean(defaultReachable);
+      const effectiveEndpointInfo =
+        defaultInUse || !portFallbackEnabled
+          ? endpointInfo
+          : reachablePort
+          ? { ...endpointInfo, port: reachablePort.port }
+          : endpointInfo;
+      const shouldOverride =
+        portFallbackEnabled &&
+        !defaultInUse &&
+        reachablePort &&
+        reachablePort.port !== endpointInfo.port;
+      const configText = shouldOverride
+        ? overrideWireGuardEndpoint(normalizedConfig, effectiveEndpointInfo)
+        : normalizedConfig;
       const serverListenPort = extractListenPortFromSummary(wgStatusResponse.data);
       const reused = Boolean(profilePayload.reused);
       appendVpnLog(
@@ -1282,9 +1345,8 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
           serverListenPort: serverListenPort ?? 'n/a',
           profileIp: profilePayload.ip ?? 'n/a',
           profileName: profilePayload.name ?? 'n/a',
-          endpointPortOverridden:
-            Boolean(reachablePort && reachablePort.port !== endpointInfo.port) ||
-            undefined,
+          endpointPortOverridden: shouldOverride || undefined,
+          portFallbackEnabled,
         },
         true
       );
@@ -1330,16 +1392,18 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
         },
       };
     },
-      [
-        appendVpnLog,
-        callServerApi,
-        loadProbePorts,
-        resolveDeviceId,
-        runDnsProbeMatrix,
-        runPortProbeMatrix,
-        updateChecklistStep,
-        overrideWireGuardEndpoint,
-      ]
+    [
+      appendVpnLog,
+      callServerApi,
+      loadProbePorts,
+      overrideWireGuardEndpoint,
+      portFallbackEnabled,
+      resolveDeviceId,
+      runDnsProbeMatrix,
+      runUdpProbeMatrix,
+      runPortProbeMatrix,
+      updateChecklistStep,
+    ]
   );
 
   const verifyEndpointReachability = useCallback(
@@ -1416,47 +1480,118 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     }
   }, [appendVpnLog, loadProbePorts, performWireGuardPreflight]);
 
-  const refreshExternalIp = useCallback(async () => {
-    const reasons: string[] = [];
-    updateChecklistStep('ipUpdated', 'in_progress', 'Запрос внешнего IP');
-    for (const source of EXTERNAL_IP_SOURCES) {
+  const togglePortFallback = useCallback(() => {
+    setPortFallbackEnabled((previous) => {
+      const next = !previous;
+      appendVpnLog('PORT_FALLBACK', next ? 'enabled' : 'disabled', {
+        source: 'manual_toggle',
+      });
+      return next;
+    });
+  }, [appendVpnLog]);
+
+  const runExternalIpDiscovery = useCallback(async () => {
+    const attempts: string[] = [];
+    let firstSuccess: { ip: string; source: string } | null = null;
+    for (let index = 0; index < IP_DISCOVERY_PROBES.length; index += 1) {
+      const probe = IP_DISCOVERY_PROBES[index];
+      appendVpnLog('IP_DISCOVERY', 'attempt_start', {
+        id: probe.id,
+        label: probe.label,
+        url: probe.url,
+      });
       try {
         const response = await CapacitorHttp.request({
-          url: source.url,
+          url: probe.url,
           method: 'GET',
           headers: {
             Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8',
           },
         });
-        if ((response.status ?? 200) >= 400) {
-          reasons.push(`${source.label}: HTTP ${response.status}`);
-          continue;
-        }
-        const ip = parseExternalIp(source, response.data ?? null);
-        if (ip && ip.length > 2) {
-          if (!initialIp) {
-            setInitialIp(ip);
+        const status = response.status ?? 200;
+        if (status >= 400) {
+          const message = `HTTP ${status}`;
+          attempts.push(`${probe.label}: ${message}`);
+          appendVpnLog('IP_DISCOVERY', 'http_error', {
+            id: probe.id,
+            url: probe.url,
+            status,
+          });
+        } else {
+          const ip = parseExternalIp(probe, response.data ?? null);
+          if (ip && ip.length > 2) {
+            attempts.push(`${probe.label}: ${ip}`);
+            appendVpnLog('IP_DISCOVERY', 'success', {
+              id: probe.id,
+              url: probe.url,
+              ip,
+              status,
+            });
+            if (!firstSuccess) {
+              firstSuccess = { ip, source: probe.label };
+            }
+          } else {
+            attempts.push(`${probe.label}: invalid response`);
+            appendVpnLog('IP_DISCOVERY', 'invalid_response', {
+              id: probe.id,
+              url: probe.url,
+              status,
+            });
           }
-          setCurrentIp(ip);
-          setIpSourceLabel(source.label);
-          setIpError(null);
-          appendVpnLog('IP', 'external IP updated', { ip, source: source.label });
-          updateChecklistStep('ipUpdated', 'success', `${ip} (${source.label})`);
-          return ip;
         }
-        reasons.push(`${source.label}: invalid response`);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        reasons.push(`${source.label}: ${message}`);
+        attempts.push(`${probe.label}: ${message}`);
+        appendVpnLog('IP_DISCOVERY', 'error', {
+          id: probe.id,
+          url: probe.url,
+          error: message,
+        });
+      }
+      if (index < IP_DISCOVERY_PROBES.length - 1) {
+        await sleep(IP_DISCOVERY_DELAY_MS);
       }
     }
-    const combined = reasons.join(' | ');
+    appendVpnLog('IP_DISCOVERY', 'sequence_complete', {
+      success: Boolean(firstSuccess),
+      attempts: IP_DISCOVERY_PROBES.length,
+      detail: attempts.join(' | '),
+    });
+    return {
+      ip: firstSuccess?.ip ?? null,
+      source: firstSuccess?.source ?? null,
+      log: attempts.join(' | '),
+    };
+  }, [appendVpnLog]);
+
+  const refreshExternalIp = useCallback(async () => {
+    updateChecklistStep('ipUpdated', 'in_progress', 'Запрос внешнего IP');
+    const discovery = await runExternalIpDiscovery();
+    if (discovery.ip) {
+      if (!initialIp) {
+        setInitialIp(discovery.ip);
+      }
+      setCurrentIp(discovery.ip);
+      setIpSourceLabel(discovery.source ?? 'ip discovery');
+      setIpError(null);
+      appendVpnLog('IP', 'external IP updated', {
+        ip: discovery.ip,
+        source: discovery.source ?? 'ip discovery',
+      });
+      updateChecklistStep(
+        'ipUpdated',
+        'success',
+        `${discovery.ip} (${discovery.source ?? 'ip discovery'})`
+      );
+      return discovery.ip;
+    }
+    const combined = discovery.log || 'Не удалось получить IP';
     setIpError(combined);
     setIpSourceLabel(null);
     appendVpnLog('IP_ERROR', 'failed to detect IP', { error: combined });
-    updateChecklistStep('ipUpdated', 'error', combined || 'Не удалось получить IP');
+    updateChecklistStep('ipUpdated', 'error', combined);
     return null;
-  }, [appendVpnLog, initialIp, updateChecklistStep]);
+  }, [appendVpnLog, initialIp, runExternalIpDiscovery, updateChecklistStep]);
 
   const refreshStatus = useCallback(
     async (options: { reason: RefreshReason; silent?: boolean } = { reason: 'manual' }) => {
@@ -1564,12 +1699,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       await verifyEndpointReachability(preflight.endpointInfo);
       const configBase64 = encodeUtf8Base64(preflight.configText);
       const vpnResult = await NativeVpn.start({
-        host: form.host || PROXY_CONFIG.host,
-        httpPort: Number(form.httpPort) || 8080,
-        socksPort: Number(form.socksPort) || 1080,
-        username: form.username,
-        password: form.password,
-        mode: 'HTTP',
         wireguardConfigBase64: configBase64,
       });
       setVpnState(vpnResult);
@@ -1585,7 +1714,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
       setRuntime((previous) => ({
         ...previous,
         enabled: vpnResult.running,
-        proxyType: 'wireguard',
         host: preflight.endpointInfo.host,
         port: preflight.endpointInfo.port,
         connectedAt: vpnResult.running ? Date.now() : null,
@@ -1632,13 +1760,10 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({
     form.apiBase,
     form.apiToken,
     form.host,
-    form.httpPort,
-    form.password,
-    form.socksPort,
-    form.username,
     isNativePlatform,
     performWireGuardPreflight,
     runDnsProbeMatrix,
+    runUdpProbeMatrix,
     runPortProbeMatrix,
     refreshStatus,
     resetConnectionChecklist,
@@ -1723,29 +1848,30 @@ const handleServerSnapshot = useCallback(async () => {
       return;
     }
     setDiagnosticsRunning(true);
-    setDiagProgress('Запускаем полный тест (PING/DNS/TCP/UDP/HTTP/HTTPS)...');
+    setDiagProgress('Запускаем полный тест (PING/DNS/TCP + HTTP/HTTPS + TLS)...');
     resetDiagResults('pending');
     setLastDiagAt(null);
     appendVpnLog('DIAG', 'full_test_requested', {
-      host: form.host || PROXY_CONFIG.host,
+      host: diagHost,
       tcpPort: DEFAULT_API_TCP_PORT,
     });
     try {
       const request: VpnDiagnosticRequest = {
-        host: form.host || PROXY_CONFIG.host,
+        host: diagHost,
         port: DEFAULT_API_TCP_PORT,
         tests: ['ping', 'dns', 'tcp', 'http', 'https'],
         timeoutMs: 8000,
       };
       const diagnostic = await NativeVpn.diagnose(request);
       const upcomingResults = buildInitialDiagResults();
-      FULL_TEST_TYPES.forEach(({ id }) => {
+      FULL_TEST_TYPES.forEach((id) => {
         upcomingResults[id] = { status: 'pending' };
       });
+      void runUdpProbeMatrix(preflight.endpointInfo.host, 'post');
       let processed = 0;
       const totalTracked = FULL_TEST_TYPES.length;
       diagnostic.results.forEach((entry: VpnDiagnosticEntry) => {
-        const normalized = (entry.type ?? '').toLowerCase() as FullTestType;
+        const normalized = (entry.type ?? '').toLowerCase();
         appendVpnLog('DIAG_RESULT', 'full_test', {
           type: entry.type,
           success: entry.success,
@@ -1753,7 +1879,7 @@ const handleServerSnapshot = useCallback(async () => {
           status: entry.status ?? null,
           message: entry.message ?? null,
         });
-        if (FULL_TEST_TYPES.some((test) => test.id === normalized)) {
+        if (isFullTestType(normalized)) {
           processed += 1;
           upcomingResults[normalized] = {
             status: entry.success ? 'success' : 'error',
@@ -1763,10 +1889,10 @@ const handleServerSnapshot = useCallback(async () => {
           setDiagProgressValue(Math.min(processed / totalTracked, 1));
         }
       });
-      if (FULL_TEST_TYPES.some((test) => test.id === 'api_tls')) {
-        const tlsBase = normalizeApiBase(form.apiBase, form.host || PROXY_CONFIG.host);
+      if (FULL_TEST_TYPES.includes('api_tls')) {
+        const tlsBase = diagApiBase;
         const token = form.apiToken.trim() || PROXY_CONFIG.apiToken;
-        setDiagProgress('Проверяем TLS API (system/info)...');
+        setDiagProgress(`Проверяем TLS API (${tlsBase}/system/info)...`);
         try {
           const startedTls = Date.now();
           const response = await CapacitorHttp.request({
@@ -1799,12 +1925,9 @@ const handleServerSnapshot = useCallback(async () => {
           upcomingResults.api_tls = { status: 'error', message };
         }
       }
-      FULL_TEST_TYPES.forEach(({ id }) => {
+      FULL_TEST_TYPES.forEach((id) => {
         if (upcomingResults[id].status === 'pending') {
-          upcomingResults[id] =
-            id === 'udp'
-              ? { status: 'idle', message: 'Тест UDP недоступен на этом клиенте' }
-              : { status: 'error', message: 'Нет данных от диагностики' };
+          upcomingResults[id] = { status: 'error', message: 'Нет данных от диагностики' };
         }
       });
       setDiagResults(upcomingResults);
@@ -1834,8 +1957,8 @@ const handleServerSnapshot = useCallback(async () => {
     }
   }, [
     appendVpnLog,
-    form.host,
-    form.apiBase,
+    diagApiBase,
+    diagHost,
     form.apiToken,
     isNativePlatform,
     refreshExternalIp,
@@ -1919,12 +2042,6 @@ const handleServerSnapshot = useCallback(async () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {renderInput('Host', 'host', 'text', '45.151.183.153')}
-          {renderInput('HTTP порт', 'httpPort', 'text', '8080')}
-          {renderInput('SOCKS порт', 'socksPort', 'text', '1080')}
-          {renderInput('Логин (HTTP/SOCKS)', 'username')}
-          {renderInput('Пароль (HTTP/SOCKS)', 'password', 'password', undefined, {
-            autoComplete: 'current-password',
-          })}
           {renderInput('API token', 'apiToken', 'text', 'e55757...', {
             autoComplete: 'off',
           })}
@@ -2166,6 +2283,87 @@ const handleServerSnapshot = useCallback(async () => {
           })}
         </div>
       </section>
+      <section className="rounded-3xl bg-slate-950/70 border border-emerald-500/20 p-8 space-y-6 shadow-[0_20px_50px_rgba(16,185,129,0.12)]">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Порты WireGuard (UDP-проверки)</h3>
+            <p className="text-sm text-slate-400">
+              Та же матрица, но через UDP 51820 — видно, доступен ли чистый WireGuard до и после подключения.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {PROBE_PHASES.map((phase) => {
+            const summary = udpProbeResults[phase];
+            return (
+              <div key={`udp-${phase}`} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-base font-semibold text-white">
+                      {phase === 'pre' ? 'До подключения' : 'Внутри туннеля'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {summary
+                        ? `Хост: ${summary.host} • ${formatTimestamp(summary.timestamp)}`
+                        : 'нет данных'}
+                    </p>
+                  </div>
+                </div>
+                <div className="overflow-auto">
+                  <table className="w-full text-sm text-left text-slate-200">
+                    <thead>
+                      <tr className="text-xs uppercase text-slate-400">
+                        <th className="py-1 pr-2">Порт</th>
+                        <th className="py-1 pr-2">Статус</th>
+                        <th className="py-1 pr-2">Комментарий</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayedPortList.map((port) => {
+                        const row = summary?.rows.find((item) => item.port === port);
+                        const success = row?.success ?? false;
+                        return (
+                          <tr key={`udp-${phase}-${port}`} className="border-t border-slate-800/60">
+                            <td className="py-1 pr-2 font-mono text-xs">{port}</td>
+                            <td className="py-1 pr-2 text-xs">
+                              {success ? (
+                                <span className="text-emerald-300">
+                                  OK{row?.latencyMs ? ` (${row.latencyMs} мс)` : ''}
+                                </span>
+                              ) : (
+                                <span className="text-rose-300">нет</span>
+                              )}
+                            </td>
+                            <td className="py-1 pr-2 text-xs text-slate-400">
+                              {row?.message ?? (success ? 'ответил' : 'нет ответа')}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rounded-3xl bg-slate-950/70 border border-slate-800/60 shadow-[0_15px_30px_rgba(15,23,42,0.9)] p-6 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Smart порт</h3>
+            <p className="text-sm text-slate-400">Держим Endpoint на 45.151.183.153:51820 и не переключаемся без вашего разрешения.</p>
+          </div>
+          <Button variant="neutral" onClick={togglePortFallback}>
+            {portFallbackEnabled ? 'fallback включён' : 'fallback выключен'}
+          </Button>
+        </div>
+        <p className="text-xs text-slate-500">
+          Когда fallback выключен, приложение не будет заменять порт 51820 на 443. Если UDP блокируется,
+          вручную вернитесь к 443 или включите fallback обратно.
+        </p>
+      </section>
 
       <section className="rounded-3xl bg-slate-950/70 border border-yellow-400/30 shadow-[0_20px_45px_rgba(234,179,8,0.25)] p-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -2214,7 +2412,7 @@ const handleServerSnapshot = useCallback(async () => {
           <div>
             <h3 className="text-lg font-semibold text-white">Полный тест</h3>
             <p className="text-sm text-slate-400">
-              Контроль PING/DNS/TCP/UDP/HTTP/HTTPS через 1.1.1.1 и api.ipify.org
+              Ping/DNS/TCP → {diagHost} • HTTP/HTTPS → api.ipify.org • TLS → {diagApiBase}/system/info
             </p>
           </div>
           <div className="text-sm text-slate-300">
@@ -2234,7 +2432,7 @@ const handleServerSnapshot = useCallback(async () => {
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {FULL_TEST_TYPES.map(({ id, label }) => {
+          {FULL_TEST_TYPES.map((id) => {
             const result = diagResults[id];
             const meta = getDiagStatusMeta(result.status);
             return (
@@ -2242,10 +2440,12 @@ const handleServerSnapshot = useCallback(async () => {
                 key={id}
                 className={`rounded-2xl border px-4 py-5 backdrop-blur ${meta.container}`}
               >
-                <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest ${meta.pill}`}>
+                <div
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest ${meta.pill}`}
+                >
                   {meta.label}
                 </div>
-                <p className="mt-3 text-base font-medium">{label}</p>
+                <p className="mt-3 text-base font-medium">{fullTestLabels[id]}</p>
                 {result.latencyMs != null && (
                   <p className="text-sm text-slate-200 mt-1">Latency: {result.latencyMs} ms</p>
                 )}
