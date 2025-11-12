@@ -1,7 +1,9 @@
 import { registerPlugin } from '@capacitor/core';
 
 export interface VpnStartOptions {
-  wireguardConfigBase64: string;
+  configJson: string;
+  outboundTag?: string;
+  profileLabel?: string;
 }
 
 export interface VpnState {

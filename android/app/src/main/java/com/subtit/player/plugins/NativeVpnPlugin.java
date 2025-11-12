@@ -10,7 +10,6 @@ import android.net.VpnService;
 import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
-import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -23,16 +22,15 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.wireguard.android.backend.GoBackend;
-import com.wireguard.android.backend.Tunnel;
-import com.wireguard.android.backend.Statistics;
-import com.wireguard.config.Config;
+import libv2ray.CoreCallbackHandler;
+import libv2ray.CoreController;
+import libv2ray.Libv2ray;
 
-import java.io.ByteArrayInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -48,6 +46,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -79,14 +78,14 @@ public class NativeVpnPlugin extends Plugin {
     private volatile boolean debugModeEnabled = false;
     private volatile boolean running = false;
     private volatile boolean requestedStart = false;
-    private final Object wireguardLock = new Object();
+    private final Object vlessLock = new Object();
     @Nullable
-    private GoBackend wireguardBackend;
+    private CoreController coreController;
     @Nullable
-    private PluginTunnel wireguardTunnel;
+    private VlessSession activeSession;
+    private final CoreEvents coreEvents = new CoreEvents();
     private volatile long vpnStartedRealtime = 0L;
     private volatile long vpnStartedEpochMs = 0L;
-    private static final String DEFAULT_TUNNEL_NAME = "mask-wireguard";
     @Nullable
     private ConnectivityManager connectivityManager;
     @Nullable
@@ -253,11 +252,13 @@ public class NativeVpnPlugin extends Plugin {
 
     @PluginMethod
     public void start(PluginCall call) {
-        String configBase64 = call.getString("wireguardConfigBase64");
-        if (configBase64 == null || configBase64.isEmpty()) {
-            call.reject("wireguardConfigBase64 is required");
+        String configJson = call.getString("configJson");
+        if (configJson == null || configJson.trim().isEmpty()) {
+            call.reject("configJson is required");
             return;
         }
+        String outboundTag = call.getString("outboundTag", "proxy-out");
+        String profileLabel = call.getString("profileLabel", "VLESS session");
         Context context = getContext();
         if (context == null) {
             call.reject("context_unavailable");
@@ -269,28 +270,30 @@ public class NativeVpnPlugin extends Plugin {
         }
         try {
             refreshBaselineNetwork();
-            Config config = parseWireGuardConfig(configBase64);
-            GoBackend backend;
-            PluginTunnel tunnel;
-            synchronized (wireguardLock) {
-                if (wireguardBackend == null) {
-                    wireguardBackend = new GoBackend(context.getApplicationContext());
-                }
-                if (wireguardTunnel == null) {
-                    wireguardTunnel = new PluginTunnel(DEFAULT_TUNNEL_NAME);
-                }
-                backend = wireguardBackend;
-                tunnel = wireguardTunnel;
-            }
+            CoreController controller = ensureCoreController(context);
             requestedStart = true;
-            backend.setState(tunnel, Tunnel.State.UP, config);
-            running = backend.getState(tunnel) == Tunnel.State.UP;
+            String resolvedOutboundTag = outboundTag != null && !outboundTag.trim().isEmpty()
+                    ? outboundTag.trim()
+                    : "proxy-out";
+            controller.startLoop(configJson);
+            running = controller.getIsRunning();
+            if (!running) {
+                call.reject("VLESS core reported non-running state after start");
+                return;
+            }
+            vpnStartedRealtime = SystemClock.elapsedRealtime();
+            vpnStartedEpochMs = System.currentTimeMillis();
+            synchronized (vlessLock) {
+                activeSession = new VlessSession(profileLabel, resolvedOutboundTag);
+            }
             resetApiClient();
             call.resolve(buildState());
         } catch (Exception e) {
+            running = false;
+            Log.e(TAG, "Failed to start VLESS core", e);
+            call.reject("Failed to start VLESS core: " + e.getMessage(), e);
+        } finally {
             requestedStart = false;
-            Log.e(TAG, "Failed to start WireGuard tunnel", e);
-            call.reject("Failed to start WireGuard VPN: " + e.getMessage(), e);
         }
     }
 
@@ -308,23 +311,24 @@ public class NativeVpnPlugin extends Plugin {
     public void stop(PluginCall call) {
         Log.i(TAG, "[stop] requested");
         try {
-            GoBackend backend;
-            PluginTunnel tunnel;
-            synchronized (wireguardLock) {
-                backend = wireguardBackend;
-                tunnel = wireguardTunnel;
+            CoreController controller;
+            synchronized (vlessLock) {
+                controller = coreController;
             }
-            if (backend != null && tunnel != null) {
-                backend.setState(tunnel, Tunnel.State.DOWN, null);
+            if (controller != null && controller.getIsRunning()) {
+                controller.stopLoop();
             }
             running = false;
             requestedStart = false;
+            synchronized (vlessLock) {
+                activeSession = null;
+            }
             resetApiClient();
             refreshBaselineNetwork();
             call.resolve(buildState());
         } catch (Exception e) {
-            Log.e(TAG, "Failed to stop WireGuard tunnel", e);
-            call.reject("Failed to stop WireGuard VPN: " + e.getMessage(), e);
+            Log.e(TAG, "Failed to stop VLESS core", e);
+            call.reject("Failed to stop VLESS session: " + e.getMessage(), e);
         }
     }
 
@@ -475,80 +479,121 @@ public class NativeVpnPlugin extends Plugin {
 
     private JSObject buildState() {
         JSObject state = new JSObject();
-        GoBackend backendRef;
-        PluginTunnel tunnelRef;
-        synchronized (wireguardLock) {
-            backendRef = wireguardBackend;
-            tunnelRef = wireguardTunnel;
-        }
-        boolean currentRunning = running;
-        Statistics stats = null;
-        if (backendRef != null && tunnelRef != null) {
-            currentRunning = backendRef.getState(tunnelRef) == Tunnel.State.UP;
-            if (currentRunning) {
-                stats = backendRef.getStatistics(tunnelRef);
-            }
-        }
-        state.put("running", currentRunning);
+        state.put("running", running);
         state.put("exitCode", 0);
         state.put("requestedStart", requestedStart);
-        if (stats != null) {
-            JSObject statsJson = new JSObject();
-            statsJson.put("rxBytes", stats.totalRx());
-            statsJson.put("txBytes", stats.totalTx());
-            statsJson.put("rxPackets", 0);
-            statsJson.put("txPackets", 0);
-            statsJson.put("startedAt", vpnStartedEpochMs);
-            long uptime = currentRunning ? Math.max(0, SystemClock.elapsedRealtime() - vpnStartedRealtime) : 0;
-            statsJson.put("uptimeMs", uptime);
-            statsJson.put("exitCode", 0);
-            statsJson.put("nativeRunning", currentRunning);
-            statsJson.put("restartAttempts", 0);
-            statsJson.put("lastRestartAt", vpnStartedEpochMs);
-            statsJson.put("lastRestartReason", null);
+        JSObject statsJson = collectStatsSnapshot();
+        if (statsJson != null) {
             state.put("stats", statsJson);
         }
         return state;
     }
 
-    private Config parseWireGuardConfig(String configBase64) throws Exception {
-        byte[] decoded = Base64.decode(configBase64, Base64.DEFAULT);
-        if (decoded == null || decoded.length == 0) {
-            throw new IllegalArgumentException("wireguard config payload is empty");
+    private JSObject collectStatsSnapshot() {
+        CoreController controller;
+        VlessSession session;
+        synchronized (vlessLock) {
+            controller = coreController;
+            session = activeSession;
         }
-        return Config.parse(new ByteArrayInputStream(decoded));
+        if (controller == null || session == null || !running) {
+            return null;
+        }
+        long txDelta = safeQueryStats(controller, session.outboundTag, "uplink");
+        long rxDelta = safeQueryStats(controller, session.outboundTag, "downlink");
+        long txTotal = session.txBytes.addAndGet(Math.max(0, txDelta));
+        long rxTotal = session.rxBytes.addAndGet(Math.max(0, rxDelta));
+
+        JSObject statsJson = new JSObject();
+        statsJson.put("rxBytes", rxTotal);
+        statsJson.put("txBytes", txTotal);
+        statsJson.put("rxPackets", 0);
+        statsJson.put("txPackets", 0);
+        statsJson.put("startedAt", vpnStartedEpochMs);
+        long uptime = Math.max(0, SystemClock.elapsedRealtime() - vpnStartedRealtime);
+        statsJson.put("uptimeMs", running ? uptime : 0);
+        statsJson.put("exitCode", 0);
+        statsJson.put("nativeRunning", running);
+        statsJson.put("restartAttempts", 0);
+        statsJson.put("lastRestartAt", vpnStartedEpochMs);
+        statsJson.put("lastRestartReason", null);
+        return statsJson;
     }
 
-    private final class PluginTunnel implements Tunnel {
-        private final String name;
-        private volatile Tunnel.State state = Tunnel.State.DOWN;
-
-        PluginTunnel(String name) {
-            this.name = name;
+    private long safeQueryStats(CoreController controller, String tag, String direct) {
+        if (controller == null || tag == null) {
+            return 0;
         }
-
-        @Override
-        public String getName() {
-            return name;
+        try {
+            return Math.max(0, controller.queryStats(tag, direct));
+        } catch (Exception e) {
+            Log.w(TAG, "[stats] failed to query " + direct + " for tag=" + tag, e);
+            return 0;
         }
+    }
 
-        @Override
-        public void onStateChange(Tunnel.State newState) {
-            state = newState;
-            running = newState == Tunnel.State.UP;
-            if (running) {
-                vpnStartedRealtime = SystemClock.elapsedRealtime();
-                vpnStartedEpochMs = System.currentTimeMillis();
-                refreshBaselineNetwork();
-            } else {
-                refreshBaselineNetwork();
+    private CoreController ensureCoreController(Context context) {
+        synchronized (vlessLock) {
+            if (coreController == null) {
+                File envDir = new File(context.getFilesDir(), "xray-runtime");
+                if (!envDir.exists() && !envDir.mkdirs()) {
+                    Log.w(TAG, "[libv2ray] failed to create env dir at " + envDir.getAbsolutePath());
+                }
+                String fingerprint = resolveDeviceFingerprint(context);
+                Libv2ray.initCoreEnv(envDir.getAbsolutePath(), fingerprint);
+                coreController = Libv2ray.newCoreController(coreEvents);
+                Log.i(TAG, "[libv2ray] initialized version=" + Libv2ray.checkVersionX());
             }
-            resetApiClient();
-            Log.i(TAG, "[wireguard] state=" + newState);
+            return coreController;
+        }
+    }
+
+    private String resolveDeviceFingerprint(Context context) {
+        try {
+            String androidId = Settings.Secure.getString(
+                    context.getContentResolver(),
+                    Settings.Secure.ANDROID_ID);
+            if (androidId == null || androidId.trim().isEmpty()) {
+                androidId = "mask-device";
+            }
+            return sha256(androidId);
+        } catch (Exception e) {
+            Log.w(TAG, "[libv2ray] failed to access ANDROID_ID", e);
+            return "mask-device";
+        }
+    }
+
+    private static final class VlessSession {
+        private final String label;
+        private final String outboundTag;
+        private final AtomicLong txBytes = new AtomicLong(0);
+        private final AtomicLong rxBytes = new AtomicLong(0);
+
+        VlessSession(String label, String outboundTag) {
+            this.label = label;
+            this.outboundTag = outboundTag;
+        }
+    }
+
+    private final class CoreEvents implements CoreCallbackHandler {
+        @Override
+        public long onEmitStatus(long code, String status) {
+            Log.d(TAG, "[libv2ray][status] code=" + code + " message=" + status);
+            return 0;
         }
 
-        public Tunnel.State getState() {
-            return state;
+        @Override
+        public long shutdown() {
+            Log.i(TAG, "[libv2ray] shutdown callback");
+            running = false;
+            return 0;
+        }
+
+        @Override
+        public long startup() {
+            Log.i(TAG, "[libv2ray] startup callback");
+            running = true;
+            return 0;
         }
     }
 

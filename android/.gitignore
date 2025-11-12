@@ -3,6 +3,7 @@
 # Built application files
 *.apk
 *.aar
+!app/libs/libv2ray.aar
 *.ap_
 *.aab
 
