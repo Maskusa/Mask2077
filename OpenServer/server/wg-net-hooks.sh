@@ -8,7 +8,7 @@ set -euo pipefail
 ACTION="${1:-}"
 
 WG_IF="${WG_IF:-wg0}"
-WG_SUBNET="${WG_SUBNET:-10.7.0.0/24}"
+WG_SUBNET="${WG_SUBNET:-10.6.0.0/24}"
 WG_PORT="${WG_PORT:-443}"
 WAN_IF="${WAN_IF:-$(ip -o -4 route show to default | awk '{print $5}' | head -n1)}"
 

@@ -4,6 +4,8 @@ set -euo pipefail
 WG_IF="${WG_IF:-wg0}"
 WG_DIR="/etc/wireguard"
 CLIENTS_DIR="$WG_DIR/clients"
+WG_CLIENT_DNS="${WG_CLIENT_DNS:-10.6.0.1}"
+WG_CLIENT_MTU="${WG_CLIENT_MTU:-1280}"
 
 require_root() { [[ $(id -u) -eq 0 ]] || { echo "Только root" >&2; exit 1; }; }
 
@@ -64,20 +66,22 @@ add_peer() {
     printf "AllowedIPs = %s/32\n" "$ip"
   } >>"$WG_DIR/$WG_IF.conf"
   systemctl restart "wg-quick@$WG_IF"
-  local spub sDNS endpoint_url
+  local spub sDNS endpoint_url client_mtu
   spub=$(srv_pub)
   sDNS=$(awk -F= '/^#DNS_DEFAULT/ {print $2}' "$WG_DIR/$WG_IF.conf" 2>/dev/null | tr -d ' ' || true)
   endpoint_url=$(endpoint)
+  client_mtu="${WG_CLIENT_MTU:-1280}"
   cat <<CFG
 [Interface]
 PrivateKey = $cpriv
 Address = $ip/32
-DNS = ${sDNS:-1.1.1.1}
+DNS = ${sDNS:-$WG_CLIENT_DNS}
+MTU = ${client_mtu}
 
 [Peer]
 PublicKey = $spub
 Endpoint = $endpoint_url
-AllowedIPs = 0.0.0.0/0
+AllowedIPs = 0.0.0.0/0, ::/0
 PersistentKeepalive = 25
 CFG
 }

@@ -9,10 +9,12 @@ WG_IF="${WG_IF:-wg0}"
 # Порт WireGuard (UDP)
 WG_PORT="${WG_PORT:-443}"
 # Подсеть VPN и адрес сервера
-WG_SUBNET="${WG_SUBNET:-10.7.0.0/24}"
-WG_SERVER_IP="${WG_SERVER_IP:-10.7.0.1}"
+WG_SUBNET="${WG_SUBNET:-10.6.0.0/24}"
+WG_SERVER_IP="${WG_SERVER_IP:-10.6.0.1}"
 # DNS для клиентов
-WG_DNS="${WG_DNS:-1.1.1.1,1.0.0.1}"
+WG_DNS="${WG_DNS:-10.6.0.1}"
+# MTU для интерфейса и клиентов
+WG_MTU="${WG_MTU:-1280}"
 
 require_root() {
   if [[ $(id -u) -ne 0 ]]; then
@@ -36,7 +38,7 @@ EOF
 install_packages() {
   echo "Установка пакетов..."
   apt-get update -y
-  DEBIAN_FRONTEND=noninteractive apt-get install -y wireguard qrencode ufw iproute2
+  DEBIAN_FRONTEND=noninteractive apt-get install -y wireguard qrencode ufw iproute2 dnsmasq iptables-persistent
 }
 
 generate_server_keys() {
@@ -57,8 +59,11 @@ write_wg_conf() {
   cat >/etc/wireguard/${WG_IF}.conf <<EOF
 [Interface]
 Address = ${WG_SERVER_IP}/24
+MTU = ${WG_MTU}
 ListenPort = ${WG_PORT}
 PrivateKey = ${priv}
+DNS = ${WG_DNS}
+#DNS_DEFAULT = ${WG_DNS}
 # NAT и форвардинг трафика через внешний интерфейс
 PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET} -o ${wan} -j MASQUERADE; \
          iptables -A FORWARD -i ${wan} -o ${WG_IF} -m state --state RELATED,ESTABLISHED -j ACCEPT; \
@@ -66,7 +71,7 @@ PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET} -o ${wan} -j MASQUERADE;
 PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET} -o ${wan} -j MASQUERADE; \
            iptables -D FORWARD -i ${wan} -o ${WG_IF} -m state --state RELATED,ESTABLISHED -j ACCEPT; \
            iptables -D FORWARD -i ${WG_IF} -o ${wan} -j ACCEPT
-SaveConfig = true
+SaveConfig = false
 EOF
 
   chmod 600 /etc/wireguard/${WG_IF}.conf
@@ -87,6 +92,19 @@ enable_service() {
 prepare_clients_dir() {
   mkdir -p /etc/wireguard/clients
   chmod 700 /etc/wireguard/clients
+}
+
+configure_dnsmasq() {
+  echo "Настраиваю dnsmasq для WireGuard..."
+  cat >/etc/dnsmasq.d/wg.conf <<EOF
+interface=${WG_IF}
+listen-address=${WG_SERVER_IP}
+bind-interfaces
+cache-size=1000
+server=1.1.1.1
+server=8.8.8.8
+EOF
+  systemctl enable --now dnsmasq >/dev/null 2>&1 || true
 }
 
 install_api() {
@@ -226,6 +244,7 @@ main() {
   setup_ufw || true
   enable_service
   prepare_clients_dir
+  configure_dnsmasq
   install_api
   echo
   echo "WireGuard установлен и запущен на ${WG_IF}."

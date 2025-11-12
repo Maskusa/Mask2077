@@ -6,7 +6,8 @@ import secrets
 HOST = os.environ.get("WG_HOST", "45.151.183.153")
 USER = os.environ.get("WG_USER", "root")
 PASSWORD = os.environ.get("WG_PASS", "760RBeSbt57T")
-PORT = int(os.environ.get("WG_API_PORT", "8787"))
+API_HOST = os.environ.get("WG_API_HOST", "127.0.0.1")
+PORT = int(os.environ.get("WG_API_PORT", "8789"))
 PUB_ENDPOINT_VALUE = os.environ.get("PUB_ENDPOINT")
 
 SCRIPT = textwrap.dedent(
@@ -14,7 +15,7 @@ SCRIPT = textwrap.dedent(
 #!/usr/bin/env python3
 import os, json, secrets, argparse, subprocess, time, socket, ipaddress
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 TOKEN_FILE = '/etc/wireguard/api_token'
 CTRL_SCRIPT = '/usr/local/bin/tcpdump_ctrl.sh'
@@ -746,6 +747,7 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        params = parse_qs(parsed.query)
         if not self._ensure_auth():
             self._log_request(path, 'unauthorized')
             self._unauth(); return
@@ -761,11 +763,43 @@ class H(BaseHTTPRequestHandler):
                 self._text(200, log)
                 self._log_request(path, 'ok', 'tcpdump_log')
                 return
+            if path == '/tcpdump/ens3-443':
+                duration = 5
+                try:
+                    duration = max(1, min(30, int(params.get('duration', ['5'])[0])))
+                except ValueError:
+                    duration = 5
+                cmd = ['timeout', str(duration), 'tcpdump', '-ni', 'ens3', 'udp', 'port', '443', '-c', '200']
+                try:
+                    output = run_cmd(cmd, timeout=duration + 5)
+                    self._json(200, {'ok': True, 'output': output})
+                    self._log_request(path, 'ok', f"duration={duration}")
+                except Exception as exc:
+                    self._json(200, {'ok': False, 'error': str(exc)})
+                    self._log_request(path, 'error', f"{exc}")
+                return
+            if path == '/tcpdump/wg0-icmp':
+                host = params.get('host', ['10.6.0.6'])[0]
+                count = 20
+                cmd = ['timeout', '10', 'tcpdump', '-ni', WG_INTERFACE, 'icmp', 'or', 'host', host, '-c', str(count)]
+                try:
+                    output = run_cmd(cmd, timeout=15)
+                    self._json(200, {'ok': True, 'output': output})
+                    self._log_request(path, 'ok', f"host={host} count={count}")
+                except Exception as exc:
+                    self._json(200, {'ok': False, 'error': str(exc)})
+                    self._log_request(path, 'error', f"{exc}")
+                return
             if path == '/wg/status':
                 summary = run_cmd(['wg', 'show'])
                 peers = run_cmd([WG_API, 'list-peers'])
                 self._json(200, {'ok': True, 'summary': summary, 'peers': peers})
                 self._log_request(path, 'ok', f"peers={len(peers.splitlines()) if isinstance(peers,str) else 'n/a'}")
+                return
+            if path == '/wg/latest-handshakes':
+                latest = run_cmd(['wg', 'show', WG_INTERFACE, 'latest-handshakes'])
+                self._json(200, {'ok': True, 'latest': latest})
+                self._log_request(path, 'ok', 'latest-handshakes')
                 return
             if path == '/wg/peers':
                 peers = run_cmd([WG_API, 'list-peers'])
@@ -998,7 +1032,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-{env_line}ExecStart=/usr/bin/python3 /usr/local/bin/wg_api_http.py --host 0.0.0.0 --port {port}
+{env_line}ExecStart=/usr/bin/python3 /usr/local/bin/wg_api_http.py --host {api_host} --port {port}
 Restart=on-failure
 User=root
 
@@ -1008,7 +1042,7 @@ WantedBy=multi-user.target
 
 def render_unit(env_value):
     env_line = f"    Environment=PUB_ENDPOINT={env_value}\n" if env_value else ""
-    return textwrap.dedent(UNIT_TEMPLATE.format(env_line=env_line, port=PORT))
+    return textwrap.dedent(UNIT_TEMPLATE.format(env_line=env_line, api_host=API_HOST, port=PORT))
 
 def main():
     try:
