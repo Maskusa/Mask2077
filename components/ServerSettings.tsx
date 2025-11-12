@@ -332,9 +332,19 @@ interface PreparedVlessProfile {
 
 
 
+  source: 'manual' | 'server';
+
+
+
 
 
 }
+
+
+type ServerProfileMismatch = Record<string, { local: unknown; remote: unknown }>;
+
+
+
 
 
 
@@ -1073,6 +1083,17 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
   );
 
 
+  const logTunnelStep = useCallback(
+    (stage: string, extra?: Record<string, unknown>) => {
+      appendLog(`VPN_FLOW:${stage}`, extra);
+    },
+    [appendLog]
+  );
+
+
+
+
+
 
 
 
@@ -1455,203 +1476,47 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
   const callServerApi = useCallback(
-
-
-
-
-
-
-
     async <T,>(path: string, body?: Record<string, unknown>): Promise<ApiCallResult<T>> => {
-
-
-
-
-
-
-
       const url = `${normalizeApiBase()}${path.startsWith('/') ? path : `/${path}`}`;
-
-
-
-
-
-
-
       const headers: Record<string, string> = {
-
-
-
-
-
-
-
         Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8',
-
-
-
-
-
-
-
         'X-Auth-Token': apiToken.trim(),
-
-
-
-
-
-
-
       };
-
-
-
-
-
-
-
-      const response = await CapacitorHttp.request({
-
-
-
-
-
-
-
-        url,
-
-
-
-
-
-
-
-        method: body ? 'POST' : 'GET',
-
-
-
-
-
-
-
-        headers,
-
-
-
-
-
-
-
-        data: body ? JSON.stringify(body) : undefined,
-
-
-
-
-
-
-
-      });
-
-
-
-
-
-
-
-      if ((response.status ?? 200) >= 400) {
-
-
-
-
-
-
-
-        throw new Error(`API ${path} ответил ${response.status}`);
-
-
-
-
-
-
-
+      const method = body ? 'POST' : 'GET';
+      const started = Date.now();
+      appendLog('API_REQUEST', { path, method, hasBody: Boolean(body) });
+      try {
+        const response = await CapacitorHttp.request({
+          url,
+          method,
+          headers,
+          data: body ? JSON.stringify(body) : undefined,
+        });
+        const latency = Date.now() - started;
+        appendLog('API_RESPONSE', {
+          path,
+          status: response.status ?? 200,
+          latency,
+        });
+        if ((response.status ?? 200) >= 400) {
+          throw new Error(`API ${path} не ответил ${response.status}`);
+        }
+        return {
+          data: (response.data ?? null) as T | null,
+          apiBase: url,
+          tokenUsed: apiToken.trim(),
+        };
+      } catch (error) {
+        appendLog('API_REQUEST_ERROR', {
+          path,
+          error: error instanceof Error ? error.message : String(error),
+          duration: Date.now() - started,
+        });
+        throw error;
       }
-
-
-
-
-
-
-
-      return {
-
-
-
-
-
-
-
-        data: (response.data ?? null) as T | null,
-
-
-
-
-
-
-
-        apiBase: url,
-
-
-
-
-
-
-
-        tokenUsed: apiToken.trim(),
-
-
-
-
-
-
-
-      };
-
-
-
-
-
-
-
     },
-
-
-
-
-
-
-
-    [apiToken, normalizeApiBase]
-
-
-
-
-
-
-
+    [apiToken, appendLog, normalizeApiBase]
   );
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   const buildPreparedProfile = useCallback(
@@ -1660,9 +1525,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 
-
-
-    (uri: string, parsed: ParsedVlessProfile): PreparedVlessProfile => {
+    (uri: string, parsed: ParsedVlessProfile, source: 'manual' | 'server' = 'manual'): PreparedVlessProfile => {
 
 
 
@@ -1750,7 +1613,12 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 
-        label: parsed.remark || `${parsed.host}:${parsed.port}`,
+        label: parsed.remark || `${parsed.host}:${parsed.port}`,
+
+
+
+
+        source,
 
 
 
@@ -2694,7 +2562,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 
-      const prepared = buildPreparedProfile(uri, parsed);
+      const prepared = buildPreparedProfile(uri, parsed, 'server');
 
 
 
@@ -2772,6 +2640,94 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 
+
+
+  const verifyServerProfile = useCallback(
+    async (
+      localProfile: PreparedVlessProfile
+    ): Promise<{ ok: boolean; mismatches?: ServerProfileMismatch }> => {
+      logTunnelStep('server_profile_check_started', {
+        host: localProfile.parsed.host,
+        port: localProfile.parsed.port,
+      });
+      try {
+        const deviceIdValue = await resolveDeviceId();
+        const response = await callServerApi<{ profile?: string; vless?: string }>(
+          '/vless/profile',
+          {
+            device_id: deviceIdValue,
+          }
+        );
+        const body = response.data ?? {};
+        const remoteUri =
+          typeof body.profile === 'string'
+            ? body.profile
+            : typeof body.vless === 'string'
+            ? body.vless
+            : null;
+        if (!remoteUri) {
+          appendLog('SERVER_PROFILE_ABSENT', { deviceId: deviceIdValue });
+          logTunnelStep('server_profile_absent', { deviceId: deviceIdValue });
+          return { ok: true };
+        }
+        const remoteParsed = parseVlessUri(remoteUri);
+        const normalizeValue = (value: unknown) => {
+          if (value === undefined || value === null) {
+            return '';
+          }
+          if (Array.isArray(value)) {
+            return value.join(',');
+          }
+          if (typeof value === 'string') {
+            return value.trim();
+          }
+          return value;
+        };
+        const fields: ServerProfileMismatch = {
+          id: { local: localProfile.parsed.id, remote: remoteParsed.id },
+          host: { local: localProfile.parsed.host, remote: remoteParsed.host },
+          port: { local: localProfile.parsed.port, remote: remoteParsed.port },
+          security: { local: localProfile.parsed.security, remote: remoteParsed.security },
+          network: { local: localProfile.parsed.network, remote: remoteParsed.network },
+          sni: { local: localProfile.parsed.sni ?? '', remote: remoteParsed.sni ?? '' },
+          fingerprint: { local: localProfile.parsed.fingerprint ?? '', remote: remoteParsed.fingerprint ?? '' },
+          publicKey: { local: localProfile.parsed.publicKey ?? '', remote: remoteParsed.publicKey ?? '' },
+          shortId: { local: localProfile.parsed.shortId ?? '', remote: remoteParsed.shortId ?? '' },
+          flow: { local: localProfile.parsed.flow ?? '', remote: remoteParsed.flow ?? '' },
+          path: { local: localProfile.parsed.path ?? '', remote: remoteParsed.path ?? '' },
+        };
+        const mismatches = Object.entries(fields).filter(
+          ([, values]) => normalizeValue(values.local) !== normalizeValue(values.remote)
+        );
+        if (mismatches.length === 0) {
+          appendLog('SERVER_PROFILE_VERIFIED', {
+            host: remoteParsed.host,
+            port: remoteParsed.port,
+            security: remoteParsed.security,
+          });
+          logTunnelStep('server_profile_verified', {
+            host: remoteParsed.host,
+            port: remoteParsed.port,
+            security: remoteParsed.security,
+          });
+          return { ok: true };
+        }
+        const mismatchPayload = mismatches.reduce<ServerProfileMismatch>((acc, [key, value]) => {
+          acc[key] = value;
+          return acc;
+        }, {});
+        appendLog('SERVER_PROFILE_MISMATCH', mismatchPayload);
+        logTunnelStep('server_profile_mismatch', { fields: Object.keys(mismatchPayload) });
+        return { ok: false, mismatches: mismatchPayload };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        appendLog('SERVER_PROFILE_CHECK_ERROR', { error: message });
+        logTunnelStep('server_profile_check_error', { error: message });
+        return { ok: true };
+      }
+    },
+    [appendLog, callServerApi, logTunnelStep, resolveDeviceId]
+  );
 
 
   const handlePrepareFromManual = useCallback(() => {
@@ -3285,6 +3241,254 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 
+
+  const handleStartVpn = useCallback(async () => {
+    logTunnelStep('button_pressed', {
+      hasProfile: Boolean(preparedProfile),
+      platform: Capacitor.getPlatform(),
+    });
+    if (!isNativePlatform) {
+      logTunnelStep('blocked_non_native');
+      setWarning('Доступно только на устройстве');
+      return;
+    }
+    if (!preparedProfile) {
+      logTunnelStep('blocked_no_profile');
+      setProfileError('Сначала импортируйте профиль');
+      return;
+    }
+      logTunnelStep('validation_passed', {
+        label: preparedProfile.label,
+        endpoint: `${preparedProfile.parsed.host}:${preparedProfile.parsed.port}`,
+      });
+    logTunnelStep('preflight_passed', {
+      outboundTag: preparedProfile.outboundTag,
+      inboundPort: DEFAULT_VLESS_INBOUND_PORT,
+      profileLabel: preparedProfile.label,
+    });
+    if (preparedProfile.source === 'server') {
+      const serverProfileCheck = await verifyServerProfile(preparedProfile);
+      if (serverProfileCheck && serverProfileCheck.ok === false) {
+        const mismatchMessage = 'Профиль на сервере изменился — обновите данные перед запуском.';
+        setWarning(mismatchMessage);
+        setProfileError(mismatchMessage);
+        appendLog('VPN_START_ABORTED', {
+          reason: 'server_mismatch',
+          mismatches: serverProfileCheck.mismatches ?? null,
+        });
+        logTunnelStep('blocked_server_mismatch', {
+          fields: Object.keys(serverProfileCheck.mismatches ?? {}),
+        });
+        return;
+      }
+    } else {
+      logTunnelStep('server_profile_check_skipped', { reason: preparedProfile.source });
+    }
+    setLoading(true);
+    logTunnelStep('loading_flag_set');
+    setWarning(null);
+    try {
+      logTunnelStep('native_start_request', {
+        outboundTag: preparedProfile.outboundTag,
+        inboundPort: DEFAULT_VLESS_INBOUND_PORT,
+        profileLabel: preparedProfile.label,
+      });
+      const vpnResult = await NativeVpn.start({
+        configJson: preparedProfile.configJson,
+        outboundTag: preparedProfile.outboundTag,
+        profileLabel: preparedProfile.label,
+      });
+      logTunnelStep('native_start_response', {
+        running: vpnResult.running,
+        exitCode: vpnResult.exitCode ?? null,
+      });
+      setVpnState(vpnResult);
+      logTunnelStep('native_state_committed', {
+        running: vpnResult.running,
+        exitCode: vpnResult.exitCode ?? null,
+      });
+      appendLog('VPN_START', { running: vpnResult.running });
+      setRuntime({
+        connected: vpnResult.running,
+        host: preparedProfile.parsed.host,
+        port: preparedProfile.parsed.port,
+        lastMessage: vpnResult.running ? 'Туннель активен' : 'Не удалось запустить',
+        updatedAt: Date.now(),
+      });
+      logTunnelStep('runtime_updated', {
+        connected: vpnResult.running,
+        host: preparedProfile.parsed.host,
+        port: preparedProfile.parsed.port,
+      });
+      logTunnelStep('status_refresh_started');
+      await refreshStatus();
+      logTunnelStep('status_refresh_completed');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setWarning(message);
+      appendLog('VPN_START_ERROR', { error: message });
+      logTunnelStep('native_start_error', { error: message });
+    } finally {
+      setLoading(false);
+      logTunnelStep('loading_flag_cleared');
+      logTunnelStep('flow_finished');
+    }
+  }, [appendLog, logTunnelStep, preparedProfile, refreshStatus, verifyServerProfile]);
+
+
+  const handleStopVpn = useCallback(async () => {
+
+    if (!isNativePlatform) {
+
+      setWarning('Доступно только на устройстве');
+
+      return;
+
+    }
+
+
+
+
+
+
+
+    setLoading(true);
+
+
+
+
+
+
+
+    try {
+
+
+
+
+
+
+
+      const state = await NativeVpn.stop();
+
+
+
+
+
+
+
+      setVpnState(state);
+
+
+
+
+
+
+
+      appendLog('VPN_STOP', { running: state.running });
+
+
+
+
+
+
+
+      setRuntime((prev) => ({
+
+
+
+
+
+
+
+        ...prev,
+
+
+
+
+
+
+
+        connected: false,
+
+
+
+
+
+
+
+        lastMessage: 'Туннель остановлен',
+
+
+
+
+
+
+
+        updatedAt: Date.now(),
+
+
+
+
+
+
+
+      }));
+
+
+
+
+
+
+
+    } catch (error) {
+
+
+
+
+
+
+
+      const message = error instanceof Error ? error.message : String(error);
+
+
+
+
+
+
+
+      appendLog('VPN_STOP_ERROR', { error: message });
+
+
+
+
+
+
+
+    } finally {
+
+
+
+
+
+
+
+      setLoading(false);
+
+
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+  }, [appendLog]);
 
   return (
 
@@ -4830,429 +5034,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 
-const handleStartVpn = useCallback(async () => {
-
-
-
-
-
-
-
-    if (!isNativePlatform) {
-
-      setWarning('Доступно только на устройстве');
-
-      return;
-
-    }
-
-
-
-
-
-
-
-    if (!preparedProfile) {
-
-
-
-
-
-
-
-      setProfileError('Сначала импортируйте профиль');
-
-
-
-
-
-
-
-      return;
-
-
-
-
-
-
-
-    }
-
-
-
-
-
-
-
-    setLoading(true);
-
-
-
-
-
-
-
-    setWarning(null);
-
-
-
-
-
-
-
-    try {
-
-
-
-
-
-
-
-      const vpnResult = await NativeVpn.start({
-
-
-
-
-
-
-
-        configJson: preparedProfile.configJson,
-
-
-
-
-
-
-
-        outboundTag: preparedProfile.outboundTag,
-
-
-
-
-
-
-
-        profileLabel: preparedProfile.label,
-
-
-
-
-
-
-
-      });
-
-
-
-
-
-
-
-      setVpnState(vpnResult);
-
-
-
-
-
-
-
-      appendLog('VPN_START', { running: vpnResult.running });
-
-
-
-
-
-
-
-      setRuntime({
-
-
-
-
-
-
-
-        connected: vpnResult.running,
-
-
-
-
-
-
-
-        host: preparedProfile.parsed.host,
-
-
-
-
-
-
-
-        port: preparedProfile.parsed.port,
-
-
-
-
-
-
-
-        lastMessage: vpnResult.running ? 'Туннель активен' : 'Не удалось запустить',
-
-
-
-
-
-
-
-        updatedAt: Date.now(),
-
-
-
-
-
-
-
-      });
-
-
-
-
-
-
-
-      await refreshStatus();
-
-
-
-
-
-
-
-    } catch (error) {
-
-
-
-
-
-
-
-      const message = error instanceof Error ? error.message : String(error);
-
-
-
-
-
-
-
-      setWarning(message);
-
-
-
-
-
-
-
-      appendLog('VPN_START_ERROR', { error: message });
-
-
-
-
-
-
-
-    } finally {
-
-
-
-
-
-
-
-      setLoading(false);
-
-
-
-
-
-
-
-    }
-
-
-
-
-
-
-
-  }, [appendLog, preparedProfile, refreshStatus]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const handleStopVpn = useCallback(async () => {
-
-    if (!isNativePlatform) {
-
-      setWarning('Доступно только на устройстве');
-
-      return;
-
-    }
-
-
-
-
-
-
-
-    setLoading(true);
-
-
-
-
-
-
-
-    try {
-
-
-
-
-
-
-
-      const state = await NativeVpn.stop();
-
-
-
-
-
-
-
-      setVpnState(state);
-
-
-
-
-
-
-
-      appendLog('VPN_STOP', { running: state.running });
-
-
-
-
-
-
-
-      setRuntime((prev) => ({
-
-
-
-
-
-
-
-        ...prev,
-
-
-
-
-
-
-
-        connected: false,
-
-
-
-
-
-
-
-        lastMessage: 'Туннель остановлен',
-
-
-
-
-
-
-
-        updatedAt: Date.now(),
-
-
-
-
-
-
-
-      }));
-
-
-
-
-
-
-
-    } catch (error) {
-
-
-
-
-
-
-
-      const message = error instanceof Error ? error.message : String(error);
-
-
-
-
-
-
-
-      appendLog('VPN_STOP_ERROR', { error: message });
-
-
-
-
-
-
-
-    } finally {
-
-
-
-
-
-
-
-      setLoading(false);
-
-
-
-
-
-
-
-    }
-
-
-
-
-
-
-
-  }, [appendLog]);
 
 
 

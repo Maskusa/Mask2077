@@ -4,5 +4,9 @@
     <string name="title_activity_main">TTS Synthesizer</string>
     <string name="package_name">com.subtit.player</string>
     <string name="custom_url_scheme">com.subtit.player</string>
-    <string name="admob_app_id">ca-app-pub-4735181707963719~5807381443</string>`n</resources>
+    <string name="admob_app_id">ca-app-pub-4735181707963719~5807381443</string>
+    <string name="vpn_notification_title">Mask VPN активен</string>
+    <string name="vpn_notification_text">Профиль: %1$s</string>
+    <string name="vpn_notification_description">Фоновый сервис туннеля</string>
+</resources>
 

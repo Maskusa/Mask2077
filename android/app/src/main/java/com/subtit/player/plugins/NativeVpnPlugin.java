@@ -10,6 +10,7 @@ import android.net.VpnService;
 import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -268,16 +269,25 @@ public class NativeVpnPlugin extends Plugin {
             call.reject("vpn permission not granted");
             return;
         }
+        int configLength = configJson.length();
+        Log.i(TAG, "[start] request accepted label=" + profileLabel
+                + " outboundTag=" + outboundTag + " configLength=" + configLength);
         try {
             refreshBaselineNetwork();
+            Log.i(TAG, "[start] baselineNetwork=" + (baselineNetwork != null ? baselineNetwork.toString() : "none"));
             CoreController controller = ensureCoreController(context);
+            Log.i(TAG, "[start] core controller ready=" + (controller != null));
             requestedStart = true;
+            Log.i(TAG, "[start] requestedStart=true");
             String resolvedOutboundTag = outboundTag != null && !outboundTag.trim().isEmpty()
                     ? outboundTag.trim()
                     : "proxy-out";
+            Log.i(TAG, "[start] resolvedOutboundTag=" + resolvedOutboundTag + " launching core loop");
             controller.startLoop(configJson);
+            Log.i(TAG, "[start] startLoop finished, querying running state");
             running = controller.getIsRunning();
             if (!running) {
+                Log.w(TAG, "[start] controller reported non-running state");
                 call.reject("VLESS core reported non-running state after start");
                 return;
             }
@@ -286,14 +296,19 @@ public class NativeVpnPlugin extends Plugin {
             synchronized (vlessLock) {
                 activeSession = new VlessSession(profileLabel, resolvedOutboundTag);
             }
+            Log.i(TAG, "[start] active session created label=" + profileLabel);
             resetApiClient();
-            call.resolve(buildState());
+            Log.i(TAG, "[start] api client cache reset");
+            JSObject state = buildState();
+            Log.i(TAG, "[start] flow complete running=" + running + " outboundTag=" + resolvedOutboundTag);
+            call.resolve(state);
         } catch (Exception e) {
             running = false;
-            Log.e(TAG, "Failed to start VLESS core", e);
+            Log.e(TAG, "Failed to start VLESS core label=" + profileLabel, e);
             call.reject("Failed to start VLESS core: " + e.getMessage(), e);
         } finally {
             requestedStart = false;
+            Log.i(TAG, "[start] cleanup requestedStart=false");
         }
     }
 
@@ -540,6 +555,7 @@ public class NativeVpnPlugin extends Plugin {
                     Log.w(TAG, "[libv2ray] failed to create env dir at " + envDir.getAbsolutePath());
                 }
                 String fingerprint = resolveDeviceFingerprint(context);
+                Log.i(TAG, "[libv2ray] derived basekey length=" + fingerprint.length());
                 Libv2ray.initCoreEnv(envDir.getAbsolutePath(), fingerprint);
                 coreController = Libv2ray.newCoreController(coreEvents);
                 Log.i(TAG, "[libv2ray] initialized version=" + Libv2ray.checkVersionX());
@@ -549,17 +565,38 @@ public class NativeVpnPlugin extends Plugin {
     }
 
     private String resolveDeviceFingerprint(Context context) {
+        String seed;
         try {
-            String androidId = Settings.Secure.getString(
-                    context.getContentResolver(),
-                    Settings.Secure.ANDROID_ID);
-            if (androidId == null || androidId.trim().isEmpty()) {
-                androidId = "mask-device";
-            }
-            return sha256(androidId);
+            seed = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
         } catch (Exception e) {
             Log.w(TAG, "[libv2ray] failed to access ANDROID_ID", e);
-            return "mask-device";
+            seed = null;
+        }
+        if (seed == null || seed.trim().isEmpty()) {
+            seed = "mask-device";
+        }
+        return deriveBaseKey(seed);
+    }
+
+    private String deriveBaseKey(String seed) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(seed.getBytes(StandardCharsets.UTF_8));
+            // Xray expects Base64 URL-safe without padding (RawURLEncoding).
+            final int flags = Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP;
+            String encoded = Base64.encodeToString(hash, flags);
+            if (encoded == null || encoded.length() == 0) {
+                throw new IllegalStateException("Failed to encode XUDP base key");
+            }
+            byte[] decoded = Base64.decode(encoded, flags);
+            if (decoded.length != 32) {
+                throw new IllegalStateException(
+                        "Derived XUDP base key has invalid length=" + decoded.length + ", expected 32");
+            }
+            Log.i(TAG, "[libv2ray] basekey encodedLen=" + encoded.length() + " decodedLen=" + decoded.length);
+            return encoded;
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e);
         }
     }
 

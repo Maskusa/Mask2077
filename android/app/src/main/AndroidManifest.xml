@@ -51,6 +51,15 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
+        <service
+            android:name=".vpn.service.V2rayVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
     </application>
 
     <!-- Permissions -->
