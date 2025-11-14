@@ -1,5 +1,7 @@
 package com.subtit.player.vpn.model;
 
+import androidx.annotation.Nullable;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +24,15 @@ public final class VpnLaunchConfig implements Serializable {
     private final List<String> allowedApplications;
     private final List<String> disallowedApplications;
     private final String configJson;
+    private final String tunIpv4Address;
+    private final int tunIpv4PrefixLength;
+    private final String tunNetmask;
+    @Nullable
+    private final String tunIpv6Address;
+    @Nullable
+    private final Integer tunIpv6PrefixLength;
+    private final boolean forwardUdp;
+    private final HevOptions hevOptions;
 
     private VpnLaunchConfig(Builder builder) {
         this.sessionName = builder.sessionName;
@@ -34,6 +45,13 @@ public final class VpnLaunchConfig implements Serializable {
         this.allowedApplications = Collections.unmodifiableList(new ArrayList<>(builder.allowedApplications));
         this.disallowedApplications = Collections.unmodifiableList(new ArrayList<>(builder.disallowedApplications));
         this.configJson = builder.configJson;
+        this.tunIpv4Address = builder.tunIpv4Address;
+        this.tunIpv4PrefixLength = builder.tunIpv4PrefixLength;
+        this.tunNetmask = builder.tunNetmask;
+        this.tunIpv6Address = builder.tunIpv6Address;
+        this.tunIpv6PrefixLength = builder.tunIpv6PrefixLength;
+        this.forwardUdp = builder.forwardUdp;
+        this.hevOptions = builder.hevOptions;
     }
 
     public String getSessionName() {
@@ -76,6 +94,36 @@ public final class VpnLaunchConfig implements Serializable {
         return configJson;
     }
 
+    public String getTunIpv4Address() {
+        return tunIpv4Address;
+    }
+
+    public int getTunIpv4PrefixLength() {
+        return tunIpv4PrefixLength;
+    }
+
+    public String getTunNetmask() {
+        return tunNetmask;
+    }
+
+    @Nullable
+    public String getTunIpv6Address() {
+        return tunIpv6Address;
+    }
+
+    @Nullable
+    public Integer getTunIpv6PrefixLength() {
+        return tunIpv6PrefixLength;
+    }
+
+    public boolean isForwardUdp() {
+        return forwardUdp;
+    }
+
+    public HevOptions getHevOptions() {
+        return hevOptions;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -83,6 +131,7 @@ public final class VpnLaunchConfig implements Serializable {
         VpnLaunchConfig that = (VpnLaunchConfig) o;
         return socksPort == that.socksPort &&
                 mtu == that.mtu &&
+                forwardUdp == that.forwardUdp &&
                 Objects.equals(sessionName, that.sessionName) &&
                 Objects.equals(socksHost, that.socksHost) &&
                 Objects.equals(socksUsername, that.socksUsername) &&
@@ -90,13 +139,20 @@ public final class VpnLaunchConfig implements Serializable {
                 Objects.equals(dnsServers, that.dnsServers) &&
                 Objects.equals(allowedApplications, that.allowedApplications) &&
                 Objects.equals(disallowedApplications, that.disallowedApplications) &&
-                Objects.equals(configJson, that.configJson);
+                Objects.equals(configJson, that.configJson) &&
+                Objects.equals(tunIpv4Address, that.tunIpv4Address) &&
+                Objects.equals(tunNetmask, that.tunNetmask) &&
+                Objects.equals(tunIpv6Address, that.tunIpv6Address) &&
+                Objects.equals(tunIpv6PrefixLength, that.tunIpv6PrefixLength) &&
+                Objects.equals(hevOptions, that.hevOptions);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(sessionName, socksHost, socksPort, socksUsername, socksPassword, mtu,
-                dnsServers, allowedApplications, disallowedApplications, configJson);
+                dnsServers, allowedApplications, disallowedApplications, configJson,
+                tunIpv4Address, tunIpv4PrefixLength, tunNetmask, tunIpv6Address, tunIpv6PrefixLength,
+                forwardUdp, hevOptions);
     }
 
     @Override
@@ -124,6 +180,15 @@ public final class VpnLaunchConfig implements Serializable {
         private final List<String> allowedApplications = new ArrayList<>();
         private final List<String> disallowedApplications = new ArrayList<>();
         private String configJson = "";
+        private String tunIpv4Address = "26.26.26.2";
+        private int tunIpv4PrefixLength = 32;
+        private String tunNetmask = "255.255.255.255";
+        @Nullable
+        private String tunIpv6Address = null;
+        @Nullable
+        private Integer tunIpv6PrefixLength = null;
+        private boolean forwardUdp = true;
+        private HevOptions hevOptions = HevOptions.builder().build();
 
         private Builder() {
             dnsServers.add("1.1.1.1");
@@ -189,8 +254,50 @@ public final class VpnLaunchConfig implements Serializable {
             return this;
         }
 
+        public Builder tunIpv4(String address, int prefixLength) {
+            this.tunIpv4Address = address;
+            this.tunIpv4PrefixLength = prefixLength;
+            this.tunNetmask = prefixToNetmask(prefixLength);
+            return this;
+        }
+
+        public Builder tunNetmask(String netmask) {
+            this.tunNetmask = netmask;
+            return this;
+        }
+
+        public Builder tunIpv6(@Nullable String address, @Nullable Integer prefixLength) {
+            this.tunIpv6Address = address;
+            this.tunIpv6PrefixLength = prefixLength;
+            return this;
+        }
+
+        public Builder forwardUdp(boolean value) {
+            this.forwardUdp = value;
+            return this;
+        }
+
+        public Builder hevOptions(HevOptions value) {
+            if (value != null) {
+                this.hevOptions = value;
+            }
+            return this;
+        }
+
         public VpnLaunchConfig build() {
             return new VpnLaunchConfig(this);
+        }
+
+        private static String prefixToNetmask(int prefixLength) {
+            if (prefixLength <= 0) {
+                return "0.0.0.0";
+            }
+            int mask = (int) (0xFFFFFFFFL << (32 - prefixLength));
+            int a = (mask >>> 24) & 0xFF;
+            int b = (mask >>> 16) & 0xFF;
+            int c = (mask >>> 8) & 0xFF;
+            int d = mask & 0xFF;
+            return a + "." + b + "." + c + "." + d;
         }
     }
 }

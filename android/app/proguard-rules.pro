@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# JNI-заглушка для hev-socks5-tunnel. Её нельзя выкидывать, иначе System.loadLibrary
+# упадёт при регистрации нативных методов.
+-keep class com.v2ray.ang.service.TProxyService {
+    *;
+}

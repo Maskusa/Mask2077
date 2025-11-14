@@ -1,9 +1,44 @@
 import { registerPlugin } from '@capacitor/core';
 
+export interface NativeVpnTunAddress {
+  address: string;
+  prefix: number;
+  netmask?: string;
+}
+
+export interface NativeVpnHevOptions {
+  taskStackSize?: number;
+  udpInTcp?: boolean;
+  socksUdpAddress?: string;
+  mapDnsEnabled?: boolean;
+  mapDnsAddress?: string;
+  mapDnsPort?: number;
+  mapDnsNetwork?: string;
+  mapDnsNetmask?: string;
+  mapDnsCacheSize?: number;
+}
+
+export interface NativeVpnLaunchOptions {
+  sessionName?: string;
+  socksHost?: string;
+  socksPort?: number;
+  socksUsername?: string;
+  socksPassword?: string;
+  mtu?: number;
+  forwardUdp?: boolean;
+  dns?: string[];
+  allowedApps?: string[];
+  disallowedApps?: string[];
+  tunIpv4?: NativeVpnTunAddress;
+  tunIpv6?: NativeVpnTunAddress;
+  hev?: NativeVpnHevOptions;
+}
+
 export interface VpnStartOptions {
   configJson: string;
   outboundTag?: string;
   profileLabel?: string;
+  launchOptions?: NativeVpnLaunchOptions;
 }
 
 export interface VpnState {

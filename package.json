@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync:android": "npx cap sync android && node scripts/patch-capacitor-plugins.mjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "^7.0.3",

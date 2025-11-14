@@ -54,7 +54,9 @@
         <service
             android:name=".vpn.service.V2rayVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:exported="false">
+            android:exported="false"
+            android:process=":vpnCore"
+            android:foregroundServiceType="connectedDevice">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
@@ -68,6 +70,8 @@
         android:name="android.permission.POST_NOTIFICATIONS"
         tools:targetApi="33" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

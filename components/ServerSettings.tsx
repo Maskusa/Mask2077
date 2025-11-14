@@ -102,7 +102,7 @@ import { PROXY_CONFIG } from '../constants/proxy';
 
 
 
-import { NativeVpn, type VpnState } from '../native/nativeVpn';
+import { NativeVpn, type NativeVpnLaunchOptions, type VpnState } from '../native/nativeVpn';
 
 
 
@@ -287,58 +287,80 @@ interface RuntimeState {
 
 
 interface PreparedVlessProfile {
-
-
-
-
-
-
-
   profileUri: string;
-
-
-
-
-
-
-
   parsed: ParsedVlessProfile;
-
-
-
-
-
-
-
   configJson: string;
-
-
-
-
-
-
-
   outboundTag: string;
-
-
-
-
-
-
-
   label: string;
-
-
-
-
-
   source: 'manual' | 'server';
-
-
-
-
-
+  launchOptions: NativeVpnLaunchOptions;
 }
+
+interface StoredProfileSnapshot {
+  profileUri: string;
+  source?: 'manual' | 'server';
+  launchOptions?: NativeVpnLaunchOptions;
+}
+
+const FALLBACK_SESSION_NAME = 'Mask2077 Tunnel';
+
+const BASE_NATIVE_LAUNCH_OPTIONS: NativeVpnLaunchOptions = {
+  socksHost: '127.0.0.1',
+  socksPort: DEFAULT_VLESS_INBOUND_PORT,
+  mtu: 8500,
+  forwardUdp: true,
+  dns: ['1.1.1.1', '8.8.8.8'],
+  tunIpv4: { address: '198.18.0.1', prefix: 24, netmask: '255.255.255.0' },
+  tunIpv6: { address: 'fc00::1', prefix: 128 },
+  hev: {
+    taskStackSize: 81920,
+    udpInTcp: false,
+    mapDnsEnabled: true,
+    mapDnsAddress: '198.18.0.2',
+    mapDnsPort: 53,
+    mapDnsNetwork: '240.0.0.0',
+    mapDnsNetmask: '240.0.0.0',
+    mapDnsCacheSize: 10_000,
+  },
+};
+
+const cloneLaunchOptions = (options: NativeVpnLaunchOptions): NativeVpnLaunchOptions => ({
+  ...options,
+  dns: options.dns ? [...options.dns] : undefined,
+  tunIpv4: options.tunIpv4 ? { ...options.tunIpv4 } : undefined,
+  tunIpv6: options.tunIpv6 ? { ...options.tunIpv6 } : undefined,
+  hev: options.hev ? { ...options.hev } : undefined,
+});
+
+const createDefaultNativeLaunchOptions = (
+  profile?: { label?: string; parsed?: ParsedVlessProfile | null }
+): NativeVpnLaunchOptions => {
+  const base = cloneLaunchOptions(BASE_NATIVE_LAUNCH_OPTIONS);
+  const sessionName =
+    profile?.label?.trim() ||
+    profile?.parsed?.remark?.trim() ||
+    FALLBACK_SESSION_NAME;
+  return {
+    ...base,
+    sessionName,
+  };
+};
+
+const parsePackageList = (raw: string): string[] => {
+  if (!raw) {
+    return [];
+  }
+  const unique = new Set<string>();
+  raw
+    .split(/[\s,]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .forEach((entry) => unique.add(entry));
+  return Array.from(unique);
+};
+
+const formatPackageList = (entries?: string[]): string =>
+  entries && entries.length > 0 ? entries.join('\n') : '';
 
 
 type ServerProfileMismatch = Record<string, { local: unknown; remote: unknown }>;
@@ -409,6 +431,7 @@ interface ApiCallResult<T = unknown> {
 
 
 const DEVICE_ID_STORAGE_KEY = 'vpn_device_id';
+const LOCAL_PROFILE_STORAGE_KEY = 'vpn_last_profile';
 
 
 
@@ -793,6 +816,91 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
   const [preparedProfile, setPreparedProfile] = useState<PreparedVlessProfile | null>(null);
+  const [nativeOptions, setNativeOptions] = useState<NativeVpnLaunchOptions>(() =>
+    createDefaultNativeLaunchOptions()
+  );
+  const updateNativeOptions = useCallback(
+    (updater: (prev: NativeVpnLaunchOptions) => NativeVpnLaunchOptions) => {
+      setNativeOptions((prev) => {
+        const next = updater(prev);
+        setPreparedProfile((current) =>
+          current ? { ...current, launchOptions: next } : current
+        );
+        return next;
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || preparedProfile) {
+      return;
+    }
+    const storage = window.localStorage;
+    if (!storage) {
+      return;
+    }
+    const raw = storage.getItem(LOCAL_PROFILE_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+    try {
+      const snapshot: StoredProfileSnapshot = JSON.parse(raw);
+      if (!snapshot || typeof snapshot.profileUri !== 'string' || !snapshot.profileUri.trim()) {
+        return;
+      }
+      const parsed = parseVlessUri(snapshot.profileUri);
+      const prepared = buildPreparedProfile(
+        snapshot.profileUri,
+        parsed,
+        snapshot.source === 'server' ? 'server' : 'manual'
+      );
+      const launchOptions = snapshot.launchOptions
+        ? cloneLaunchOptions(snapshot.launchOptions)
+        : prepared.launchOptions;
+      applyProfile({
+        ...prepared,
+        launchOptions,
+      });
+      appendLog('PROFILE_STORAGE_RESTORED', {
+        source: snapshot.source ?? 'manual',
+        label: prepared.label,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendLog('PROFILE_STORAGE_RESTORE_ERROR', { error: message });
+      try {
+        window.localStorage?.removeItem(LOCAL_PROFILE_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    }
+  }, [appendLog, applyProfile, buildPreparedProfile, preparedProfile]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storage = window.localStorage;
+    if (!storage) {
+      return;
+    }
+    if (!preparedProfile) {
+      storage.removeItem(LOCAL_PROFILE_STORAGE_KEY);
+      return;
+    }
+    const snapshot: StoredProfileSnapshot = {
+      profileUri: preparedProfile.profileUri,
+      source: preparedProfile.source,
+      launchOptions: preparedProfile.launchOptions,
+    };
+    try {
+      storage.setItem(LOCAL_PROFILE_STORAGE_KEY, JSON.stringify(snapshot));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      appendLog('PROFILE_STORAGE_SAVE_ERROR', { error: message });
+    }
+  }, [appendLog, preparedProfile]);
 
 
 
@@ -1534,98 +1642,20 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
       const configJson = buildVlessConfig(parsed, {
-
-
-
-
-
-
-
         inboundPort: DEFAULT_VLESS_INBOUND_PORT,
-
-
-
-
-
-
-
         outboundTag: 'proxy-out',
-
-
-
-
-
-
-
         inboundTag: 'socks-in',
-
-
-
-
-
-
-
       });
-
-
-
-
-
-
-
+      const label = parsed.remark || `${parsed.host}:${parsed.port}`;
+      const launchOptions = createDefaultNativeLaunchOptions({ label, parsed });
       return {
-
-
-
-
-
-
-
         profileUri: uri,
-
-
-
-
-
-
-
         parsed,
-
-
-
-
-
-
-
         configJson,
-
-
-
-
-
-
-
         outboundTag: 'proxy-out',
-
-
-
-
-
-
-
-        label: parsed.remark || `${parsed.host}:${parsed.port}`,
-
-
-
-
+        label,
         source,
-
-
-
-
-
-
-
+        launchOptions,
       };
 
 
@@ -1683,6 +1713,7 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
       setPreparedProfile(profile);
+      setNativeOptions(profile.launchOptions ?? createDefaultNativeLaunchOptions(profile));
 
 
 
@@ -3242,6 +3273,12 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 
+  const handleNativeOptionsReset = useCallback(() => {
+    updateNativeOptions(() =>
+      createDefaultNativeLaunchOptions(preparedProfile ?? undefined)
+    );
+  }, [preparedProfile, updateNativeOptions]);
+
   const handleStartVpn = useCallback(async () => {
     logTunnelStep('button_pressed', {
       hasProfile: Boolean(preparedProfile),
@@ -3293,10 +3330,13 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
         inboundPort: DEFAULT_VLESS_INBOUND_PORT,
         profileLabel: preparedProfile.label,
       });
+      const launchOptions =
+        preparedProfile.launchOptions ?? nativeOptions;
       const vpnResult = await NativeVpn.start({
         configJson: preparedProfile.configJson,
         outboundTag: preparedProfile.outboundTag,
         profileLabel: preparedProfile.label,
+        launchOptions,
       });
       logTunnelStep('native_start_response', {
         running: vpnResult.running,
@@ -3333,7 +3373,14 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
       logTunnelStep('loading_flag_cleared');
       logTunnelStep('flow_finished');
     }
-  }, [appendLog, logTunnelStep, preparedProfile, refreshStatus, verifyServerProfile]);
+  }, [
+    appendLog,
+    logTunnelStep,
+    nativeOptions,
+    preparedProfile,
+    refreshStatus,
+    verifyServerProfile,
+  ]);
 
 
   const handleStopVpn = useCallback(async () => {
@@ -4459,6 +4506,388 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
       <section className="rounded-3xl bg-slate-900/70 border border-slate-700 p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Tunnel Settings</h3>
+            <p className="text-sm text-slate-400">
+              Override MTU, DNS and hev-socks5-tunnel parameters before launching the VPN.
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="neutral" onClick={handleNativeOptionsReset}>
+              Reset to defaults
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">Session name</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.sessionName ??
+                preparedProfile?.label ??
+                preparedProfile?.parsed.remark ??
+                FALLBACK_SESSION_NAME
+              }
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  sessionName: event.target.value.length ? event.target.value : undefined,
+                }))
+              }
+              placeholder="Mask2077 Tunnel"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">MTU</span>
+            <input
+              type="number"
+              min={576}
+              max={9000}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={nativeOptions.mtu ?? BASE_NATIVE_LAUNCH_OPTIONS.mtu ?? ''}
+              onChange={(event) => {
+                const next = Number.parseInt(event.target.value, 10);
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  mtu: Number.isFinite(next) ? next : undefined,
+                }));
+              }}
+              placeholder="8500"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200 sm:col-span-2">
+            <span className="text-xs uppercase tracking-wide text-slate-400">DNS (comma separated)</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.dns && nativeOptions.dns.length > 0
+                  ? nativeOptions.dns.join(', ')
+                  : (BASE_NATIVE_LAUNCH_OPTIONS.dns ?? []).join(', ')
+              }
+              onChange={(event) => {
+                const entries = event.target.value
+                  .split(',')
+                  .map((entry) => entry.trim())
+                  .filter(Boolean);
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  dns: entries.length ? entries : undefined,
+                }));
+              }}
+              placeholder="1.1.1.1, 8.8.8.8"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">IPv4 address</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.tunIpv4?.address ??
+                BASE_NATIVE_LAUNCH_OPTIONS.tunIpv4?.address ??
+                ''
+              }
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  tunIpv4: {
+                    ...(prev.tunIpv4 ?? {}),
+                    address: event.target.value || undefined,
+                  },
+                }))
+              }
+              placeholder="198.18.0.1"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-2 text-sm text-slate-200">
+              <span className="text-xs uppercase tracking-wide text-slate-400">IPv4 prefix</span>
+              <input
+                type="number"
+                min={1}
+                max={32}
+                className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+                value={
+                  nativeOptions.tunIpv4?.prefix ??
+                  BASE_NATIVE_LAUNCH_OPTIONS.tunIpv4?.prefix ??
+                  ''
+                }
+                onChange={(event) => {
+                  const next = Number.parseInt(event.target.value, 10);
+                  updateNativeOptions((prev) => ({
+                    ...prev,
+                    tunIpv4: {
+                      ...(prev.tunIpv4 ?? {}),
+                      prefix: Number.isFinite(next) ? next : undefined,
+                    },
+                  }));
+                }}
+                placeholder="24"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm text-slate-200">
+              <span className="text-xs uppercase tracking-wide text-slate-400">IPv4 netmask</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.tunIpv4?.netmask ??
+                BASE_NATIVE_LAUNCH_OPTIONS.tunIpv4?.netmask ??
+                ''
+              }
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  tunIpv4: {
+                    ...(prev.tunIpv4 ?? {}),
+                    netmask: event.target.value || undefined,
+                  },
+                }))
+              }
+              placeholder="255.255.255.0"
+            />
+            </label>
+          </div>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">IPv6 address</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.tunIpv6?.address ??
+                BASE_NATIVE_LAUNCH_OPTIONS.tunIpv6?.address ??
+                ''
+              }
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  tunIpv6: {
+                    ...(prev.tunIpv6 ?? {}),
+                    address: event.target.value || undefined,
+                  },
+                }))
+              }
+              placeholder="fc00::1"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">IPv6 prefix</span>
+            <input
+              type="number"
+              min={1}
+              max={128}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.tunIpv6?.prefix ??
+                BASE_NATIVE_LAUNCH_OPTIONS.tunIpv6?.prefix ??
+                ''
+              }
+              onChange={(event) => {
+                const next = Number.parseInt(event.target.value, 10);
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  tunIpv6: {
+                    ...(prev.tunIpv6 ?? {}),
+                    prefix: Number.isFinite(next) ? next : undefined,
+                  },
+                }));
+              }}
+              placeholder="128"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">Map DNS address</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.hev?.mapDnsAddress ??
+                BASE_NATIVE_LAUNCH_OPTIONS.hev?.mapDnsAddress ??
+                ''
+              }
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  hev: {
+                    ...(prev.hev ?? {}),
+                    mapDnsAddress: event.target.value || undefined,
+                  },
+                }))
+              }
+              placeholder="198.18.0.2"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">Map DNS port</span>
+            <input
+              type="number"
+              min={1}
+              max={65535}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.hev?.mapDnsPort ??
+                BASE_NATIVE_LAUNCH_OPTIONS.hev?.mapDnsPort ??
+                ''
+              }
+              onChange={(event) => {
+                const next = Number.parseInt(event.target.value, 10);
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  hev: {
+                    ...(prev.hev ?? {}),
+                    mapDnsPort: Number.isFinite(next) ? next : undefined,
+                  },
+                }));
+              }}
+              placeholder="53"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">Map DNS network</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.hev?.mapDnsNetwork ??
+                BASE_NATIVE_LAUNCH_OPTIONS.hev?.mapDnsNetwork ??
+                ''
+              }
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  hev: {
+                    ...(prev.hev ?? {}),
+                    mapDnsNetwork: event.target.value || undefined,
+                  },
+                }))
+              }
+              placeholder="240.0.0.0"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-wide text-slate-400">Map DNS netmask</span>
+            <input
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={
+                nativeOptions.hev?.mapDnsNetmask ??
+                BASE_NATIVE_LAUNCH_OPTIONS.hev?.mapDnsNetmask ??
+                ''
+              }
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  hev: {
+                    ...(prev.hev ?? {}),
+                    mapDnsNetmask: event.target.value || undefined,
+                  },
+                }))
+              }
+              placeholder="240.0.0.0"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200 sm:col-span-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs uppercase tracking-wide text-slate-400">
+                Allowed packages
+              </span>
+              <span className="text-[11px] uppercase text-slate-500">one per line</span>
+            </div>
+            <textarea
+              rows={3}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={formatPackageList(nativeOptions.allowedApps)}
+              onChange={(event) => {
+                const entries = parsePackageList(event.target.value);
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  allowedApps: entries.length ? entries : undefined,
+                }));
+              }}
+              placeholder="com.android.chrome&#10;org.telegram.messenger"
+            />
+            <p className="text-xs text-slate-500">
+              Если список не пустой, VPN будет активен только для указанных приложений. Остальные
+              пакеты будут исключены автоматически.
+            </p>
+          </label>
+          <label className="flex flex-col gap-2 text-sm text-slate-200 sm:col-span-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs uppercase tracking-wide text-slate-400">
+                Blocked packages
+              </span>
+              <span className="text-[11px] uppercase text-slate-500">one per line</span>
+            </div>
+            <textarea
+              rows={3}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-white outline-none"
+              value={formatPackageList(nativeOptions.disallowedApps)}
+              onChange={(event) => {
+                const entries = parsePackageList(event.target.value);
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  disallowedApps: entries.length ? entries : undefined,
+                }));
+              }}
+              placeholder="com.miui.home&#10;com.google.android.gms"
+            />
+            <p className="text-xs text-slate-500">
+              При пустом списке ограничения не применяются. Если разрешённый список задан, то
+              запреты игнорируются и используются только разрешения.
+            </p>
+          </label>
+        </div>
+
+        <div className="flex flex-wrap gap-4 text-sm text-slate-200">
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="size-4 accent-emerald-400"
+              checked={nativeOptions.forwardUdp ?? true}
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  forwardUdp: event.target.checked,
+                }))
+              }
+            />
+            <span>Forward UDP traffic</span>
+          </label>
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="size-4 accent-emerald-400"
+              checked={nativeOptions.hev?.udpInTcp ?? false}
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  hev: {
+                    ...(prev.hev ?? {}),
+                    udpInTcp: event.target.checked,
+                  },
+                }))
+              }
+            />
+            <span>Force UDP-in-TCP</span>
+          </label>
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="size-4 accent-emerald-400"
+              checked={nativeOptions.hev?.mapDnsEnabled ?? true}
+              onChange={(event) =>
+                updateNativeOptions((prev) => ({
+                  ...prev,
+                  hev: {
+                    ...(prev.hev ?? {}),
+                    mapDnsEnabled: event.target.checked,
+                  },
+                }))
+              }
+            />
+            <span>Capture DNS via hev</span>
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-3xl bg-slate-900/70 border border-slate-700 p-6 space-y-4">
 
 
 
@@ -5074,7 +5503,6 @@ const ServerSettings: React.FC<ServerSettingsProps> = ({ onBack, onShowLogs, add
 
 
 export default ServerSettings;
-
 
 
 

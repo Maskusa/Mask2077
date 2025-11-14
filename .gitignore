@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+v2raytun_apk
+v2raytun_src
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
