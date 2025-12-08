@@ -1,4 +1,0 @@
-﻿
-package:com.wireguard.android uid:11712
-
-
